@@ -53,6 +53,10 @@ react {
     /* Autolinking */
     autolinkLibrariesWithApp()
 }
+project.ext.react = [
+    enableHermes: true  // Enables Hermes
+]
+
 
 /**
  * Set this to true to Run Proguard on Release builds to minify the Java bytecode.
