@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
 import { useNavigation } from '@react-navigation/native';
+import { PhoneIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from 'react-native-heroicons/outline';
 
 const LogIn = () => {
   const navigation = useNavigation();
@@ -12,9 +11,13 @@ const LogIn = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+
+
   const validateInputs = () => {
     const phoneRegex = /^[0-9]{10}$/;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
+
+
 
     if (!phoneRegex.test(formData.phoneNumber)) {
       Alert.alert('Invalid Phone Number', 'Phone number must be 10 digits long.');
@@ -32,31 +35,33 @@ const LogIn = () => {
       <Text style={styles.title}>Welcome{"\n"}Back!</Text>
 
       <View style={styles.inputContainer}>
-        <Icon name="phone" size={18} color="#888" style={styles.icon} />
+        <PhoneIcon size={18} color="#888" style={styles.icon} />
         <TextInput
           placeholder="Phone Number"
           style={styles.input}
           keyboardType="phone-pad"
+          placeholderTextColor="black"
           value={formData.phoneNumber}
           onChangeText={(value) => handleChange('phoneNumber', value)}
         />
       </View>
 
       <View style={styles.inputContainer}>
-        <Icon name="lock" size={18} color="#888" style={styles.icon} />
+        <LockClosedIcon size={18} color="#888" style={styles.icon} />
         <TextInput
           placeholder="Password"
           style={styles.input}
           secureTextEntry={!formData.passwordVisible}
+          placeholderTextColor="black"
           value={formData.password}
           onChangeText={(value) => handleChange('password', value)}
         />
         <TouchableOpacity onPress={() => handleChange('passwordVisible', !formData.passwordVisible)}>
-          <Icon name={formData.passwordVisible ? "eye-slash" : "eye"} size={18} color="#888" />
+          {formData.passwordVisible ? <EyeSlashIcon size={18} color="#888" /> : <EyeIcon size={18} color="#888" />}
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity onPress={() => navigation.navigate("Authentication", { screen: "ForgotPassword" })}>
+      <TouchableOpacity onPress={() => navigation.navigate('Authentication', { screen: 'ForgotPassword' })}>
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </TouchableOpacity>
 
@@ -68,13 +73,13 @@ const LogIn = () => {
 
       <View style={styles.socialContainer}>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="google" size={40} color="#DB4437" />
+          <PhoneIcon size={40} color="#DB4437" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="apple" size={40} color="#000" />
+          <PhoneIcon size={40} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="facebook" size={40} color="#1877F2" />
+          <PhoneIcon size={40} color="#1877F2" />
         </TouchableOpacity>
       </View>
 
@@ -96,6 +101,7 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: 'bold',
     marginBottom: 24,
+    textAlign: 'center',
   },
   inputContainer: {
     flexDirection: 'row',
@@ -110,7 +116,7 @@ const styles = StyleSheet.create({
   },
   input: {
     flex: 1,
-    color: "black"
+    color: "black",
   },
   forgotPassword: {
     color: '#16a34a',

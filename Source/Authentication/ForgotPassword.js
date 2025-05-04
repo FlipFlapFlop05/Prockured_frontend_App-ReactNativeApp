@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
-import Icon from 'react-native-vector-icons/FontAwesome';
-import MaterialCommunityIcons from 'react-native-vector-icons/MaterialCommunityIcons';
+import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet, Dimensions } from 'react-native';
+import { PhoneIcon } from 'react-native-heroicons/outline';
+import { GoogleIcon, AppleIcon, FacebookIcon } from 'react-native-heroicons/solid';
 import { useNavigation } from "@react-navigation/native";
+
+const { width } = Dimensions.get('window');
 
 const ForgotPassword = () => {
   const navigation = useNavigation();
@@ -28,9 +30,10 @@ const ForgotPassword = () => {
 
       {/* Phone Number Input */}
       <View style={styles.inputContainer}>
-        <Icon name="phone" size={18} color="#888" style={styles.icon} />
+        <PhoneIcon size={24} color="#888" style={styles.icon} />
         <TextInput
           placeholder="Phone Number"
+          placeholderTextColor="black"
           style={styles.input}
           keyboardType="phone-pad"
           value={formData.phoneNumber}
@@ -50,13 +53,13 @@ const ForgotPassword = () => {
       {/* Social Logins */}
       <View style={styles.socialContainer}>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="google" size={40} color="#DB4437" />
+          <GoogleIcon size={40} color="#DB4437" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="apple" size={40} color="#000" />
+          <AppleIcon size={40} color="#000" />
         </TouchableOpacity>
         <TouchableOpacity>
-          <MaterialCommunityIcons name="facebook" size={40} color="#1877F2" />
+          <FacebookIcon size={40} color="#1877F2" />
         </TouchableOpacity>
       </View>
       <TouchableOpacity onPress={() => navigation.navigate("Authentication", { screen: "CreateAnAccount" })}>
@@ -73,7 +76,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'white',
     justifyContent: 'center',
-    paddingHorizontal: 20,
+    paddingHorizontal: width * 0.05,
   },
   heading: {
     fontSize: 28,

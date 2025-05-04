@@ -1,0 +1,30 @@
+{
+  "project_info": {
+    "project_number": "647021741855",
+    "firebase_url": "https://prockured-1ec23-default-rtdb.firebaseio.com",
+    "project_id": "prockured-1ec23",
+    "storage_bucket": "prockured-1ec23.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:647021741855:android:d79751fc27962b9434122a",
+        "android_client_info": {
+          "package_name": "com.prockured_frontend_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCbLWk0BxqX9kU9UdQXfLTFCOtLBaFG2e4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

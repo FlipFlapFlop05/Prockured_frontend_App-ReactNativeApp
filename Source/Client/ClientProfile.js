@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from "react";
+import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,213 +6,396 @@ import {
   Image,
   TextInput,
   ScrollView,
-  TouchableOpacity
-} from "react-native";
-import {
-  ChevronLeftIcon
-} from "react-native-heroicons/outline";
-import {useNavigation} from "@react-navigation/native";
+  TouchableOpacity,
+  Dimensions, Alert,
+} from 'react-native';
+import { ChevronLeftIcon } from "react-native-heroicons/outline";
+import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 
+const { width: screenWidth } = Dimensions.get("window");
+
 export default function ClientProfile() {
   const navigation = useNavigation();
-  const [data, setData] = useState([]);
-  const [clientId, setClientId] = useState(null);
-  const [clientPassword, setClientPassword] = useState(null);
-  const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
+  const [data, setData] = useState({});
+  const [clientPassword, setClientPassword] = useState("");
+  const [clientPhoneNumber, setClientPhoneNumber] = useState("");
+  const [shippingAddress, setShippingAddress] = useState("");
+  const [billingAddress, setBillingAddress] = useState("");
+  const [gstNumber, setGstNumber] = useState("");
+  const [pincode, setPincode] = useState("");
+  const [state, setState] = useState("");
+  const [country, setCountry] = useState("");
+  const [name, setName] = useState("");
+  const [businessName, setBusinessName] = useState("");
+  const [email, setEmail] = useState("");
 
   useEffect(() => {
-    const fetchClientId = async () => {
+    const fetchClientData = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('userId');
-        const storedPassword = await AsyncStorage.getItem('password');
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        console.log(storedId);
-        console.log(storedPassword);
-        console.log(storedPhoneNumber);
-        if (storedId) {
-          setClientId(storedId);
-        }
-        if(storedPassword){
+        const storedPassword = await AsyncStorage.getItem("password");
+        const storedPhoneNumber = await AsyncStorage.getItem("phoneNumber");
+        const storedShippingAddress = await AsyncStorage.getItem("shippingAddress");
+        const storedBillingAddress = await AsyncStorage.getItem("billingAddress");
+        const storedGSTNumber = await AsyncStorage.getItem("gstNumber");
+
+        if (storedPassword) {
           setClientPassword(storedPassword);
         }
-        if(storedPhoneNumber){
+        if (storedPhoneNumber) {
           setClientPhoneNumber(storedPhoneNumber);
         }
-      } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
-      }
-    };
-
-    fetchClientId();
-  }, []);
-  useEffect(() => {
-
-
-    const fetchData = async () => {
-      if (clientId) {
-        try {
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getClient/${clientId}`);
-          const dataArray = Object.values(response.data);
-          setData(response.data);
-        } catch (error) {
-          console.log(error);
+        if (storedShippingAddress) {
+          setShippingAddress(storedShippingAddress);
         }
+        if (storedBillingAddress) {
+          setBillingAddress(storedBillingAddress);
+        }
+        if (storedGSTNumber) {
+          setGstNumber(storedGSTNumber);
+        }
+
+        if (storedPhoneNumber) {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedPhoneNumber}`
+          );
+          setData(response.data);
+          setName(response.data.Name);
+          setBusinessName(response.data.BusinessName);
+          setEmail(response.data.email);
+          setPincode(response.data.pincode || "");
+          setState(response.data.state || "");
+          setCountry(response.data.country || "");
+          setBillingAddress(response.data.billingAddress);
+          setGstNumber(response.data.gst || "");
+          setShippingAddress(response.data.shippingAddress || "");
+        }
+      } catch (error) {
+        console.log("Error Fetching Client Data: ", error);
       }
     };
 
-    if(clientId)fetchData();
-  }, [clientId, clientPassword, clientPhoneNumber]);
+    fetchClientData();
+  }, []);
+
+
+  const handlePassword = async () => {
+    try{
+      await AsyncStorage.setItem("password", clientPassword);
+      Alert.alert('Success', 'Password Changed Successfully');
+      navigation.goBack();
+    }
+    catch (error){
+      console.log('Error Updating Profile')
+    }
+  }
+  const handleSave = async () => {
+    const userName = name;
+    const userEmail = email;
+    const userPhoneNumber = clientPhoneNumber;
+    const userBusinessName = businessName;
+    const userPincode = pincode;
+    const userShippingAddress = shippingAddress;
+    const userBillingAddress = billingAddress;
+    const userGSTNumber = gstNumber;
+    const userState = state;
+    const userCountry = country;
+    try {
+
+      // Update API
+      await axios.get(`https://api-v7quhc5aza-uc.a.run.app/createClient/${userName}/${userBusinessName}/${userEmail}/${userPincode}/${userState}/${userCountry}/${userGSTNumber}/${userPhoneNumber}/${userBillingAddress}/${userShippingAddress}`)
+
+      Alert.alert("Success", "Profile updated successfully!");
+      navigation.goBack();
+    } catch (error) {
+      console.log("Error updating profile:", error);
+      Alert.alert("Error", "Failed to update profile.");
+    }
+  };
+
   return (
-    <ScrollView style={{flex: 1,display: "flex",fontFamily: "Montserrat",color: "#76B117"}}>
-      <TouchableOpacity style = {{padding: 40, marginLeft: -20, flexDirection: 'row'}} onPress={() => navigation.goBack()} >
+    <ScrollView style={styles.container}>
+      <TouchableOpacity
+        style={styles.backButton}
+        onPress={() => navigation.goBack()}
+      >
         <ChevronLeftIcon size={20} color={"black"} strokeWidth={5} />
       </TouchableOpacity>
-      <Text style = {{alignSelf: "center", marginTop: -60, fontWeight: "bold", fontSize: 16}}>
-        Profile
-      </Text>
+      <Text style={styles.title}>Profile</Text>
 
-      <View style = {{alignContent: "center", alignSelf: "center", flexDirection: "column", paddingTop: 40}}>
+      <View style={styles.profileImageContainer}>
         <Image
-          source={{uri: "https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg"}}
-          style = {{width: 140, height: 140, borderRadius: 80}}
+          source={{
+            uri: "https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg",
+          }}
+          style={styles.profileImage}
         />
-        <Text style = {{fontWeight: "800", color: "black", fontSize: 28, alignSelf: "center", paddingTop: 10}}>
-          {data?.Name}
-        </Text>
-        <Text style = {{fontWeight: "500", color: "black", alignContent: "center", alignSelf: "center", fontSize: 18}}>
-          Client
-        </Text>
+        <Text style={styles.profileName}>{data?.Name}</Text>
+        <Text style={styles.profileType}>Client</Text>
       </View>
 
-
-
-      <TouchableOpacity style={{padding: 20, borderColor: "gray", borderWidth: 1, width: "85%", alignSelf: "center", borderRadius: 10, marginTop: 50}} onPress={() => navigation.navigate("Main", {screen: "Catalogue"})}>
-        <Text style={{marginTop: -8}}>
-          Manage your catalogs
-        </Text>
+      <TouchableOpacity
+        style={styles.manageButton}
+        onPress={() => navigation.goBack()}
+      >
+        <Text>Manage Teams</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={{padding: 20, borderColor: "gray", borderWidth: 1, width: "85%", alignSelf: "center", borderRadius: 10, marginTop: 20}} onPress={() => navigation.navigate("Home Screen")}>
-        <Text style={{marginTop: -8}}>
-          Manage Teams
-        </Text>
+      <TouchableOpacity
+        style={styles.manageButton}
+        onPress={() => navigation.navigate("Add Outlet")}
+      >
+        <Text>Set up Outlet</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={{padding: 20, borderColor: "gray", borderWidth: 1, width: "85%", alignSelf: "center", borderRadius: 10, marginTop: 20}} onPress={() => navigation.navigate("Add Outlet")}>
-        <Text style={{marginTop: -8}}>
-          Set up Outlet
-        </Text>
+      <Text style={styles.sectionTitle}>Personal Details</Text>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Name</Text>
+        <TextInput
+          value={name}
+          onChangeText={setName}
+          style={styles.input}
+          keyboardType={'default'}
+        />
+      </View>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Email</Text>
+        <TextInput
+          value={email}
+          onChangeText={setEmail}
+          style={styles.input}
+          keyboardType={'default'}
+        />
+      </View>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Phone Number</Text>
+        <TextInput
+          value={clientPhoneNumber}
+          onChangeText={setClientPhoneNumber}
+          style={styles.input}
+          keyboardType={'numeric'}
+        />
+      </View>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Password</Text>
+        <TextInput
+          value={clientPassword}
+          onChangeText={setClientPassword}
+          style={styles.input}
+          keyboardType={'default'}
+        />
+      </View>
+      <TouchableOpacity style={{ paddingHorizontal: 20 }} onPress = {handlePassword}>
+        <Text style={styles.changePassword}>Change Password</Text>
       </TouchableOpacity>
 
-
-      {/*PERSONAL DETAILS*/}
-
-      <Text style = {{padding: 20, color: "black", fontFamily: "Montserrat", fontSize: 18, fontStyle: "normal", fontWeight: "bold", alignSelf: "stretch", lineHeight: 10, marginTop: 20}}>
-        Personal Details
-      </Text>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "black", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Phone Number
-        </Text>
-        <Text style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch"}}>
-          {clientPhoneNumber}
-        </Text>
+      <Text style={styles.sectionTitle}>Business Address Details</Text>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Business Name</Text>
+        <TextInput
+          value={businessName}
+          onChangeText={setBusinessName}
+          style={styles.input}
+          keyboardType={'numeric'}
+        />
       </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "black", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Password
-        </Text>
-        <Text style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch"}}>
-          {clientPassword}
-        </Text>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Pincode</Text>
+        <TextInput
+          value={pincode}
+          onChangeText={setPincode}
+          style={styles.input}
+          keyboardType={'numeric'}
+        />
       </View>
-      <View>
-        <Text style = {{color: "#76B117", textAlign: "right", fontFamily: "Montserrat", fontSize: 12, fontStyle: "normal", fontWeight: 600, lineHeight: 20, textDecorationLine: "underline", textDecorationStyle: "solid", marginRight: 20}}>
-          Change Password
-        </Text>
-      </View>
-
-
-      {/*Business Address Details*/}
-      <View>
-        <Text style = {{alignSelf: "stretch", color: "black", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: 800, lineHeight: 30, padding: 10}}>
-          Business Address Details
-        </Text>
-      </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Pincode
-        </Text>
-        <Text style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch"}}>
-          {data?.pincode}
-        </Text>
-      </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Shipping Address
-        </Text>
+      <View style={styles.inputContainer}>
+        <Text style={styles.detailLabel}>Shipping Address</Text>
         <TextInput
           placeholder={"Enter Shipping Address"}
           keyboardType={"default"}
-          style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch", color: "black"}}
+          style={styles.input}
+          value={shippingAddress}
+          onChangeText={setShippingAddress}
+          placeholderTextColor={'black'}
         />
       </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Billing Address
-        </Text>
+      <View style={styles.inputContainer}>
+        <Text style={styles.detailLabel}>Billing Address</Text>
         <TextInput
           placeholder={"Enter Billing Address"}
           keyboardType={"default"}
-          style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch", color: "black"}}
+          style={styles.input}
+          value={billingAddress}
+          onChangeText={setBillingAddress}
+          placeholderTextColor={'black'}
         />
       </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          GST Number
-        </Text>
+      <View style={styles.inputContainer}>
+        <Text style={styles.detailLabel}>GST Number</Text>
         <TextInput
           placeholder={"Enter GST Number"}
           keyboardType={"default"}
-          style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch", color: "black"}}
+          style={styles.input}
+          value={gstNumber}
+          onChangeText={setGstNumber}
+          placeholderTextColor={'black'}
         />
       </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          State
-        </Text>
-        <Text style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch"}}>
-          {data?.state}
-        </Text>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>State</Text>
+        <TextInput
+          placeholder={"Enter State"}
+          keyboardType={"default"}
+          style={styles.input}
+          value={state}
+          onChangeText={setState}
+          placeholderTextColor={'black'}
+        />
       </View>
-      <View style = {{alignSelf: "stretch", padding: 20, paddingTop: -20}}>
-        <Text style = {{color: "#76B117", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: "bold", lineHeight: 20, padding: 10}}>
-          Country
-        </Text>
-        <Text style = {{borderRadius: 10, borderColor: "gray", borderWidth: 1, height: 50, padding: 14, alignItems: "center", alignSelf: "stretch"}}>
-          {data?.country}
-        </Text>
+      <View style={styles.detailContainer}>
+        <Text style={styles.detailLabel}>Country</Text>
+        <TextInput
+          placeholder={"Enter Country"}
+          keyboardType={"default"}
+          style={styles.input}
+          value={country}
+          onChangeText={setCountry}
+          placeholderTextColor={'black'}
+        />
       </View>
 
-      {/*Buttons*/}
-      <TouchableOpacity style = {{display: "flex", width: 327, padding: 14, alignSelf: "center", backgroundColor: "#76B117", alignItems: "center", justifyContent: "center", borderRadius: 20}}>
-        <Text style={{color: "#FFF", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: 500, lineHeight: 22}}>
-          Save
-        </Text>
+      <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+        <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style = {{display: "flex", width: 327, padding: 14, alignSelf: "center", backgroundColor: "#E74C3C", alignItems: "center", justifyContent: "center", borderRadius: 20, marginTop: 10}}>
-        <Text style={{color: "#FFF", fontFamily: "Montserrat", fontSize: 16, fontStyle: "normal", fontWeight: 500, lineHeight: 22}}>
-          Log Out
-        </Text>
+      <TouchableOpacity style={styles.logoutButton}>
+        <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
     </ScrollView>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
-  container: {flex: 1,display: "flex",fontFamily: "Montserrat",color: "#76B117"},
-  profileView: {},
+  container: {
+    flex: 1,
+    backgroundColor: "#fff", // Added background color
+  },
+  backButton: {
+    padding: 20,
+    marginLeft: -10, // Adjusted margin
+    flexDirection: "row",
+  },
+  title: {
+    alignSelf: "center",
+    marginTop: -40, // Adjusted margin
+    fontWeight: "bold",
+    fontSize: 16,
+  },
+  profileImageContainer: {
+    alignItems: "center",
+    paddingTop: 20,
+  },
+  profileImage: {
+    width: 140,
+    height: 140,
+    borderRadius: 70, // Half of width/height for perfect circle
+  },
+  profileName: {
+    fontWeight: "800",
+    color: "black",
+    fontSize: 28,
+    marginTop: 10,
+  },
+  profileType: {
+    fontWeight: "500",
+    color: "black",
+    fontSize: 18,
+    marginTop: 5,
+  },
+  manageButton: {
+    padding: 20,
+    borderColor: "gray",
+    borderWidth: 1,
+    width: "85%",
+    alignSelf: "center",
+    borderRadius: 10,
+    marginTop: 20,
+  },
+  sectionTitle: {
+    padding: 20,
+    color: "black",
+    fontSize: 18,
+    fontWeight: "bold",
+    marginTop: 20,
+  },
+  detailContainer: {
+    paddingHorizontal: 20,  // Consistent horizontal padding
+    paddingVertical: 10, // Added vertical padding
+  },
+  detailLabel: {
+    color: "black",
+    fontSize: 16,
+    fontWeight: "bold",
+    marginBottom: 5, // Space between label and value
+  },
+  detailValue: {
+    borderRadius: 10,
+    borderColor: "gray",
+    borderWidth: 1,
+    height: 50,
+    padding: 14,
+    color: "black",
+  },
+  inputContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+  },
+  input: {
+    borderRadius: 10,
+    borderColor: "gray",
+    borderWidth: 1,
+    height: 50,
+    padding: 14,
+    color: "black",
+  },
+  changePassword: {
+    color: "#76B117",
+    textAlign: "right",
+    fontSize: 12,
+    fontWeight: "600",
+    textDecorationLine: "underline",
+    marginRight: 0, // Removed unnecessary margin
+  },
+  saveButton: {
+    width: "85%",
+    padding: 14,
+    alignSelf: "center",
+    backgroundColor: "#76B117",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    marginTop: 20, // Added margin top
+  },
+  saveButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "500",
+  },
+  logoutButton: {
+    width: "85%",
+    padding: 14,
+    alignSelf: "center",
+    backgroundColor: "#E74C3C",
+    alignItems: "center",
+    justifyContent: "center",
+    borderRadius: 20,
+    marginTop: 10,  // Added margin top
+    marginBottom: 20, // Added margin bottom for spacing
+  },
+  logoutButtonText: {
+    color: "#FFF",
+    fontSize: 16,
+    fontWeight: "500",
+  },
 })

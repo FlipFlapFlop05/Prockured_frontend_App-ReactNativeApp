@@ -2,99 +2,108 @@ import React from "react";
 import {
   View,
   Text,
-  TouchableHighlight,
+  TouchableOpacity,
   StyleSheet,
-  TouchableOpacity
+  Dimensions,
+  Image
 } from 'react-native';
 import {UserIcon} from "react-native-heroicons/outline";
 import {useNavigation} from "@react-navigation/native";
 
+const { width, height } = Dimensions.get('window');
 
 export default function ChooseMode() {
   const navigation = useNavigation();
   return (
-    <View style = {styles.container}>
-      <View style = {styles.chooseModeView}>
+    <View style={styles.container}>
+      <View style={styles.chooseModeView}>
         <Text style={styles.chooseModeText}>
           Choose Mode
         </Text>
       </View>
-      <View style = {styles.clientModeView}>
-        <UserIcon size={100} color={"black"} strokeWidth={3} />
-        <TouchableOpacity style = {styles.clientModeTouchableOpacity} onPress={() => navigation.navigate("Basic Client Profile")}>
-          <Text style = {styles.clientModeText}>
+      <View style={styles.clientModeView}>
+        <Image
+          source = {require("../Images/ClientSide.png")}
+          style = {{
+            height: width * 0.5,
+            width: width * 0.8,
+            borderRadius: 20
+          }}
+        />
+        <TouchableOpacity style={styles.clientModeTouchableOpacity} onPress={() => navigation.navigate("Basic Client Profile")}>
+          <Text style={styles.clientModeText}>
             Client Mode
           </Text>
         </TouchableOpacity>
       </View>
-      <View style = {styles.vendorModeView}>
-        <UserIcon size={100} color={"black"} strokeWidth={3} />
-        <TouchableOpacity style = {styles.vendorModeTouchableOpacity}>
-          <Text style = {styles.vendorModeText}>
+      <View style={styles.vendorModeView}>
+        <Image
+          source = {require("../Images/More.jpg")}
+          style = {{
+            height: width * 0.5,
+            width: width * 0.8,
+            borderRadius: 20
+          }}
+        />
+        <TouchableOpacity style={styles.vendorModeTouchableOpacity} onPress={() => navigation.navigate("Basic Vendor Profile")}>
+          <Text style={styles.vendorModeText}>
             Vendor Mode
           </Text>
         </TouchableOpacity>
       </View>
     </View>
-  )
+  );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    display: "flex",
-    flexDirection: "column"
+    flexDirection: "column",
+    paddingHorizontal: width * 0.10,
+    alignSelf: "center",
+    alignItems: "center", justifyContent: "center"
   },
   chooseModeView: {
-    padding: 100
+    paddingVertical: height * 0.05,
   },
   chooseModeText: {
-    alignItems: "center",
     alignSelf: "center",
-    justifyContent: "center",
-    fontStyle: "normal",
     fontWeight: "bold",
-    fontSize: 28
+    fontSize: width * 0.07,
   },
   clientModeView: {
     alignItems: "center",
-    alignSelf: "center",
-    justifyContent: "space-between"
   },
   clientModeTouchableOpacity: {
     backgroundColor: "green",
-    width: 300,
-    height: 50,
-    marginTop: 30,
-    borderRadius: 10
+    width: width * 0.8,
+    height: height * 0.07,
+    marginTop: height * 0.03,
+    borderRadius: 10,
+    justifyContent: "center",
   },
   clientModeText: {
-    fontStyle: "normal",
     fontWeight: "bold",
     color: "white",
     textAlign: "center",
-    marginTop: 10,
-    fontSize: 18
+    fontSize: width * 0.045,
   },
   vendorModeView: {
     alignItems: "center",
-    alignSelf: "center",
-    justifyContent: "space-between",
-    padding: 80
+    paddingVertical: height * 0.05,
   },
   vendorModeTouchableOpacity: {
     backgroundColor: "green",
-    width: 300,
-    height: 50,
-    marginTop: 30,
-    borderRadius: 10
+    width: width * 0.8,
+    height: height * 0.07,
+    marginTop: height * 0.03,
+    borderRadius: 10,
+    justifyContent: "center",
   },
   vendorModeText: {
-    fontStyle: "normal",
     fontWeight: "bold",
     color: "white",
     textAlign: "center",
-    marginTop: 10,
-    fontSize: 18
+    fontSize: width * 0.045,
   },
-})
+});

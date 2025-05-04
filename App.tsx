@@ -6,5 +6,5 @@ import AppNavigation from './Source/Navigation/AppNavigation';
 export default function App(){
   return (
     <AppNavigation />
-  )
-}
+  );
+};
