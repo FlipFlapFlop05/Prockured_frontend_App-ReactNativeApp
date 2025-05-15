@@ -1,94 +1,106 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, Dimensions, TouchableOpacity, Image, TextInput, FlatList } from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  FlatList,
+  TouchableOpacity,
+  Image,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import {orders} from '../Constant/constant';
-
-const { width: screenWidth } = Dimensions.get('window');
+import { orders } from '../Constant/constant';
+import { ChevronLeftIcon } from 'react-native-heroicons/outline';
 
 const Orders = () => {
   const [searchText, setSearchText] = useState('');
-  const [selectedDate, setSelectedDate] = useState('24-06-2024'); // Default date
-  const [selectedCategory, setSelectedCategory] = useState('Vegetables'); // Default category
-  const [selectedStatus, setSelectedStatus] = useState('Pending'); // Default status
-
-
+  const [selectedDate, setSelectedDate] = useState('24-06-2024');
+  const [selectedCategory, setSelectedCategory] = useState('Vegetables');
+  const [selectedStatus, setSelectedStatus] = useState('Pending');
 
   const filteredOrders = orders.filter(order => {
-    const searchMatch = order.vendor.toLowerCase().includes(searchText.toLowerCase()) || order.orderValue.includes(searchText);
-    const statusMatch = selectedStatus === 'All' || order.status === selectedStatus;
+    const searchMatch =
+      order.vendor.toLowerCase().includes(searchText.toLowerCase()) ||
+      order.orderValue.includes(searchText);
+    const statusMatch =
+      selectedStatus === 'All' || order.status === selectedStatus;
     return searchMatch && statusMatch;
   });
 
   const renderOrderItem = ({ item }) => (
-    <View style={styles.orderRow}>
-      <View style={styles.vendorContainer}>
-        <Text style={styles.orderVendor}>{item.vendor}</Text>
-        <Text style={styles.orderStatus}>{item.status}</Text>
-        <TouchableOpacity style={styles.viewSummaryButton}>
-          <Text style={styles.viewSummaryButtonText}>View Summary</Text>
-        </TouchableOpacity>
+    <View style={styles.orderItem}>
+      <View style={styles.orderLeft}>
+        <Image source={item.logo} style={styles.logo} />
+        <View>
+          <Text style={styles.vendor}>{item.vendor}</Text>
+          <Text style={styles.status}>{item.status}</Text>
+          <TouchableOpacity>
+            <Text style={styles.summary}>View Summary</Text>
+          </TouchableOpacity>
+        </View>
       </View>
-      <Text style={styles.orderValue}>₹{item.orderValue}</Text>
+      <Text style={styles.amount}>₹ {item.orderValue}</Text>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerTitle}>Orders</Text>
-        </View>
+      <View style={styles.header}>
+        <ChevronLeftIcon color={'black'} size={24} />
+        <Text style={styles.headerTitle}>Orders</Text>
+      </View>
 
-        <View style={styles.searchBar}>
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search Vendor or Order ID..."
-            value={searchText}
-            onChangeText={setSearchText}
-            placeholderTextColor={'black'}
-          />
-        </View>
-
-        <View style={styles.filterBar}>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>Sort by</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>{selectedDate}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.filterButton}>
-            <Text style={styles.filterButtonText}>{selectedCategory}</Text>
-          </TouchableOpacity>
-        </View>
-
-        <View style={styles.statusFilter}>
-          <TouchableOpacity
-            style={[styles.statusButton, selectedStatus === 'Pending' && styles.activeStatusButton]}
-            onPress={() => setSelectedStatus('Pending')}
-          >
-            <Text style={[styles.statusButtonText, selectedStatus === 'Pending' && styles.activeStatusButtonText]}>Pending</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.statusButton, selectedStatus === 'Confirmed' && styles.activeStatusButton]}
-            onPress={() => setSelectedStatus('Confirmed')}
-          >
-            <Text style={[styles.statusButtonText, selectedStatus === 'Confirmed' && styles.activeStatusButtonText]}>Confirmed</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.statusButton, selectedStatus === 'Past' && styles.activeStatusButton]}
-            onPress={() => setSelectedStatus('Past')}
-          >
-            <Text style={[styles.statusButtonText, selectedStatus === 'Past' && styles.activeStatusButtonText]}>Past</Text>
-          </TouchableOpacity>
-        </View>
-
-        <FlatList
-          data={filteredOrders}
-          renderItem={renderOrderItem}
-          keyExtractor={(item, index) => index.toString()} // Replace with a unique ID if available
-          contentContainerStyle={styles.flatListContent}
+      <View style={styles.searchBox}>
+        <TextInput
+          style={styles.searchInput}
+          placeholder="Search Vendor or Order ID..."
+          placeholderTextColor={'#999'}
+          value={searchText}
+          onChangeText={setSearchText}
         />
       </View>
+
+      <View style={styles.filters}>
+        <Text style={styles.filterText}>Sort by</Text>
+        <Text style={styles.filterText}>{selectedDate}</Text>
+        <Text style={styles.filterText}>{selectedCategory}</Text>
+      </View>
+
+      <View style={styles.tabBar}>
+        {['Pending', 'Confirmed', 'Past'].map(tab => (
+          <TouchableOpacity
+            key={tab}
+            style={[
+              styles.tabItem,
+              selectedStatus === tab && styles.activeTabItem,
+            ]}
+            onPress={() => setSelectedStatus(tab)}>
+            <Text
+              style={[
+                styles.tabText,
+                selectedStatus === tab && styles.activeTabText,
+              ]}>
+              {tab}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+
+      <View style={styles.tableHeader}>
+        <View>
+          <Text style={styles.tableHeaderText}>Vendor Name</Text>
+        </View>
+        <View>
+          <Text style={styles.tableHeaderText}>Order Value</Text>
+        </View>
+      </View>
+
+      <FlatList
+        data={filteredOrders}
+        renderItem={renderOrderItem}
+        keyExtractor={(item, index) => index.toString()}
+        contentContainerStyle={{ paddingBottom: 80 }}
+      />
     </SafeAreaView>
   );
 };
@@ -96,110 +108,115 @@ const Orders = () => {
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingTop: 20
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e0e0e0',
   },
   headerTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
+    marginLeft: 10,
   },
-  searchBar: {
-    backgroundColor: 'white',
+  searchBox: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  searchInput: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 5,
-    padding: 8,
-    paddingLeft: 15,
-    color: "black"
-  },
-  filterBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  filterButton: {
-    padding: 8,
-  },
-  filterButtonText: {
-    color: 'blue',
-    fontSize: 16,
-  },
-  statusFilter: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  statusButton: {
-    padding: 8,
-  },
-  statusButtonText: {
-    color: '#4CAF50',
-    fontSize: 16,
-  },
-  activeStatusButton: {
-    backgroundColor: 'lightgray',
-    borderRadius: 5,
-  },
-  activeStatusButtonText: {
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  flatListContent: {
-    padding: 10,
-  },
-  orderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    paddingVertical: 15,
+    backgroundColor: '#fff',
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
+  },
+  searchInput: {
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    color: 'black',
+  },
+  filters: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  filterText: {
+    fontSize: 14,
+    color: '#444',
+  },
+  tabBar: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  tabItem: {
+    paddingVertical: 6,
     paddingHorizontal: 10,
   },
-  vendorContainer: {
-    flexDirection: 'column',
-    justifyContent: 'flex-start',
+  activeTabItem: {
+    backgroundColor: '#e6f4ea',
+    borderRadius: 20,
   },
-  orderStatus: {
-    fontSize: 14,
-    color: 'gray',
-    marginTop: 5,
-  },
-  orderValue: {
+  tabText: {
     fontSize: 16,
-    alignSelf: 'center',
+    color: '#4CAF50',
   },
-  viewSummaryButton: {
-    backgroundColor: '#4CAF50',
-    borderRadius: 5,
-    padding: 8,
-    marginTop: 10,
+  activeTabText: {
+    fontWeight: 'bold',
+    color: '#000',
   },
-  viewSummaryButtonText: {
-    color: 'white',
+  tableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+  },
+  tableHeaderText: {
     fontSize: 14,
+    color: '#4CAF50',
+    fontWeight: '600',
+  },
+  orderItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  orderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  logo: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
+  },
+  vendor: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  status: {
+    fontSize: 14,
+    color: 'orange',
+  },
+  summary: {
+    fontSize: 14,
+    color: '#4CAF50',
+    marginTop: 2,
+  },
+  amount: {
+    fontSize: 16,
+    fontWeight: '500',
+    color: '#000',
   },
 });
 
