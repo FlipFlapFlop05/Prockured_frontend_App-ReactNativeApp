@@ -69,20 +69,8 @@ const LogIn = () => {
         <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
 
+
       <Text style={styles.orText}>- Or continue with -</Text>
-
-      <View style={styles.socialContainer}>
-        <TouchableOpacity>
-          <PhoneIcon size={40} color="#DB4437" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <PhoneIcon size={40} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <PhoneIcon size={40} color="#1877F2" />
-        </TouchableOpacity>
-      </View>
-
       <TouchableOpacity onPress={() => navigation.navigate("Authentication", { screen: "CreateAnAccount" })}>
         <Text style={styles.signupText}>Create An Account <Text style={styles.signupLink}>Sign Up</Text></Text>
       </TouchableOpacity>

@@ -99,7 +99,7 @@ const ChatScreenWithSupplier = ({ route, navigation }) => {
             )}
           />
         </View>
-        <TouchableOpacity style={{width: 118, backgroundColor: "#76B117", height: 36, left: width * 0.68, borderRadius: 24, borderWidth: 1, padding: 8, borderColor: '#76B117', justifyContent: 'center', alignContent: 'center', alignItems: 'center'}}>
+        <TouchableOpacity onPress={() => navigation.navigate('Specific Vendor Order Now')} style={{width: 118, backgroundColor: "#76B117", height: 36, left: width * 0.68, borderRadius: 24, borderWidth: 1, padding: 8, borderColor: '#76B117', justifyContent: 'center', alignContent: 'center', alignItems: 'center'}}>
           <Text style={{fontWeight: 14, fontStyle: 'normal', fontFamily: 'Montserrat', lineHeight: 13, letterSpacing: 0, alignContent: 'center', justifyContent: 'center', alignItems: 'center', color: 'white'}}>
             +  Add Order
           </Text>

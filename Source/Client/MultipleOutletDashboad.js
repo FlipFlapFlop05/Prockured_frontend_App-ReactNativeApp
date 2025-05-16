@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+ import React, { useEffect, useState } from "react";
 import {
   View,
   Text,
@@ -6,10 +6,11 @@ import {
   FlatList,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView, // Import SafeAreaView
-  Dimensions, // Import Dimensions
+  SafeAreaView,
+  Dimensions,
+  Modal
 } from 'react-native';
-import { ChevronLeftIcon } from "react-native-heroicons/outline";
+import { ChevronLeftIcon, ChevronRightIcon } from "react-native-heroicons/outline";
 import { useNavigation } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
@@ -20,11 +21,12 @@ export default function MultipleOutletDashboard() {
   const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [clientId, setClientId] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
 
   useEffect(() => {
     const fetchClientId = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('ClientUserId');
+        const storedId = await AsyncStorage.getItem('phoneNumber');
         if (storedId) {
           setClientId(storedId);
         }
@@ -52,12 +54,49 @@ export default function MultipleOutletDashboard() {
 
   const renderOutletItem = ({ item }) => (
     <View style={styles.outletItem}>
-      <Text style={styles.outletName}>{item.OutletName}</Text>
-      <Text style={styles.outletAddress}>{item.BillingAddress}</Text>
-      <Text style={styles.outletAddress}>{item.Address}</Text>
-      <Text style={styles.outletAddress}>
-        {item.city} {item.state} {item.country}
-      </Text>
+      <View>
+        <Text style={styles.outletName}>{item.OutletName}</Text>
+        <Text style={styles.outletAddress}>{item.BillingAddress}</Text>
+        <Text style={styles.outletAddress}>{item.Address}</Text>
+        <Text style={styles.outletAddress}>
+          {item.city} {item.state} {item.country}
+        </Text>
+      </View>
+      <TouchableOpacity onPress={() => setModalVisible(true)}>
+        <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
+      </TouchableOpacity>
+      <Modal
+        transparent={true}
+        visible = {modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}
+      >
+        <View styles = {styles.modalOverlay}>
+          <View style = {styles.modalContainer}>
+            <Text style = {styles.title}>
+              Choose and Option
+            </Text>
+
+            <TouchableOpacity style = {styles.button} onPress={() => {setModalVisible((false))}}>
+              <Text style = {styles.buttonText}>
+                Edit Details
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity style = {styles.button} onPress={() => navigation.navigate('Outlet Dashboard')} >
+              <Text style={styles.buttonText}>
+                Dashboard
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress = {() => setModalVisible(false)}>
+              <Text style = {styles.closeText}>
+                Cancel
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 
@@ -137,7 +176,10 @@ const styles = StyleSheet.create({
     backgroundColor: "white",
     marginBottom: 10,
     padding: 10,
-    borderRadius: 5, // Add border radius for visual appeal
+    borderRadius: 5,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center'
   },
   outletName: {
     color: "#2C3E50",
@@ -148,10 +190,46 @@ const styles = StyleSheet.create({
     color: "#2C3E50",
     fontSize: 14,
     fontWeight: "400",
-    marginTop: 5, // Add margin top for spacing
+    marginTop: 5,
   },
   flatListContent: {
-    paddingHorizontal: 10, // Add horizontal padding to the FlatList content
-    paddingBottom: 20, // Add padding to the bottom
+    paddingHorizontal: 10,
+    paddingBottom: 20,
   },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.4)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContainer: {
+    width: 300,
+    backgroundColor: 'white',
+    borderRadius: 15,
+    padding: 20,
+    alignItems: 'center',
+    elevation: 5
+  },
+  title: {
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 20
+  },
+  button: {
+    width: '100%',
+    backgroundColor: '#1e90ff',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+    marginVertical: 6
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 16
+  },
+  closeText: {
+    marginTop: 15,
+    color: 'red',
+    fontSize: 16
+  }
 });

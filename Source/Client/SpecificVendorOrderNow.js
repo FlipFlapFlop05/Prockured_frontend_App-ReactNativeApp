@@ -1,293 +1,324 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  Dimensions,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
-import {myCatalogueProducts} from '../Constant/constant';
-import {suppliersCatalogueProducts} from '../Constant/constant';
+import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Dimensions } from 'react-native';
+import { ChevronLeftIcon, ShoppingCartIcon, PlusIcon, MinusIcon } from 'react-native-heroicons/outline';
+import {useNavigation} from '@react-navigation/native';
 
-const { width: screenWidth } = Dimensions.get('window');
+const screenWidth = Dimensions.get('window').width;
+
+const myCatalogue = [
+  {
+    id: '1',
+    name: 'Zucchini',
+    brand: 'Veggievital',
+    weight: '10kg',
+    price: 3000,
+    image: require('../Images/VendorProfileImage.png'),
+    discount: 200,
+  },
+  {
+    id: '2',
+    name: 'Red Capsicum',
+    brand: 'Veggievital',
+    weight: '10kg',
+    price: 700,
+    image: require('../Images/VendorProfileImage.png'),
+    discount: 20,
+  },
+];
+
+const supplierCatalogue = [
+  {
+    id: '3',
+    name: 'Red Cabbage',
+    brand: 'Veggievital',
+    weight: '10kg',
+    price: 1000,
+    image: require('../Images/VendorProfileImage.png'),
+    discount: 200,
+  },
+  {
+    id: '4',
+    name: 'Broccoli',
+    brand: 'Veggievital',
+    weight: '5kg',
+    price: 500,
+    image: require('../Images/VendorProfileImage.png'),
+    discount: 50,
+  },
+];
 
 const SpecificVendorOrderNow = () => {
-  const [selectedTab, setSelectedTab] = useState('My Catalogue');
-  const [cartItems, setCartItems] = useState([]);
-
-
-
-  const products = selectedTab === 'My Catalogue' ? myCatalogueProducts : suppliersCatalogueProducts;
-  const [selectedUnit, setSelectedUnit] = useState('Kg');
-
-  const handleAddToCart = (product) => {
-    const existingItemIndex = cartItems.findIndex(item => item.name === product.name && item.unit === selectedUnit);
-
-    const updatedProduct = products.find(p => p.name === product.name);
-    if (updatedProduct) {
-      if (existingItemIndex !== -1) {
-        const updatedCart = [...cartItems];
-        updatedCart[existingItemIndex].quantity += 1;
-        setCartItems(updatedCart);
-      } else {
-        setCartItems([...cartItems, { ...updatedProduct, quantity: 1, unit: selectedUnit }]);
-      }
-      updatedProduct.quantity += 1;
-    }
-
+  const [selectedTab, setSelectedTab] = useState('supplier');
+  const [selectedUnit, setSelectedUnit] = useState('carton');
+  const [products, setProducts] = useState({
+    my: myCatalogue.map(p => ({ ...p, count: 0 })),
+    supplier: supplierCatalogue.map(p => ({ ...p, count: 0 })),
+  });
+  const navigation = useNavigation();
+  const updateCount = (catalogue, id, delta) => {
+    setProducts(prev => ({
+      ...prev,
+      [catalogue]: prev[catalogue].map(product =>
+        product.id === id
+          ? { ...product, count: Math.max(0, product.count + delta) }
+          : product
+      )
+    }));
   };
 
-  const handleDecrement = (product) => {
-    const existingItemIndex = cartItems.findIndex(item => item.name === product.name && item.unit === selectedUnit);
-    const updatedProduct = products.find(p => p.name === product.name);
-
-    if (updatedProduct) {
-      if (existingItemIndex !== -1) {
-        const updatedCart = [...cartItems];
-        if (updatedCart[existingItemIndex].quantity > 0) {
-          updatedCart[existingItemIndex].quantity -= 1;
-          setCartItems(updatedCart);
-          if (updatedProduct.quantity > 0) {
-            updatedProduct.quantity -= 1;
-          }
-        }
-      }
-    }
-  };
-
-
-  const getPrice = (product) => {
-    return selectedUnit === 'Kg' ? product.pricePerKg : product.pricePerCarton;
-  };
+  const renderProduct = ({ item }) => (
+    <View style={styles.productCard}>
+      <Image source={item.image} style={styles.productImage} />
+      <View style={styles.productInfo}>
+        <Text style={styles.productName}>{item.name}</Text>
+        <Text style={styles.productBrand}>{item.brand}</Text>
+        <Text style={styles.productWeight}>{item.weight}</Text>
+      </View>
+      <View style={styles.productPricing}>
+        <Text style={styles.productPrice}>₹ {item.price}</Text>
+        <Text style={styles.productDiscount}>Save ₹ {item.discount}</Text>
+      </View>
+      <View style={styles.counter}>
+        <TouchableOpacity onPress={() => updateCount(selectedTab, item.id, -1)} style={styles.counterBtn}>
+          <MinusIcon size={15} color="white" />
+        </TouchableOpacity>
+        <Text style={styles.counterText}>{item.count}</Text>
+        <TouchableOpacity onPress={() => updateCount(selectedTab, item.id, 1)} style={styles.counterBtn}>
+          <PlusIcon size={15} color="white" />
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
+      {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Order Now</Text>
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <ChevronLeftIcon size={24} color="black" strokeWidth={3} />
+        </TouchableOpacity>
+        <Text style={styles.headerText}>Order Now</Text>
       </View>
 
-      <View style={styles.vendorInfo}>
+      {/* Vendor Info */}
+      <View style={styles.vendorBox}>
         <Image source={require('../Images/VendorProfileImage.png')} style={styles.vendorLogo} />
-        <View style={styles.vendorDetails}>
-          <Text style={styles.vendorName}>DM Agro Care</Text>
-          <Text style={styles.vendorType}>Vendor</Text>
-        </View>
-        <TouchableOpacity style={styles.addProductsButton}>
-          <Text style={styles.addProductsButtonText}>+ Add Products</Text>
+        <Text style={styles.vendorName}>DM Agro Care</Text>
+        <Text style={styles.vendorLabel}>Vendor</Text>
+        <TouchableOpacity style={styles.addProductBtn}>
+          <Text style={styles.addProductText}>+ Add Products</Text>
         </TouchableOpacity>
       </View>
 
-      <View style={styles.tabBar}>
-        <TouchableOpacity
-          style={[styles.tabButton, selectedTab === 'My Catalogue' && styles.activeTabButton]}
-          onPress={() => setSelectedTab('My Catalogue')}
-        >
-          <Text style={[styles.tabButtonText, selectedTab === 'My Catalogue' && styles.activeTabButtonText]}>My Catalogue</Text>
+      {/* Tab Options */}
+      <View style={styles.tabWrapper}>
+        <TouchableOpacity onPress={() => setSelectedTab('my')}>
+          <Text style={[styles.tab, selectedTab === 'my' && styles.activeTab]}>
+            My Catalogue
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tabButton, selectedTab === 'Supplier\'s Catalogue' && styles.activeTabButton]}
-          onPress={() => setSelectedTab('Supplier\'s Catalogue')}
-        >
-          <Text style={[styles.tabButtonText, selectedTab === 'Supplier\'s Catalogue' && styles.activeTabButtonText]}>Supplier's Catalogue</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.unitSelector}>
-        <TouchableOpacity
-          style={[styles.unitButton, selectedUnit === 'Kg' && styles.activeUnitButton]}
-          onPress={() => setSelectedUnit('Kg')}
-        >
-          <Text style={[styles.unitButtonText, selectedUnit === 'Kg' && styles.activeUnitButtonText]}>Per Kg</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.unitButton, selectedUnit === 'Carton' && styles.activeUnitButton]}
-          onPress={() => setSelectedUnit('Carton')}
-        >
-          <Text style={[styles.unitButtonText, selectedUnit === 'Carton' && styles.activeUnitButtonText]}>Per 10 kg Carton</Text>
+        <TouchableOpacity onPress={() => setSelectedTab('supplier')}>
+          <Text style={[styles.tab, selectedTab === 'supplier' && styles.activeTab]}>
+            Supplier’s Catalogue
+          </Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {products.map((product, index) => (
-          <View key={index} style={styles.productRow}>
-            <Image source={product.image} style={styles.productImage} />
-            <View style={styles.productDetails}>
-              <Text style={styles.productName}>{product.name}</Text>
-              <Text style={styles.productQuantity}>{product.category} {product.quantity}{selectedUnit}</Text>
-            </View>
-            <View style={{ flexDirection: "column", alignItems: "center", marginRight: 20 }}>
-              <Text style={styles.productPrice}>₹{getPrice(product)}</Text>
-              <Text style={styles.productSave}>Save ₹200</Text>
-            </View>
-            <View style={{ flexDirection: "row", alignItems: "center" }}>
-              <TouchableOpacity style={styles.quantityButton} onPress={() => handleDecrement(product)}>
-                <Text style={{ color: "white" }}>-</Text>
-              </TouchableOpacity>
-              <Text style={styles.quantityText}>{product.quantity}</Text>
-              <TouchableOpacity style={styles.quantityButton} onPress={() => handleAddToCart(product)}>
-                <Text style={{ color: "white" }}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        ))}
-      </ScrollView>
+      {/* Unit Switch */}
+      <View style={styles.unitSwitch}>
+        <TouchableOpacity onPress={() => setSelectedUnit('kg')} style={selectedUnit === 'kg' ? styles.unitBtnGreen : styles.unitBtnGray}>
+          <Text style={selectedUnit === 'kg' ? styles.unitTextGreen : styles.unitTextGray}>Per Kg</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={() => setSelectedUnit('carton')} style={selectedUnit === 'carton' ? styles.unitBtnGreen : styles.unitBtnGray}>
+          <Text style={selectedUnit === 'carton' ? styles.unitTextGreen : styles.unitTextGray}>Per 10 kg Carton</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity style={styles.viewBasketButton}>
-        <Text style={styles.viewBasketButtonText}>View Basket</Text>
+      {/* Product List */}
+      <FlatList
+        data={products[selectedTab]}
+        renderItem={renderProduct}
+        keyExtractor={(item) => item.id}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      />
+
+      {/* Basket Button */}
+      <TouchableOpacity style={styles.basketBtn}>
+        <Text style={styles.basketText}>View Basket</Text>
+        <ShoppingCartIcon size={20} color="white" />
       </TouchableOpacity>
     </View>
   );
 };
 
+export default SpecificVendorOrderNow;
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f8f8',
+    backgroundColor: 'white',
+    paddingHorizontal: 16,
+    paddingTop: 20,
   },
   header: {
-    backgroundColor: 'white',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 20
+    gap: 8,
   },
-  headerTitle: {
+  headerText: {
     fontSize: 18,
-    fontWeight: 'bold',
+    fontWeight: '700',
   },
-  vendorInfo: {
-    flexDirection: 'column',
+  vendorBox: {
     alignItems: 'center',
-    backgroundColor: 'white',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    marginVertical: 20,
   },
   vendorLogo: {
-    width: 80,
-    height: 80,
-    borderRadius: 30,
-    marginRight: 10,
-  },
-  vendorDetails: {
-    alignItems: "center"
+    width: 90,
+    height: 90,
+    resizeMode: 'contain',
+    marginBottom: 10,
+    borderRadius: 30
   },
   vendorName: {
-    fontSize: 20,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '700',
   },
-  vendorType: {
-    fontSize: 17,
-    color: '#666',
+  vendorLabel: {
+    fontSize: 18,
+    color: '#6B7280',
+    marginBottom: 10,
   },
-  addProductsButton: {
-    backgroundColor: 'green',
-    borderRadius: 10,
-    padding: 8,
-    marginTop: 30
+  addProductBtn: {
+    backgroundColor: '#76B117',
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderRadius: 25,
+    width: '60%',
+    alignItems: 'center'
   },
-  addProductsButtonText: {
+  addProductText: {
     color: 'white',
+    fontWeight: '600',
+    fontSize: 17
+  },
+  tabWrapper: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    borderBottomWidth: 1,
+    borderColor: '#d1d5db',
+    marginTop: 20,
+  },
+  tab: {
+    paddingVertical: 8,
+    color: '#6B7280',
+    fontWeight: '600',
     fontSize: 14,
   },
-  tabBar: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-  },
-  tabButton: {
-    padding: 8,
-    marginRight: 10,
-  },
-  tabButtonText: {
-    color: '#4CAF50',
-    fontSize: 16,
-  },
-  activeTabButton: {
+  activeTab: {
+    color: '#76B117',
+    fontWeight: '700',
     borderBottomWidth: 2,
-    borderBottomColor: 'blue',
+    borderColor: '#76B117',
   },
-  activeTabButtonText: {
-    color: 'blue',
-    fontWeight: 'bold',
-  },
-  unitSelector: {
+  unitSwitch: {
     flexDirection: 'row',
-    backgroundColor: 'white',
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
+    marginVertical: 15,
+    gap: 10,
   },
-  unitButton: {
-    padding: 8,
-    marginRight: 10,
+  unitBtnGray: {
+    backgroundColor: '#F1F5F9',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
-  unitButtonText: {
-    color: 'gray',
-    fontSize: 16,
+  unitBtnGreen: {
+    backgroundColor: '#76B117',
+    paddingVertical: 6,
+    paddingHorizontal: 16,
+    borderRadius: 20,
   },
-  content: {
-    padding: 10,
+  unitTextGray: {
+    color: '#6B7280',
+    fontWeight: '600',
   },
-  productRow: {
+  unitTextGreen: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  productCard: {
+    backgroundColor: '#F9FAFB',
+    borderRadius: 10,
+    padding: 12,
+    marginVertical: 8,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    gap: 10,
   },
   productImage: {
-    width: 50,
-    height: 50,
-    marginRight: 10,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
   },
-  productDetails: {
+  productInfo: {
     flex: 1,
   },
   productName: {
-    fontSize: 16,
-    color: "#4CAF50"
+    color: '#76B117',
+    fontWeight: '700',
   },
-  productQuantity: {
-    fontSize: 14,
-    color: '#666',
+  productBrand: {
+    fontSize: 12,
+    color: '#6B7280',
   },
-  productSave: {
-    fontSize: 14,
-    color: 'green',
+  productWeight: {
+    fontSize: 12,
+    color: '#6B7280',
+  },
+  productPricing: {
+    alignItems: 'flex-end',
   },
   productPrice: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: "#4CAF50"
-  },
-  addToCartButton: {
-    backgroundColor: 'green',
-    borderRadius: 5,
-    padding: 8,
-  },
-  addToCartButtonText: {
-    color: 'white',
+    fontWeight: '700',
     fontSize: 14,
   },
-  viewBasketButton: {
-    backgroundColor: 'green',
-    borderRadius: 8,
-    padding: 12,
-    margin: 10,
-    alignItems: 'center',
+  productDiscount: {
+    fontSize: 10,
+    color: '#76B117',
   },
-  viewBasketButtonText: {
+  counter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginLeft: 10,
+    backgroundColor: '#76B117',
+    borderRadius: 20,
+    paddingHorizontal: 6,
+    paddingVertical: 4,
+    gap: 6,
+  },
+  counterBtn: {
+    padding: 2,
+  },
+  counterText: {
     color: 'white',
-    fontSize: 16,
     fontWeight: 'bold',
   },
+  basketBtn: {
+    position: 'absolute',
+    bottom: 20,
+    left: 16,
+    right: 16,
+    backgroundColor: '#76B117',
+    paddingVertical: 14,
+    borderRadius: 10,
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
+  },
+  basketText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
-
-export default SpecificVendorOrderNow;

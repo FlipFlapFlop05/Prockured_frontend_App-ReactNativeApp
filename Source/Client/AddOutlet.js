@@ -72,7 +72,7 @@ export default function AddOutlet() {
 
       if (response.status === 201 || response.status === 200) {
         Alert.alert('Success', 'Outlet Added');
-        navigation.navigate("Main", { screen: "Home" });
+        navigation.navigate('Multiple Outlet Dashboard');
       } else {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
       }

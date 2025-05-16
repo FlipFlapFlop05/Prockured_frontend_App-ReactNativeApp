@@ -101,28 +101,7 @@ const CreateAnAccount = () => {
       </TouchableOpacity>
 
       <Text style={tw`text-center text-gray-500 my-4`}>- Or continue with -</Text>
-
-      {/* Social Logins */}
-      <View style={{flexDirection: 'row', justifyContent: 'center', alignContent: 'center', alignItems: 'center'}}>
-        <TouchableOpacity style={{marginTop: 15}} onPress={() => navigation.navigate('Authentication', {screen: 'GoogleLoadingPage'})}>
-          <Image
-            source={require('../Images/GoogleImage.png')}
-            style = {{width: 45, height: 45}}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity style = {{marginLeft: 20, marginRight: 20}} onPress={() => navigation.navigate('Authentication', {screen: 'AppleLoadingPage'})}>
-          <Image
-            source={require('../Images/AppleImage.png')}
-            style = {{width: 45, height: 52}}
-          />
-        </TouchableOpacity>
-        <TouchableOpacity onPress={() => navigation.navigate('Authentication', {screen: 'FacebookLoadingPage'})}>
-          <Image
-            source={require('../Images/Facebook.png')}
-            style = {{width: 45, height: 45}}
-          />
-        </TouchableOpacity>
-      </View>
+      
       <TouchableOpacity onPress={() => navigation.navigate("Authentication", {screen: "LogIn"})}>
         <Text style={tw`text-center text-gray-600`}>
           Already have an account <Text style={tw`text-green-600`}>Log In</Text>

@@ -50,18 +50,6 @@ const ForgotPassword = () => {
 
       <Text style={styles.orText}>- Or continue with -</Text>
 
-      {/* Social Logins */}
-      <View style={styles.socialContainer}>
-        <TouchableOpacity>
-          <GoogleIcon size={40} color="#DB4437" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <AppleIcon size={40} color="#000" />
-        </TouchableOpacity>
-        <TouchableOpacity>
-          <FacebookIcon size={40} color="#1877F2" />
-        </TouchableOpacity>
-      </View>
       <TouchableOpacity onPress={() => navigation.navigate("Authentication", { screen: "CreateAnAccount" })}>
         <Text style={styles.signUpText}>
           Create An Account <Text style={styles.signUpLink}>Sign Up</Text>

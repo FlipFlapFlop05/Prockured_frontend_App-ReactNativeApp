@@ -7,12 +7,17 @@ import {
   TextInput,
   Alert,
   ScrollView,
-  Dimensions
+  Dimensions,
+  StyleSheet
 } from 'react-native';
 import { useNavigation } from "@react-navigation/native";
 import axios from 'axios';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
+
+
+const { width, height } = Dimensions.get('window');
+const imageSize = width * 0.25;
 export default function BasicClientProfile() {
   const navigation = useNavigation();
   const [clientId, setClientId] = useState(null);
@@ -101,26 +106,26 @@ export default function BasicClientProfile() {
   };
 
   // Get screen dimensions for responsive design
-  const { width, height } = Dimensions.get('window');
-  const imageSize = width * 0.25; // 25% of the screen width for the image
+
+// 25% of the screen width for the image
 
   return (
-    <ScrollView style={{ flex: 1, padding: 20 }}>
+    <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={{ flexDirection: "row", justifyContent: "space-between", marginBottom: 20 }}>
+      <View style={styles.profileView}>
         <View>
-          <Text style={{ fontWeight: "bold", fontSize: 34 }}>Create</Text>
-          <Text style={{ fontWeight: "bold", fontSize: 34 }}>Profile</Text>
+          <Text style={styles.createText}>Create</Text>
+          <Text style={styles.profileText}>Profile</Text>
         </View>
         <Image
           source={require("../Images/ProckuredImage.jpg")}
-          style={{ width: imageSize, height: imageSize, borderRadius: imageSize / 2 }}
+          style={styles.profileImage}
         />
       </View>
 
       {/* Input Fields */}
       {['name', 'businessName', 'email', 'city', 'pincode', 'state', 'country', 'gstNumber', 'billingAddress', 'shippingAddress'].map((field) => (
-        <View key={field} style={{ marginBottom: 15 }}>
+        <View key={field} style={styles.entriesView}>
           <Text style={{ fontWeight: "400", color: "green", fontSize: 16, marginBottom: 5 }}>
             {field.charAt(0).toUpperCase() + field.slice(1)}*
           </Text>
@@ -130,35 +135,47 @@ export default function BasicClientProfile() {
             keyboardType={field === 'pincode' ? "numeric" : "default"}
             value={form[field]}
             onChangeText={(value) => handleChange(field, value)}
-            style={{
-              borderColor: "lightgray",
-              borderWidth: 1,
-              padding: 10,
-              borderRadius: 5,
-              color: "black",
-              fontSize: 16
-            }}
+            style={styles.entriesInput}
           />
         </View>
       ))}
 
       {/* Save Button */}
       <TouchableOpacity onPress={handleSave}>
-        <View style={{
-          backgroundColor: "green",
-          paddingVertical: 15,
-          paddingHorizontal: 30,
-          borderRadius: 100,
-          alignItems: "center",
-          alignSelf: "center",
-          justifyContent: "center",
-          marginTop: 20,
-          width: width * 0.7,
-          marginBottom: 40
-        }}>
-          <Text style={{ color: "white", fontSize: 20 }}>Save Profile</Text>
+        <View style={styles.saveButtonView}>
+          <Text style={styles.saveButtonText}>Save Profile</Text>
         </View>
       </TouchableOpacity>
     </ScrollView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: { flex: 1, padding: 20 },
+  profileView: { flexDirection: "row", justifyContent: "space-between", marginBottom: 20 },
+  createText: { fontWeight: "bold", fontSize: 34 },
+  profileText: { fontWeight: "bold", fontSize: 34 },
+  profileImage: { width: imageSize, height: imageSize, borderRadius: imageSize / 2 },
+  entriesView: { marginBottom: 15 },
+  saveButtonView: {
+    backgroundColor: "green",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 100,
+    alignItems: "center",
+    alignSelf: "center",
+    justifyContent: "center",
+    marginTop: 20,
+    width: width * 0.7,
+    marginBottom: 40
+  },
+  saveButtonText: { color: "white", fontSize: 20 },
+  entriesInput: {
+    borderColor: "lightgray",
+    borderWidth: 1,
+    padding: 10,
+    borderRadius: 5,
+    color: "black",
+    fontSize: 16
+  }
+})

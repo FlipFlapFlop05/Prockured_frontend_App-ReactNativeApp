@@ -69,6 +69,7 @@ import LinkProduct from '../Client/LinkProduct';
 import NotificationAndSearch from '../Client/NotificationAndSearch';
 import ClientFAQ from '../Client/FAQ';
 import VendorProfile from '../Vendor/VendorProfile';
+import OutletDashboard from '../Client/OutletDashboard';
 
 
 const Stack = createNativeStackNavigator();
@@ -193,12 +194,13 @@ const AppNavigation = () => {
         <Stack.Screen name={'Chat Support'} component={ChatSupport} />
         <Stack.Screen name={'Order Tracking'} component={OrderTracking} />
         <Stack.Screen name={'Link Product'} component={LinkProduct} />
+        <Stack.Screen name={'Specific Order Screen'} component={SpecificOrderScreen} />
+        <Stack.Screen name={'Specific Vendor Order Now'} component={SpecificVendorOrderNow} />
+        <Stack.Screen name={'Outlet Dashboard'} component={OutletDashboard} />
         {/*Vendor Stack*/}
         <Stack.Screen name={'Basic Vendor Profile'} component={BasicVendorProfile} />
         <Stack.Screen name={'Customer Details'} component={CustomerDetails} />
         <Stack.Screen name={'Customers'} component={Customers} />
-        <Stack.Screen name={'Specific Order Screen'} component={SpecificOrderScreen} />
-        <Stack.Screen name={'Specific Vendor Order Now'} component={SpecificVendorOrderNow} />
         <Stack.Screen name={'Vendor Existing Presets'} component={VendorExistingPresets} />
         <Stack.Screen name={'Vendor FAQ'} component={SupplierFAQ} />
         <Stack.Screen name={'Supplier Notification And Search'} component={SupplierNotificationAndSearch} />

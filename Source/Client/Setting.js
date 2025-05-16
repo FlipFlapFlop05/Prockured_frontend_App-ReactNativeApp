@@ -72,7 +72,15 @@ export default function ClientSetting() {
     { id: 5, icon: UserPlusIcon, label: 'Invite Vendor', modal: 'inviteVendor' },
     { id: 6, icon: BookOpenIcon, label: 'Manage your catalogs', screen: 'Catalogue' },
   ];
+  const handleLogout = async () => {
+    try{
+      await AsyncStorage.clear();
 
+      navigation.navigate('Authentication', { screen: 'LogIn' })
+    } catch(e){
+      console.error("Error during logout: ", e);
+    }
+  }
   const handlePress = (item) => {
     if (item.screen) {
       navigation.navigate(item.screen);
@@ -132,7 +140,7 @@ export default function ClientSetting() {
 
         <FlatList data={menuItems} renderItem={renderMenuItem} keyExtractor={(item) => item.id.toString()} />
 
-        <TouchableOpacity style={styles.logoutButton}>
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <ArrowRightStartOnRectangleIcon size={20} color="red" style={styles.logoutIcon} />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity>
