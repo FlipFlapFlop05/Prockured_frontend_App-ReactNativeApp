@@ -1,5 +1,7 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useLayoutEffect, useState} from 'react';
+import Config from 'react-native-config';
+
 import {
   View,
   Text,
@@ -18,6 +20,7 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {Divider} from 'react-native-elements';
+import useFetchApi from '../../hooks/useFetchApi';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -39,20 +42,13 @@ export default function ClientProfile() {
   const [email, setEmail] = useState('');
   const [isSameAddress, setIsSameAddress] = useState(false);
 
-  // const logAllAsyncStorageItems = async () => {
-  //   try {
-  //     const keys = await AsyncStorage.getAllKeys();
-  //     const items = await AsyncStorage.multiGet(keys);
-  //     console.log('AsyncStorage Contents:');
-  //     items.forEach(([key, value]) => {
-  //       console.log(`${key}: ${value}`);
-  //     });
-  //   } catch (error) {
-  //     console.error('Error reading AsyncStorage:', error);
-  //   }
-  // };
-
-  // logAllAsyncStorageItems();
+  const [getProfileDataResponse, getProfileDataHandler] = useFetchApi(
+    {},
+    response => {
+      return response;
+    },
+    error => {},
+  );
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -87,6 +83,11 @@ export default function ClientProfile() {
           const response = await axios.get(
             `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedPhoneNumber}`,
           );
+          // getProfileDataHandler({
+          //   url: `/getClient/${storedPhoneNumber}`,
+          //   method: 'GET',
+          // });
+
           setData(response.data);
           setName(response.data.Name);
           setBusinessName(response.data.BusinessName);
@@ -105,6 +106,7 @@ export default function ClientProfile() {
 
     fetchClientData();
   }, []);
+  console.log('Response:', getProfileDataResponse);
 
   const toggleSameAddress = () => {
     const newValue = !isSameAddress;

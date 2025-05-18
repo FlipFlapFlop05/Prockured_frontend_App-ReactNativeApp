@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,23 +9,26 @@ import {
   FlatList,
   Dimensions,
   Modal,
-  SafeAreaView, TextInput, ActivityIndicator,
+  SafeAreaView,
+  TextInput,
+  ActivityIndicator,
 } from 'react-native';
-import { BellIcon } from 'react-native-heroicons/solid';
+import {BellIcon} from 'react-native-heroicons/solid';
 import {
   ChatBubbleLeftEllipsisIcon,
   ChevronDownIcon,
   MagnifyingGlassIcon,
   QuestionMarkCircleIcon,
 } from 'react-native-heroicons/outline';
-import { categories, worksData } from '../Constant/constant';
-import { useNavigation } from '@react-navigation/native';
+import {categories, worksData} from '../Constant/constant';
+import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import GenericVectorIcon from '../components/GenericVectorIcon';
 
-const { width, height } = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
-export default function HomeScreen(){
+export default function HomeScreen() {
   const [isChatModalVisible, setChatModalVisible] = useState(false);
   const navigation = useNavigation();
   const [data, setData] = useState([]);
@@ -36,7 +39,9 @@ export default function HomeScreen(){
   const [showCategories, setShowCategories] = useState(true);
   const [showHowItWorks, setShowHowItWorks] = useState(true);
 
-  const filteredData = data.filter(item => item.businessName.toLowerCase().includes(searchText.toLowerCase()));
+  const filteredData = data.filter(item =>
+    item.businessName.toLowerCase().includes(searchText.toLowerCase()),
+  );
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
@@ -52,7 +57,9 @@ export default function HomeScreen(){
     const fetchData = async () => {
       if (clientPhoneNumber) {
         try {
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`);
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+          );
           const dataArray = Object.values(response.data);
           setData(dataArray);
         } catch (error) {
@@ -67,40 +74,52 @@ export default function HomeScreen(){
     fetchData();
   }, [clientPhoneNumber]);
 
-  const renderCategoryItem = ({ item }) => (
+  const renderCategoryItem = ({item}) => (
     <TouchableOpacity
       style={styles.categoryItem}
-      onPress={() => navigation.navigate('View Categories', { ...item })}
-    >
-      <Image source={{ uri: item.image }} style={styles.categoryImage} />
-      <Text style={styles.categoryText} numberOfLines={2} ellipsizeMode={'tail'}>
+      onPress={() => navigation.navigate('View Categories', {...item})}>
+      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      <Text
+        style={styles.categoryText}
+        numberOfLines={2}
+        ellipsizeMode={'tail'}>
         {item.name}
       </Text>
     </TouchableOpacity>
   );
 
-  const renderCategoryItemModal = ({ item }) => (
+  const renderCategoryItemModal = ({item}) => (
     <TouchableOpacity
       style={styles.categoryItemModal}
-      onPress={() => navigation.navigate('View Categories', { ...item })}
-    >
-      <Image source={{ uri: item.image }} style={styles.categoryImage} />
-      <Text style={styles.categoryText} numberOfLines={2} ellipsizeMode={'tail'}>
+      onPress={() => navigation.navigate('View Categories', {...item})}>
+      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      <Text
+        style={styles.categoryText}
+        numberOfLines={2}
+        ellipsizeMode={'tail'}>
         {item.name}
       </Text>
     </TouchableOpacity>
   );
 
-  const renderWorkItem = ({ item }) => (
+  const renderWorkItem = ({item}) => (
     <View style={styles.workItem}>
       <Image source={item.image} style={styles.workImage} />
       <Text style={styles.workTitle}>{item.title}</Text>
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
   );
-  const renderWorkItemModal = ({ item }) => (
-    <View style={{flexDirection: 'column', height: width * 0.45, alignItems: 'center'}}>
-      <Image source={item.image} style={{width: width * 0.4, height: width * 0.3}} />
+  const renderWorkItemModal = ({item}) => (
+    <View
+      style={{
+        flexDirection: 'column',
+        height: width * 0.45,
+        alignItems: 'center',
+      }}>
+      <Image
+        source={item.image}
+        style={{width: width * 0.4, height: width * 0.3}}
+      />
       <Text style={styles.workTitle}>{item.title}</Text>
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
@@ -118,28 +137,42 @@ export default function HomeScreen(){
             <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
               <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Notification And Search')}>
-              <QuestionMarkCircleIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
+            <TouchableOpacity
+              onPress={() => navigation.navigate('Notification And Search')}>
+              <QuestionMarkCircleIcon
+                size={30}
+                color={'#a9a9a9'}
+                strokeWidth={2}
+              />
             </TouchableOpacity>
           </View>
           <View style={styles.chatScreenTextInputView}>
-            <MagnifyingGlassIcon size={20} color={'black'} strokeWidth={3} style={styles.chatScreenTextInputViewIcon} />
+            <MagnifyingGlassIcon
+              size={20}
+              color={'black'}
+              strokeWidth={3}
+              style={styles.chatScreenTextInputViewIcon}
+            />
             <TextInput
               placeholder={'Search any Supplier'}
               style={styles.chatScreenTextInput}
               placeholderTextColor={'black'}
-              value = {searchText}
+              value={searchText}
               onChangeText={setSearchText}
             />
           </View>
 
           <FlatList
             data={filteredData}
-            keyExtractor={(item) => item.supplierId}
-            renderItem={({ item }) => (
+            keyExtractor={item => item.supplierId}
+            renderItem={({item}) => (
               <View>
-                <TouchableOpacity style={styles.chatScreenCard} onPress={() => navigation.navigate('Chat With Supplier', {vendor: item})}>
-                  <View style={styles.chatScreenCardView} >
+                <TouchableOpacity
+                  style={styles.chatScreenCard}
+                  onPress={() =>
+                    navigation.navigate('Chat With Supplier', {vendor: item})
+                  }>
+                  <View style={styles.chatScreenCardView}>
                     <Image
                       source={require('../Images/VendorProfileImage.png')}
                       style={styles.chatScreenCardImage}
@@ -154,15 +187,19 @@ export default function HomeScreen(){
               </View>
             )}
           />
-          <TouchableOpacity style={styles.chatButton} onPress={() => setChatModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.chatButton}
+            onPress={() => setChatModalVisible(true)}>
             <View style={styles.chatButtonInner}>
               <Image
-                source = {require('../Images/Categories.png')}
-                style = {{width: 25, height: 25}}
+                source={require('../Images/Categories.png')}
+                style={{width: 25, height: 25}}
               />
             </View>
           </TouchableOpacity>
-          <TouchableOpacity style={styles.floatingButton} onPress={() => navigation.navigate('Add Supplier')}>
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={() => navigation.navigate('Add Supplier')}>
             <Text style={styles.floatingButtonText}>+</Text>
           </TouchableOpacity>
 
@@ -170,8 +207,7 @@ export default function HomeScreen(){
             animationType="slide"
             transparent={true}
             visible={isChatModalVisible}
-            onRequestClose={() => setChatModalVisible(!isChatModalVisible)}
-          >
+            onRequestClose={() => setChatModalVisible(!isChatModalVisible)}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <FlatList
@@ -181,67 +217,93 @@ export default function HomeScreen(){
                   keyExtractor={(item, index) => index.toString()} // Add a key extractor
                   contentContainerStyle={styles.flatListContent}
                 />
-                <TouchableOpacity style={styles.modalCloseButton} onPress={() => setChatModalVisible(!isChatModalVisible)}>
-                  <Text style={styles.modalCloseButtonText}>
-                    Close
-                  </Text>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setChatModalVisible(!isChatModalVisible)}>
+                  <Text style={styles.modalCloseButtonText}>Close</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
 
-
           <Modal
             animationType="slide"
             transparent={true}
             visible={isWorkDataVisible}
-            onRequestClose={() => setWorkDataVisible(!isWorkDataVisible)}
-          >
+            onRequestClose={() => setWorkDataVisible(!isWorkDataVisible)}>
             <View style={styles.modalOverlay}>
               <View style={styles.modalContent}>
                 <FlatList
                   data={worksData}
                   renderItem={renderWorkItemModal}
-                  keyExtractor={(item) => item.id.toString()}
+                  keyExtractor={item => item.id.toString()}
                   contentContainerStyle={styles.flatListContent}
                 />
-                <TouchableOpacity style={styles.modalCloseButton} onPress={() => setWorkDataVisible(!isWorkDataVisible)}>
-                  <Text style={styles.modalCloseButtonText}>
-                    Close
-                  </Text>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setWorkDataVisible(!isWorkDataVisible)}>
+                  <Text style={styles.modalCloseButtonText}>Close</Text>
                 </TouchableOpacity>
               </View>
             </View>
           </Modal>
         </View>
       ) : (
-        <SafeAreaView style={styles.safeAreaViewContainer}> {/* Wrap with SafeAreaView */}
-          <ScrollView contentContainerStyle={styles.scrollViewContent}> {/* Add contentContainerStyle */}
+        <SafeAreaView style={styles.safeAreaViewContainer}>
+          {' '}
+          {/* Wrap with SafeAreaView */}
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            {' '}
+            {/* Add contentContainerStyle */}
             <View style={styles.header}>
               <Image
                 source={require('../Images/ProckuredImage.jpg')}
                 style={styles.profileImage}
               />
               <View style={styles.headerIcons}>
-                <TouchableOpacity onPress={() => navigation.navigate('Notification And Search')}>
-                  <BellIcon size={30} color={'black'} strokeWidth={2} />
+                <TouchableOpacity
+                  onPress={() =>
+                    navigation.navigate('Notification And Search')
+                  }>
+                  {/* <BellIcon size={30} color={'black'} strokeWidth={2} /> */}
+                  <GenericVectorIcon
+                    name="bell"
+                    type="FontAwesome"
+                    color="rgba(0, 0, 0, 0.54)"
+                    size={23}
+                    style={{marginRight: 10}}
+                  />
                 </TouchableOpacity>
-                <QuestionMarkCircleIcon size={30} color={'black'} strokeWidth={2} />
+                <QuestionMarkCircleIcon
+                  size={25}
+                  color={'rgba(0, 0, 0, 0.54)'}
+                  strokeWidth={2}
+                />
               </View>
             </View>
-
             <TouchableOpacity
               style={styles.searchBar}
-              onPress={() => navigation.navigate('Search Bar')}
-            >
-              <MagnifyingGlassIcon size={20} color={'black'} strokeWidth={3} style={styles.searchIcon} />
+              onPress={() => navigation.navigate('Search Bar')}>
+              <MagnifyingGlassIcon
+                size={20}
+                color={'black'}
+                strokeWidth={3}
+                style={styles.searchIcon}
+              />
               <Text style={styles.searchText}>Search any Product</Text>
             </TouchableOpacity>
-
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>All Categories</Text>
-              <TouchableOpacity onPress={() => setShowCategories((!showCategories))}>
-                <ChevronDownIcon size={20} color={'black'} strokeWidth={3} style = {{transform: [{rotate: showCategories ? "180deg": "0deg"}]}} />
+              <TouchableOpacity
+                onPress={() => setShowCategories(!showCategories)}>
+                <ChevronDownIcon
+                  size={20}
+                  color={'black'}
+                  strokeWidth={3}
+                  style={{
+                    transform: [{rotate: showCategories ? '180deg' : '0deg'}],
+                  }}
+                />
               </TouchableOpacity>
             </View>
             {showCategories && (
@@ -253,66 +315,62 @@ export default function HomeScreen(){
                 contentContainerStyle={styles.flatListContent}
               />
             )}
-
             <View style={styles.sectionHeader}>
               <Text style={styles.sectionTitle}>How it works?</Text>
-              <TouchableOpacity onPress={() => setShowHowItWorks(!showHowItWorks)}>
-                <ChevronDownIcon size={20} color={'black'} strokeWidth={3} style = {{ transform: [{rotate: showHowItWorks ? "180deg": "0deg"}]}} />
+              <TouchableOpacity
+                onPress={() => setShowHowItWorks(!showHowItWorks)}>
+                <ChevronDownIcon
+                  size={20}
+                  color={'black'}
+                  strokeWidth={3}
+                  style={{
+                    transform: [{rotate: showHowItWorks ? '180deg' : '0deg'}],
+                  }}
+                />
               </TouchableOpacity>
             </View>
             {showHowItWorks && (
               <FlatList
                 data={worksData}
                 renderItem={renderWorkItem}
-                keyExtractor={(item) => item.id.toString()}
+                keyExtractor={item => item.id.toString()}
                 numColumns={2}
                 contentContainerStyle={styles.flatListContent}
               />
             )}
-
-
             <View style={styles.allChatView}>
-              <Text style={styles.allChatText}>
-                All Chats
-              </Text>
+              <Text style={styles.allChatText}>All Chats</Text>
               <View style={styles.chatContainer}>
                 <Image
                   source={require('../Images/VendorHomePage.png')}
                   style={styles.imageContainer}
                 />
                 <View style={styles.emptyChatView}>
-                  <ChatBubbleLeftEllipsisIcon
-                    size={30}
-                    color={'#757575'}
-                  />
-                  <Text style={styles.emptyChatText}>
-                    Your Chat is Empty
-                  </Text>
+                  <ChatBubbleLeftEllipsisIcon size={30} color={'#757575'} />
+                  <Text style={styles.emptyChatText}>Your Chat is Empty</Text>
                   <TouchableOpacity
                     style={styles.AddSupplierTouchableOpacity}
-                    onPress={() => navigation.navigate('Add Supplier')}
-                  >
+                    onPress={() => navigation.navigate('Add Supplier')}>
                     <Text style={styles.AddSupplierText}>+ Add Supplier</Text>
                   </TouchableOpacity>
                 </View>
               </View>
             </View>
-
-            <TouchableOpacity style={styles.chatButton} onPress={() => setChatModalVisible(true)}>
+            <TouchableOpacity
+              style={styles.chatButton}
+              onPress={() => setChatModalVisible(true)}>
               <View style={styles.chatButtonInner}>
                 <Image
-                  source = {require('../Images/Categories.png')}
-                  style = {styles.categoryPopUp}
+                  source={require('../Images/Categories.png')}
+                  style={styles.categoryPopUp}
                 />
               </View>
             </TouchableOpacity>
-
             <Modal
               animationType="slide"
               transparent={true}
               visible={isChatModalVisible}
-              onRequestClose={() => setChatModalVisible(!isChatModalVisible)}
-            >
+              onRequestClose={() => setChatModalVisible(!isChatModalVisible)}>
               <View style={styles.modalOverlay}>
                 <View style={styles.modalContent}>
                   <FlatList
@@ -322,10 +380,10 @@ export default function HomeScreen(){
                     keyExtractor={(item, index) => index.toString()} // Add a key extractor
                     contentContainerStyle={styles.flatListContent}
                   />
-                  <TouchableOpacity style={styles.modalCloseButton} onPress={() => setChatModalVisible(!isChatModalVisible)}>
-                    <Text style={styles.modalCloseButtonText}>
-                      Close
-                    </Text>
+                  <TouchableOpacity
+                    style={styles.modalCloseButton}
+                    onPress={() => setChatModalVisible(!isChatModalVisible)}>
+                    <Text style={styles.modalCloseButtonText}>Close</Text>
                   </TouchableOpacity>
                 </View>
               </View>
@@ -340,6 +398,7 @@ export default function HomeScreen(){
 const styles = StyleSheet.create({
   safeAreaContainer: {
     flex: 1,
+    backgroundColor: '#fff',
   },
   chatScreenHeaderView: {
     flex: 1,
@@ -352,7 +411,7 @@ const styles = StyleSheet.create({
     padding: 10,
     paddingTop: 40,
   },
-  chatScreenTextInputView:{
+  chatScreenTextInputView: {
     backgroundColor: 'gainsboro',
     width: '90%',
     alignSelf: 'center',
@@ -424,7 +483,7 @@ const styles = StyleSheet.create({
     alignItems: 'center', // Vertically center icons
   },
   searchBar: {
-    backgroundColor: 'lightgray',
+    backgroundColor: '#F8F9FE',
     width: '90%',
     alignSelf: 'center',
     borderRadius: 10,
@@ -522,11 +581,11 @@ const styles = StyleSheet.create({
     right: 20,
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 2,
     alignItems: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   chatButtonInner: {
     backgroundColor: '#76B117',
@@ -584,7 +643,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     elevation: 5,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
+    shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
@@ -617,7 +676,7 @@ const styles = StyleSheet.create({
   },
   allChatView: {
     flex: 1,
-    height: height * 0.5
+    height: height * 0.5,
   },
   allChatText: {
     fontStyle: 'normal',
@@ -627,7 +686,7 @@ const styles = StyleSheet.create({
     lineHeight: 30,
     paddingHorizontal: 20,
     paddingVertical: 20,
-    letterSpacing: 1
+    letterSpacing: 1,
   },
   chatContainer: {
     width: '90%',
@@ -637,17 +696,17 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignItems: 'center',
     justifyContent: 'space-evenly',
-    borderRadius: 25
+    borderRadius: 25,
   },
   imageContainer: {
     width: width * 0.4,
     height: width * 0.3,
-    borderRadius: 20
+    borderRadius: 20,
   },
   emptyChatView: {
     alignItems: 'center',
     alignSelf: 'center',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   emptyChatText: {
     fontStyle: 'normal',
@@ -656,6 +715,6 @@ const styles = StyleSheet.create({
     lineHeight: 20,
     letterSpacing: 0.5,
     fontFamily: 'Montserrat',
-    color: '#757575'
-  }
+    color: '#757575',
+  },
 });

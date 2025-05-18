@@ -1,6 +1,7 @@
 apply plugin: "com.android.application"
 apply plugin: "org.jetbrains.kotlin.android"
 apply plugin: "com.facebook.react"
+apply from: project(':react-native-config').projectDir.getPath() + "/dotenv.gradle"
 
 /**
  * This is the configuration block to customize your React Native Android app.
@@ -53,8 +54,17 @@ react {
     /* Autolinking */
     autolinkLibrariesWithApp()
 }
+
+    project.ext.envConfigFiles = [
+        debug: ".env",
+        // release: ".env.production",
+        // staging: ".env.staging"
+    ]
+
 project.ext.react = [
-    enableHermes: true  // Enables Hermes
+    enableHermes: true,  // Enables Hermes
+    entryFile: "index.js",
+    envFile: project.env.get("ENVFILE") ?: ".env" 
 ]
 
 
@@ -112,6 +122,8 @@ android {
 }
 
 dependencies {
+        implementation project(':react-native-config')
+
     // The version of react-native is set by the React Native Gradle Plugin
     implementation("com.facebook.react:react-android")
 

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -7,58 +7,41 @@ import {
   ScrollView,
   TouchableOpacity,
   Image,
-  TextInput,
   Modal,
   Alert,
-  FlatList
+  FlatList,
 } from 'react-native';
-import { useNavigation, useRoute } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import axios from "axios";
-import { ChevronLeftIcon } from 'react-native-heroicons/outline';
+import {useNavigation} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import {ChevronLeftIcon} from 'react-native-heroicons/outline';
 import {categories} from '../Constant/constant';
+import ValidatedInput from '../components/Inputs/ValidatedInput'; // Make sure this path is correct
 
-
-const { width: screenWidth, height } = Dimensions.get('window');
+const {width: screenWidth, height} = Dimensions.get('window');
 
 const AddProductManually = () => {
   const navigation = useNavigation();
-  const [
-    clientPhoneNumber,
-    setClientPhoneNumber
-  ] = useState(null);
-  const [
-    suppliers,
-    setSuppliers
-  ] = useState([]);
-  const [
-    selectedSupplier,
-    setSelectedSupplier
-  ] = useState({
+  const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState({
     supplierId: '',
-    supplierName: ''
+    supplierName: '',
   });
-  const [
-    modalVisible,
-    setModalVisible
-  ] = useState(false);
-  const [
-    categoryModalVisible,
-    setCategoryModalVisible
-  ] = useState(false);
-  const [
-    selectedCategory,
-    setSelectedCategory
-  ] = useState({
+  const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState({
     categoryImage: '',
-    categoryName: ''
+    categoryName: '',
   });
+
   const [formData, setFormData] = useState({
-    productName: "",
-    productUnit: "",
-    productPrice: "",
+    productName: '',
+    productUnit: '',
+    productPrice: '',
     productCategory: selectedCategory.categoryName,
-  })
+  });
+
   useEffect(() => {
     fetchPhoneNumber();
   }, []);
@@ -78,12 +61,14 @@ const AddProductManually = () => {
     } catch (error) {
       console.log('Error Fetching Client ID: ', error);
     }
-  }
+  };
 
   const fetchSuppliers = async () => {
     if (clientPhoneNumber) {
       axios
-        .get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`)
+        .get(
+          `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+        )
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);
@@ -92,26 +77,31 @@ const AddProductManually = () => {
     }
   };
 
-  const handleSelectSupplier = (supplier) => {
-      setSelectedSupplier({
-        supplierId: supplier.supplierId,
-        supplierName: supplier.businessName
-      });
-      setModalVisible(false);
+  const handleSelectSupplier = supplier => {
+    setSelectedSupplier({
+      supplierId: supplier.supplierId,
+      supplierName: supplier.businessName,
+    });
+    setModalVisible(false);
   };
 
-  const handleSelectCategory = (category) => {
-    setSelectedCategory({categoryImage: category.image, categoryName: category.name});
+  const handleSelectCategory = category => {
+    setSelectedCategory({
+      categoryImage: category.image,
+      categoryName: category.name,
+    });
     setCategoryModalVisible(false);
-  }
+  };
 
-  const renderCategoryItemModal = ({ item }) => (
+  const renderCategoryItemModal = ({item}) => (
     <TouchableOpacity
       style={styles.categoryItemModal}
-      onPress={() => handleSelectCategory(item)}
-    >
-      <Image source={{ uri: item.image }} style={styles.categoryImage} />
-      <Text style={styles.categoryText} numberOfLines={2} ellipsizeMode={'tail'}>
+      onPress={() => handleSelectCategory(item)}>
+      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      <Text
+        style={styles.categoryText}
+        numberOfLines={2}
+        ellipsizeMode={'tail'}>
         {item.name}
       </Text>
     </TouchableOpacity>
@@ -120,179 +110,191 @@ const AddProductManually = () => {
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
     const PhoneNumber = clientPhoneNumber;
-    const { productName, productUnit, productCategory, productPrice } = formData;
-    const {supplierId, businessName} = selectedSupplier;
-    const {categoryImage, categoryName} = selectedCategory;
+    const {productName, productUnit, productCategory, productPrice} = formData;
 
-    if (!PhoneNumber || !productName || !productUnit || !productPrice) {
+    if (
+      !PhoneNumber ||
+      !productName ||
+      !productUnit ||
+      !productPrice ||
+      !selectedSupplier.supplierId
+    ) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
 
     const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
-    console.log(url);
-
 
     try {
       const response = await axios.get(url, {
-        headers: { 'Content-Type': 'application/json' }
-      })
+        headers: {'Content-Type': 'application/json'},
+      });
+
       if (response.status === 201 || response.status === 200) {
         Alert.alert('Success', 'Product added successfully!');
-        navigation.navigate("Main", { screen: "Home" });
+        navigation.navigate('Main', {screen: 'Home'});
       } else {
         Alert.alert('Error', response.data.message || 'Failed to add product');
-        Alert.alert(url);
       }
     } catch (error) {
       Alert.alert('Error', `Failed to save product: ${error.message}`);
       console.error('Axios error:', error);
     }
-  }
+  };
+
   return (
     <View style={styles.container}>
-      {/*Header*/}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color = "black" strokeWidth={3} />
+          <ChevronLeftIcon size={20} color="black" strokeWidth={3} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Add Product</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-        {/*Product Container View*/}
         <View style={styles.inputContainerView}>
-          <View style={{ flexDirection: "column" }}>
-            <Text style={styles.inputLabel}>Product Name*</Text>
-            <TextInput
+          <View style={{flexDirection: 'column'}}>
+            {/* <Text style={styles.inputLabel}>Product Name*</Text> */}
+            <ValidatedInput
+              label={'Product Name'}
+              labelStyle={{color: '#76B117'}}
               value={formData.productName}
-              onChangeText={(text) => setFormData({ ...formData, productName: text })}
-              keyboardType={"default"}
-              placeholder={"Enter the Product Name"}
-              placeholderTextColor={"black"}
-              style={{borderWidth: 1, borderColor: '#ddd', borderRadius: 10, padding: 10, color: "black", width: "130%"}}
+              onChangeText={text =>
+                setFormData({...formData, productName: text})
+              }
+              placeholder="Enter the Product Name"
+              validationFunc={val => val.trim().length > 0}
+              errorMessage="Product name is required"
+              inputStyle={{width: '130%'}}
             />
           </View>
-          <Image source={{uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7'}} style={styles.productImage} />
+          <Image
+            source={{
+              uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
+            }}
+            style={styles.productImage}
+          />
         </View>
 
-
-        {/*Product Text Inputs View*/}
         <View style={styles.row}>
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>Unit</Text>
-            <TextInput
+            {/* <Text style={styles.inputLabel}>Unit</Text> */}
+            <ValidatedInput
+              label={'Unit'}
+              labelStyle={{color: '#76B117'}}
               value={formData.productUnit}
-              onChangeText={(text) => setFormData({ ...formData, productUnit: text })}
-              keyboardType={"numeric"}
-              placeholder={"Unit"}
-              placeholderTextColor={"black"}
-              style={styles.input}
+              onChangeText={text =>
+                setFormData({...formData, productUnit: text})
+              }
+              placeholder="Unit"
+              keyboardType="numeric"
+              validationFunc={val => /^\d+(\.\d+)?$/.test(val)}
+              errorMessage="Enter a valid unit"
             />
           </View>
+
           <View style={styles.inputContainer}>
-            <Text style={styles.inputLabel}>My Price</Text>
-            <TextInput
+            {/* <Text style={styles.inputLabel}>My Price</Text> */}
+            <ValidatedInput
+              label={'My Price'}
+              labelStyle={{color: '#76B117'}}
               value={formData.productPrice}
-              onChangeText={(text) => setFormData({ ...formData, productPrice: text })}
-              keyboardType={"numeric"}
-              placeholder={"Price"}
-              placeholderTextColor={"black"}
-              style={styles.input}
+              onChangeText={text =>
+                setFormData({...formData, productPrice: text})
+              }
+              placeholder="Price"
+              keyboardType="numeric"
+              validationFunc={val => /^\d+(\.\d+)?$/.test(val)}
+              errorMessage="Enter a valid price"
             />
           </View>
         </View>
 
-
-
-        {/*Product Category View*/}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Category</Text>
-          <TouchableOpacity style={styles.selectButton} onPress={() => setCategoryModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => setCategoryModalVisible(true)}>
             <Text style={styles.selectButtonText}>
-              {selectedCategory.categoryName || "Select Category"}
+              {selectedCategory.categoryName || 'Select Category'}
             </Text>
           </TouchableOpacity>
         </View>
 
-
-        {/*Product Supplier View*/}
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Supplier *</Text>
-          <TouchableOpacity style={styles.selectButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => setModalVisible(true)}>
             <Text style={styles.selectButtonText}>
-              {selectedSupplier.supplierName || "Select Supplier"}
+              {selectedSupplier.supplierName || 'Select Supplier'}
             </Text>
           </TouchableOpacity>
         </View>
 
-
-        {/*Add Product Button*/}
         <TouchableOpacity style={styles.addProductButton} onPress={handleSave}>
           <Text style={styles.addProductButtonText}>Add Product</Text>
         </TouchableOpacity>
 
-
-        {/*Product Category Modal*/}
         <Modal
           animationType="slide"
           transparent={true}
           visible={categoryModalVisible}
           onRequestClose={() => setCategoryModalVisible(false)}>
-            <View style={styles.categoryModalOverlay}>
-              <View style = {styles.categoryModalContent}>
+          <View style={styles.categoryModalOverlay}>
+            <View style={styles.categoryModalContent}>
+              <FlatList
+                data={categories}
+                numColumns={3}
+                renderItem={renderCategoryItemModal}
+                keyExtractor={(item, index) => index.toString()}
+                contentContainerStyle={styles.flatListContent}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}>
+          {suppliers.length > 0 ? (
+            <View style={styles.modalBackdrop}>
+              <View style={styles.modalContent}>
                 <FlatList
-                  data={categories}
-                  numColumns={3}
-                  renderItem={renderCategoryItemModal}
-                  keyExtractor={(item, index) => index.toString()} // Add a key extractor
-                  contentContainerStyle={styles.flatListContent}
+                  data={suppliers}
+                  keyExtractor={item => item.supplierId}
+                  renderItem={({item}) => (
+                    <TouchableOpacity
+                      style={styles.modalItem}
+                      onPress={() => handleSelectSupplier(item)}>
+                      <Image
+                        source={require('../Images/ProckuredImage.jpg')}
+                        style={styles.modalImage}
+                      />
+                      <Text style={styles.modalText}>{item.businessName}</Text>
+                    </TouchableOpacity>
+                  )}
                 />
               </View>
             </View>
-        </Modal>
-
-
-        {/*Product Supplier Modal*/}
-        <Modal
-            animationType="slide"
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}>
-            {suppliers.length > 0 ? (
-              <View style={styles.modalBackdrop}>
-                <View style={styles.modalContent}>
-                  <FlatList
-                      data={suppliers}
-                      keyExtractor={(item) => item.supplierId}
-                      renderItem={({ item }) => (
-                      <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectSupplier(item)}>
-                          <Image
-                            source={require("../Images/ProckuredImage.jpg")}
-                            style={styles.modalImage}
-                          />
-                          <Text style={styles.modalText}>{item.businessName}</Text>
-                        </TouchableOpacity>
-                      )}
-                  />
-                </View>
+          ) : (
+            <View style={styles.modalBackdrop}>
+              <View style={styles.addSupplierModalContent}>
+                <Image
+                  source={require('../Images/FindAnySupplier.png')}
+                  style={styles.addSupplierImage}
+                />
+                <TouchableOpacity
+                  style={styles.addSupplierButton}
+                  onPress={() => navigation.navigate('Add Supplier')}>
+                  <Text style={styles.addSupplierButtonText}>Add Supplier</Text>
+                </TouchableOpacity>
               </View>
-              ) : (
-                <View style = {styles.modalBackdrop}>
-                  <View style = {styles.addSupplierModalContent}>
-                    <Image
-                      source={require('../Images/FindAnySupplier.png')}
-                      style={styles.addSupplierImage}
-                    />
-                    <TouchableOpacity
-                      style={styles.addSupplierButton}
-                      onPress={() => navigation.navigate("Add Supplier")}>
-                      <Text style={styles.addSupplierButtonText}>Add Supplier</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              )}
-          </Modal>
+            </View>
+          )}
+        </Modal>
       </ScrollView>
     </View>
   );
@@ -306,7 +308,7 @@ const styles = StyleSheet.create({
   productImage: {
     width: 70,
     height: 70,
-    borderRadius: 20
+    borderRadius: 20,
   },
   header: {
     padding: 15,
@@ -317,15 +319,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 10
+    marginLeft: 10,
   },
   content: {
     padding: 20,
   },
   inputContainerView: {
     marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between"
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   inputContainer: {
     marginBottom: 15,
@@ -333,9 +335,9 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 12,
     marginBottom: 5,
-    color: "#76B117",
-    fontWeight: "500",
-    fontStyle: "Montserrat",
+    color: '#76B117',
+    fontWeight: '500',
+    fontStyle: 'Montserrat',
     lineHeight: 15,
   },
   input: {
@@ -343,13 +345,13 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 10,
     padding: 10,
-    color: "black",
+    color: 'black',
     width: 100,
   },
   row: {
     justifyContent: 'space-between',
     marginBottom: 15,
-    flexDirection: 'row'
+    flexDirection: 'row',
   },
   modalBackdrop: {
     flex: 1,
@@ -371,13 +373,13 @@ const styles = StyleSheet.create({
     height: screenWidth * 1.0,
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
   modalItem: {
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    flexDirection: "row"
+    flexDirection: 'row',
   },
   modalImage: {
     width: 50,
@@ -385,7 +387,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalText: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginLeft: 5,
   },
   selectButton: {
@@ -396,7 +398,7 @@ const styles = StyleSheet.create({
     padding: 10,
     alignItems: 'center',
     flexDirection: 'row',
-    justifyContent: 'center'
+    justifyContent: 'center',
   },
   selectButtonText: {
     color: '#76B117',
@@ -427,11 +429,11 @@ const styles = StyleSheet.create({
   addSupplierImage: {
     width: screenWidth * 0.6,
     height: height * 0.3,
-    alignSelf: "center",
-    justifyContent: "center",
-    alignItems: "center",
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
     borderRadius: 50,
-    marginBottom: 20
+    marginBottom: 20,
   },
   categoryItem: {
     flex: 1,

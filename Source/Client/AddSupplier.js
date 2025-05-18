@@ -1,16 +1,24 @@
-import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, Image, TouchableOpacity, TextInput, Alert, ScrollView, Dimensions } from 'react-native';
-import { ChevronLeftIcon } from "react-native-heroicons/outline";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  Alert,
+  ScrollView,
+  Dimensions,
+} from 'react-native';
+import {ChevronLeftIcon} from 'react-native-heroicons/outline';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {useNavigation} from '@react-navigation/native';
+import ValidatedInput from '../components/Inputs/ValidatedInput';
 
-const { width, height } = Dimensions.get("window");
+const {width, height} = Dimensions.get('window');
 
 export default function AddSupplier() {
   const navigation = useNavigation();
-  const options = ["Email", "Whatsapp", "SMS"];
-  const [selectedOption, setSelectedOption] = useState(null);
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [form, setForm] = useState({
     businessName: '',
@@ -18,7 +26,7 @@ export default function AddSupplier() {
     pincode: '',
     state: '',
     country: '',
-    supplierPhoneNumber: ''
+    supplierPhoneNumber: '',
   });
 
   useEffect(() => {
@@ -31,46 +39,40 @@ export default function AddSupplier() {
       } catch (error) {
         console.log('Error Fetching Client ID: ', error);
       }
-    }
+    };
     fetchPhoneNumber();
   }, []);
 
   const handleChange = (field, value) => {
-    setForm({ ...form, [field]: value });
-  };
-
-  const validateEmail = (email) => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+    setForm({...form, [field]: value});
   };
 
   const handleSave = async () => {
     const id = phoneNumber;
-    const { businessName, email, pincode, state, country, supplierPhoneNumber } = form;
+    const {businessName, email, pincode, state, country, supplierPhoneNumber} =
+      form;
 
-    if (!id || !businessName || !email || !pincode || !state || !country || !supplierPhoneNumber) {
+    if (
+      !id ||
+      !businessName ||
+      !email ||
+      !pincode ||
+      !state ||
+      !country ||
+      !supplierPhoneNumber
+    ) {
       Alert.alert('Error', 'All fields are required!');
-      return;
-    }
-
-    if (!validateEmail(email)) {
-      Alert.alert('Error', 'Please enter a valid email address!');
-      return;
-    }
-
-    if (pincode.length !== 6 || isNaN(pincode)) {
-      Alert.alert('Error', 'Please enter a valid 6 digit pincode');
       return;
     }
 
     const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
     try {
       const response = await axios.get(url, {
-        headers: { 'Content-Type': 'application/json' }
+        headers: {'Content-Type': 'application/json'},
       });
       if (response.data === 'Ok' || response.status === 200) {
         Alert.alert('Success', 'Profile saved successfully!');
-        navigation.navigate("Main", { screen: "Home" });
+        navigation.navigate('Main', {screen: 'Home'});
       } else {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
       }
@@ -84,32 +86,82 @@ export default function AddSupplier() {
     <ScrollView style={styles.container}>
       {/* Header */}
       <View style={styles.addSuppliesView}>
-        <TouchableOpacity style={styles.goBackButton} onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={24} color={"black"} strokeWidth={3} />
+        <TouchableOpacity
+          style={styles.goBackButton}
+          onPress={() => navigation.goBack()}>
+          <ChevronLeftIcon size={24} color={'black'} strokeWidth={3} />
         </TouchableOpacity>
         <Text style={styles.addSuppliesText}>Add Supplier</Text>
       </View>
 
       <View style={styles.linkProductsView}>
-        <Image source={require("../Images/ProckuredImage.jpg")} style={styles.linkProductsImage} />
-        <TouchableOpacity style={styles.linkProductsTouchableOpacity} onPress={() => navigation.navigate('Link Product')}>
+        <Image
+          source={require('../Images/ProckuredImage.jpg')}
+          style={styles.linkProductsImage}
+        />
+        <TouchableOpacity
+          style={styles.linkProductsTouchableOpacity}
+          onPress={() => navigation.navigate('Link Product')}>
           <Text style={styles.linkProductsText}>Link Products</Text>
         </TouchableOpacity>
       </View>
 
-      {['businessName', 'email', 'pincode', 'state', 'country', 'supplierPhoneNumber'].map((field) => (
-        <View key={field} style={styles.inputContainer}>
-          <Text style={styles.labelText}>{field.charAt(0).toUpperCase() + field.slice(1)}*</Text>
-          <TextInput
-            placeholder={`Enter ${field}`}
-            placeholderTextColor="black"
-            keyboardType={field === 'pincode' ? "numeric" : "default"}
-            value={form[field]}
-            onChangeText={(value) => handleChange(field, value)}
-            style={styles.inputField}
-          />
-        </View>
-      ))}
+      <ValidatedInput
+        label="Business Name"
+        placeholder="Enter Business Name"
+        value={form.businessName}
+        onChangeText={value => handleChange('businessName', value)}
+        validationFunc={text => text.trim().length > 0}
+        errorMessage="Business Name is required"
+      />
+
+      <ValidatedInput
+        label="Email"
+        placeholder="Enter Email"
+        value={form.email}
+        keyboardType="email-address"
+        onChangeText={value => handleChange('email', value)}
+        validationFunc={text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text)}
+        errorMessage="Please enter a valid email address"
+      />
+
+      <ValidatedInput
+        label="Pincode"
+        placeholder="Enter Pincode"
+        value={form.pincode}
+        keyboardType="numeric"
+        onChangeText={value => handleChange('pincode', value)}
+        validationFunc={text => /^\d{6}$/.test(text)}
+        errorMessage="Enter a valid 6-digit pincode"
+      />
+
+      <ValidatedInput
+        label="State"
+        placeholder="Enter State"
+        value={form.state}
+        onChangeText={value => handleChange('state', value)}
+        validationFunc={text => text.trim().length > 0}
+        errorMessage="State is required"
+      />
+
+      <ValidatedInput
+        label="Country"
+        placeholder="Enter Country"
+        value={form.country}
+        onChangeText={value => handleChange('country', value)}
+        validationFunc={text => text.trim().length > 0}
+        errorMessage="Country is required"
+      />
+
+      <ValidatedInput
+        label="Supplier Phone Number"
+        placeholder="Enter Supplier Phone Number"
+        value={form.supplierPhoneNumber}
+        keyboardType="phone-pad"
+        onChangeText={value => handleChange('supplierPhoneNumber', value)}
+        validationFunc={text => /^\d{10}$/.test(text)}
+        errorMessage="Enter a valid 10-digit phone number"
+      />
 
       <TouchableOpacity onPress={handleSave}>
         <View style={styles.addSupplierButtonView}>
@@ -122,77 +174,50 @@ export default function AddSupplier() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    padding: 20,
+    padding: 16,
+    backgroundColor: '#fff',
   },
   addSuppliesView: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
   },
   goBackButton: {
-    marginLeft: -20,
+    marginRight: 10,
   },
   addSuppliesText: {
-    color: "black",
-    fontWeight: "bold",
-    fontSize: 18,
-    marginLeft: 10,
+    fontSize: 20,
+    fontWeight: 'bold',
   },
   linkProductsView: {
-    flexDirection: "column",
-    alignItems: "center",
-    justifyContent: "center",
-    marginVertical: 20,
+    alignItems: 'center',
+    marginBottom: 20,
   },
   linkProductsImage: {
-    width: width * 0.3,
-    height: width * 0.3,
-    borderRadius: 50,
+    width: width * 0.9,
+    height: 150,
+    resizeMode: 'contain',
   },
   linkProductsTouchableOpacity: {
-    backgroundColor: "green",
-    width: "50%",
-    height: 50,
-    borderRadius: 25,
-    justifyContent: "center",
-    alignItems: "center",
     marginTop: 10,
+    backgroundColor: '#76B117',
+    padding: 10,
+    borderRadius: 8,
   },
   linkProductsText: {
-    color: "white",
-    fontWeight: "bold",
-  },
-  inputContainer: {
-    marginBottom: 15,
-  },
-  labelText: {
-    fontWeight: "400",
-    color: "green",
-    fontSize: 16,
-    marginBottom: 5,
-  },
-  inputField: {
-    borderColor: "lightgray",
-    borderWidth: 1,
-    padding: 10,
-    borderRadius: 5,
-    color: "black",
-    fontSize: 16,
+    color: '#fff',
+    fontWeight: 'bold',
   },
   addSupplierButtonView: {
-    backgroundColor: "green",
+    backgroundColor: '#76B117',
     padding: 15,
-    width: "70%",
-    borderRadius: 50,
-    justifyContent: "center",
-    alignSelf: "center",
+    alignItems: 'center',
+    borderRadius: 10,
     marginTop: 20,
-    marginBottom: width * 0.1
   },
   addSupplierButtonText: {
-    color: "white",
-    fontWeight: "bold",
+    color: 'white',
     fontSize: 16,
-    textAlign: "center",
+    fontWeight: 'bold',
   },
 });
