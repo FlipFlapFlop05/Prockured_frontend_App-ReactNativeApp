@@ -10,6 +10,7 @@ export default function ValidatedInput({
   validationFunc,
   errorMessage,
   labelStyle,
+  isRequired,
 }) {
   const [touched, setTouched] = useState(false);
   const isValid = validationFunc ? validationFunc(value) : true;
@@ -20,7 +21,8 @@ export default function ValidatedInput({
         <Text style={StyleSheet.flatten([styles.label, labelStyle])}>
           {label}
         </Text>
-        <Text style={styles.asterisk}> *</Text>
+        {isRequired && <Text style={styles.asterisk}> *</Text>}
+        {/* <Text style={styles.asterisk}> *</Text> */}
       </Text>
       <TextInput
         style={styles.input}

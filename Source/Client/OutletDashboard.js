@@ -1,40 +1,88 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet, ScrollView, TouchableOpacity, Dimensions } from 'react-native';
-import {ChevronLeftIcon} from "react-native-heroicons/outline";
+import {
+  View,
+  Text,
+  Image,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Dimensions,
+} from 'react-native';
+import {ChevronLeftIcon} from 'react-native-heroicons/outline';
 import {useNavigation} from '@react-navigation/native';
 
-const { width } = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 const orders = [
   {
     location: 'Crunch (Kalanagar)',
     items: [
-      { name: 'Red Cabbage', price: '960', quantity: '8kg', image: require('../Images/VendorProfileImage.png') },
-      { name: 'Brocolli', price: '1830', quantity: '15kg', image: require('../Images/VendorProfileImage.png') },
+      {
+        name: 'Red Cabbage',
+        price: '960',
+        quantity: '8kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
+      {
+        name: 'Brocolli',
+        price: '1830',
+        quantity: '15kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
     ],
     total: '11,130',
   },
   {
     location: 'Crunch (Hiranagar)',
     items: [
-      { name: 'Carrots', price: '1900', quantity: '25kg', image: require('../Images/VendorProfileImage.png') },
-      { name: 'Onion', price: '1530', quantity: '30kg', image: require('../Images/VendorProfileImage.png') },
+      {
+        name: 'Carrots',
+        price: '1900',
+        quantity: '25kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
+      {
+        name: 'Onion',
+        price: '1530',
+        quantity: '30kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
     ],
     total: '9,580',
   },
   {
     location: 'Crunch (Hiranagar)',
     items: [
-      { name: 'Carrots', price: '1900', quantity: '25kg', image: require('../Images/VendorProfileImage.png') },
-      { name: 'Onion', price: '1530', quantity: '30kg', image: require('../Images/VendorProfileImage.png') },
+      {
+        name: 'Carrots',
+        price: '1900',
+        quantity: '25kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
+      {
+        name: 'Onion',
+        price: '1530',
+        quantity: '30kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
     ],
     total: '9,580',
   },
   {
     location: 'Crunch (Hiranagar)',
     items: [
-      { name: 'Carrots', price: '1900', quantity: '25kg', image: require('../Images/VendorProfileImage.png') },
-      { name: 'Onion', price: '1530', quantity: '30kg', image: require('../Images/VendorProfileImage.png') },
+      {
+        name: 'Carrots',
+        price: '1900',
+        quantity: '25kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
+      {
+        name: 'Onion',
+        price: '1530',
+        quantity: '30kg',
+        image: require('../Images/VendorProfileImage.png'),
+      },
     ],
     total: '9,580',
   },
@@ -44,13 +92,11 @@ export default function OutletDashboard() {
   const navigation = useNavigation();
   return (
     <ScrollView style={styles.container}>
-      <View style = {styles.header}>
+      <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeftIcon size={20} color={'black'} strokeWidth={2} />
         </TouchableOpacity>
-        <Text style = {styles.dashboardText}>
-          Dashboard
-        </Text>
+        <Text style={styles.dashboardText}>Dashboard</Text>
       </View>
       <Text style={styles.dateText}>25 July 2024 / Jaipur</Text>
       {orders.map((order, index) => (
@@ -59,7 +105,7 @@ export default function OutletDashboard() {
             <Text style={styles.locationText}>{order.location}</Text>
             <Text style={styles.editOrderText}>Edit Order</Text>
           </View>
-          <View style = {styles.cardContainer}>
+          <View style={styles.cardContainer}>
             <View>
               {order.items.map((item, idx) => (
                 <View key={idx} style={styles.itemRow}>
@@ -73,15 +119,51 @@ export default function OutletDashboard() {
               ))}
               <View style={styles.itemsContainer} />
               <Text style={styles.orderTotal}>Order Total ₹ {order.total}</Text>
-              <View style={styles.itemsContainer}/>
+              <View style={styles.itemsContainer} />
               <Text style={styles.itemCount}>+ 3 Items</Text>
-              <View style={styles.itemsContainer}/>
-              <TouchableOpacity>
+              <View style={styles.itemsContainer} />
+              <TouchableOpacity
+                onPress={() =>
+                  navigation.navigate('OutletSummary', {
+                    location: order.location,
+                    groupedItems: [
+                      {
+                        category: 'Fruits & Vegetables',
+                        vendor: 'DM Agro Farm',
+                        items: order.items,
+                      },
+                      {
+                        category: 'Dairy & Fresh Produce',
+                        vendor: 'Freshpicks',
+                        items: [
+                          {
+                            name: 'Eggs',
+                            price: '640',
+                            quantity: '8 Dozen',
+                            image: require('../Images/VendorProfileImage.png'),
+                          },
+                          {
+                            name: 'Cheese',
+                            price: '4900',
+                            quantity: '10 kg',
+                            image: require('../Images/VendorProfileImage.png'),
+                          },
+                          {
+                            name: 'Whole Milk',
+                            price: '2800',
+                            quantity: '50 L',
+                            image: require('../Images/VendorProfileImage.png'),
+                          },
+                        ],
+                      },
+                    ],
+                    total: order.total,
+                  })
+                }>
                 <Text style={styles.viewSummary}>View Summary</Text>
               </TouchableOpacity>
             </View>
           </View>
-
         </View>
       ))}
     </ScrollView>
@@ -94,19 +176,19 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 20,
     backgroundColor: '#F1F5F9',
-    marginBottom: 10
+    marginBottom: 10,
   },
   header: {
-    flexDirection: "row",
-    paddingTop: 20
+    flexDirection: 'row',
+    paddingTop: 20,
   },
   dashboardText: {
     fontSize: 18,
     fontWeight: 'bold',
     fontFamily: 'Montserrat',
     lineHeight: 24,
-    color: "#0F1828",
-    marginLeft: 10
+    color: '#0F1828',
+    marginLeft: 10,
   },
   dateText: {
     fontSize: 16,
@@ -137,13 +219,13 @@ const styles = StyleSheet.create({
   editOrderText: {
     fontSize: 14,
     color: '#6B7280',
-    textDecorationLine: "underline",
+    textDecorationLine: 'underline',
   },
   itemsContainer: {
     borderTopWidth: 1,
     borderColor: '#E5E7EB',
     paddingTop: 10,
-    marginTop: 5
+    marginTop: 5,
   },
   itemRow: {
     flexDirection: 'row',
@@ -185,7 +267,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#76B117',
     marginTop: 2,
-    fontWeight: "bold"
+    fontWeight: 'bold',
   },
   viewSummary: {
     textAlign: 'center',

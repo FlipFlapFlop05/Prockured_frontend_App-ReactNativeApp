@@ -374,6 +374,7 @@ export default function ClientSetting() {
           />
           <Text style={styles.logoutButtonText}>Log Out</Text>
         </TouchableOpacity> */}
+        {/* hhh */}
       </View>
     </SafeAreaView>
   );
