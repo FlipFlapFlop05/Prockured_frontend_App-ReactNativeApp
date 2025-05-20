@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -25,6 +25,34 @@ export default function AddOutlet() {
     state: '',
     country: '',
   });
+  const [sameAsShipping, setSameAsShipping] = useState(false);
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Outlets',
+      headerStyle: {
+        backgroundColor: '#f8f9fe',
+        elevation: 0,
+        shadowColor: 'transparent',
+        shadowOffset: {height: 0},
+        shadowRadius: 0,
+        borderBottomWidth: 0,
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={23} strokeWidth={2} />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
@@ -41,7 +69,13 @@ export default function AddOutlet() {
   }, []);
 
   const handleChange = (field, value) => {
-    setForm(prev => ({...prev, [field]: value}));
+    setForm(prev => {
+      const updated = {...prev, [field]: value};
+      if (field === 'address' && sameAsShipping) {
+        updated.billingAddress = value;
+      }
+      return updated;
+    });
   };
 
   const validateRequired = value => value && value.trim().length > 0;
@@ -83,91 +117,137 @@ export default function AddOutlet() {
   };
 
   return (
-    <ScrollView style={styles.container}>
-      <View style={styles.outletView}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={25} color={'black'} strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.outletText}>Add New Outlet</Text>
+    <>
+      <View style={styles.AddOutletHeader}>
+        <Text style={styles.AddOutletHeaderText}>Add New Outlet</Text>
       </View>
+      <ScrollView style={styles.container}>
+        <ValidatedInput
+          label="Name"
+          placeholder="Enter name"
+          value={form.name}
+          onChangeText={value => handleChange('name', value)}
+          validationFunc={validateRequired}
+          errorMessage="Name is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+        <ValidatedInput
+          label="Address"
+          placeholder="Enter address"
+          value={form.address}
+          onChangeText={value => handleChange('address', value)}
+          validationFunc={validateRequired}
+          errorMessage="Address is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+        <ValidatedInput
+          label="City"
+          placeholder="Enter city"
+          value={form.city}
+          onChangeText={value => handleChange('city', value)}
+          validationFunc={validateRequired}
+          errorMessage="City is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
 
-      <ValidatedInput
-        label="Name"
-        placeholder="Enter name"
-        value={form.name}
-        onChangeText={value => handleChange('name', value)}
-        validationFunc={validateRequired}
-        errorMessage="Name is required"
-      />
-      <ValidatedInput
-        label="Address"
-        placeholder="Enter address"
-        value={form.address}
-        onChangeText={value => handleChange('address', value)}
-        validationFunc={validateRequired}
-        errorMessage="Address is required"
-      />
-      <ValidatedInput
-        label="City"
-        placeholder="Enter city"
-        value={form.city}
-        onChangeText={value => handleChange('city', value)}
-        validationFunc={validateRequired}
-        errorMessage="City is required"
-      />
-      <ValidatedInput
-        label="Billing Address"
-        placeholder="Enter billing address"
-        value={form.billingAddress}
-        onChangeText={value => handleChange('billingAddress', value)}
-        validationFunc={validateRequired}
-        errorMessage="Billing address is required"
-      />
-      <ValidatedInput
-        label="GST"
-        placeholder="Enter GST number"
-        keyboardType="numeric"
-        value={form.GST}
-        onChangeText={value => handleChange('GST', value)}
-        validationFunc={validateRequired}
-        errorMessage="GST number is required"
-      />
-      <ValidatedInput
-        label="State"
-        placeholder="Enter state"
-        value={form.state}
-        onChangeText={value => handleChange('state', value)}
-        validationFunc={validateRequired}
-        errorMessage="State is required"
-      />
-      <ValidatedInput
-        label="Country"
-        placeholder="Enter country"
-        value={form.country}
-        onChangeText={value => handleChange('country', value)}
-        validationFunc={validateRequired}
-        errorMessage="Country is required"
-      />
+        <View style={styles.checkboxContainer}>
+          <TouchableOpacity
+            onPress={() => {
+              const newVal = !sameAsShipping;
+              setSameAsShipping(newVal);
+              if (newVal) {
+                setForm(prev => ({...prev, billingAddress: prev.address}));
+              }
+            }}
+            style={styles.checkbox}>
+            {sameAsShipping && <View style={styles.checkboxTick} />}
+          </TouchableOpacity>
+          <Text style={styles.checkboxLabel}>
+            Billing address same as shipping address
+          </Text>
+        </View>
 
-      <View style={styles.buttonsView}>
-        <TouchableOpacity style={styles.cancelTouchableOpacity}>
-          <Text style={styles.cancelText}>Cancel</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.saveTouchableOpacity}
-          onPress={handleSave}>
-          <Text style={styles.saveText}>Save</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <ValidatedInput
+          label="Billing Address"
+          placeholder="Enter billing address"
+          value={form.billingAddress}
+          onChangeText={value => handleChange('billingAddress', value)}
+          validationFunc={validateRequired}
+          errorMessage="Billing address is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+        <ValidatedInput
+          label="GST"
+          placeholder="Enter GST number"
+          keyboardType="numeric"
+          value={form.GST}
+          onChangeText={value => handleChange('GST', value)}
+          validationFunc={validateRequired}
+          errorMessage="GST number is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+        <ValidatedInput
+          label="State"
+          placeholder="Enter state"
+          value={form.state}
+          onChangeText={value => handleChange('state', value)}
+          validationFunc={validateRequired}
+          errorMessage="State is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+        <ValidatedInput
+          label="Country"
+          placeholder="Enter country"
+          value={form.country}
+          onChangeText={value => handleChange('country', value)}
+          validationFunc={validateRequired}
+          errorMessage="Country is required"
+          labelStyle={{color: '#76B117', fontWeight: 700}}
+          isRequired={false}
+        />
+
+        <View style={styles.buttonsView}>
+          <TouchableOpacity style={styles.cancelTouchableOpacity}>
+            <Text style={styles.cancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.saveTouchableOpacity}
+            onPress={handleSave}>
+            <Text style={styles.saveText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: 'white',
-    paddingHorizontal: 15,
+    backgroundColor: '#f8f9fe',
+    paddingHorizontal: 20,
+    paddingTop: 10,
+  },
+  AddOutletHeader: {
+    paddingVertical: 15,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#ECF0F1',
+    width: '100%',
+    paddingHorizontal: 25,
+    paddingTop: 20,
+  },
+  AddOutletHeaderText: {
+    fontSize: 16,
+    fontWeight: 600,
+    color: '#2C3E50',
+    fontFamily: 'Montserrat',
   },
   outletView: {
     flexDirection: 'row',
@@ -218,5 +298,34 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     marginTop: 5,
+  },
+  checkboxContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 10,
+  },
+
+  checkbox: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: '#76B117',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+
+  checkboxTick: {
+    width: 12,
+    height: 12,
+    backgroundColor: '#76B117',
+    borderRadius: 2,
+  },
+
+  checkboxLabel: {
+    fontSize: 14,
+    color: '#2C3E50',
+    fontFamily: 'Montserrat',
   },
 });

@@ -68,6 +68,7 @@ import NotificationAndSearch from '../Client/NotificationAndSearch';
 import ClientFAQ from '../Client/FAQ';
 import VendorProfile from '../Vendor/VendorProfile';
 import OutletDashboard from '../Client/OutletDashboard';
+import OutletSummary from '../Client/OutletSummary';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -225,6 +226,7 @@ const AppNavigation = () => {
           component={SpecificVendorOrderNow}
         />
         <Stack.Screen name={'Outlet Dashboard'} component={OutletDashboard} />
+        <Stack.Screen name={'OutletSummary'} component={OutletSummary} />
         {/*Vendor Stack*/}
         <Stack.Screen
           name={'Basic Vendor Profile'}
