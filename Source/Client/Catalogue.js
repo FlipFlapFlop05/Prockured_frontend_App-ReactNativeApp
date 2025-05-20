@@ -123,12 +123,6 @@ export default function Catalogue() {
   return (
     <View style={styles.outerContainer}>
       <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <Text style={styles.headerText}>Your Catalogue!</Text>
-          <TouchableOpacity onPress={toggleSearch}>
-            <MagnifyingGlassIcon size={25} color={"black"} strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
 
         {isSearchVisible && ( // Conditionally render the search bar
           <Animated.View style={[styles.searchContainer, { width: searchWidth }]}>
