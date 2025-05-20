@@ -26,6 +26,34 @@ export default function AddOutlet() {
     country: '',
   });
 
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerTitle: 'Add New Outlet',
+        headerStyle: {
+          backgroundColor: '#f8f8f8',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: 20,
+          fontFamily: 'Montserrat',
+          justifyContent: 'center'
+          // color: 'white',
+        },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: 13}}>
+              <ChevronLeftIcon size={28} color="#333" />
+          </TouchableOpacity>
+        ),
+      });
+    }, [navigation]);
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
@@ -84,13 +112,6 @@ export default function AddOutlet() {
 
   return (
     <ScrollView style={styles.container}>
-      <View style={styles.outletView}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={25} color={'black'} strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.outletText}>Add New Outlet</Text>
-      </View>
-
       <ValidatedInput
         label="Name"
         placeholder="Enter name"

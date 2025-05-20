@@ -1,6 +1,5 @@
 /* eslint-disable react-hooks/exhaustive-deps */
 import React, {useEffect, useLayoutEffect, useState} from 'react';
-import Config from 'react-native-config';
 
 import {
   View,
@@ -20,7 +19,7 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {Divider} from 'react-native-elements';
-import useFetchApi from '../../hooks/useFetchApi';
+//import useFetchApi from '../../hooks/useFetchApi';
 
 const {width: screenWidth} = Dimensions.get('window');
 

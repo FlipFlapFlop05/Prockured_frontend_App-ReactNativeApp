@@ -24,6 +24,10 @@ import {
   ChartBarIcon,
   ChevronLeftIcon,
 } from 'react-native-heroicons/outline';
+import { XMarkIcon, ClipboardDocumentIcon } from 'react-native-heroicons/outline';
+import {CheckCircleIcon} from 'react-native-heroicons/solid';
+import {Clipboard} from 'react-native'; // if not using Expo
+
 
 // import Icon from 'react-native-vector-icons/FontAwesome';
 
@@ -39,6 +43,22 @@ export default function ClientSetting() {
   const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [phoneNumber, setPhoneNumber] = useState(null);
+  const [inviteVendor, setInviteVendor] = useState(false);
+  const [copied, setCopied] = useState(false);
+
+    const vendorId = 'V-4561';
+    const inviteLink = `https://vendor.invite/${vendorId}`;
+
+    const copyToClipboard = (text) => {
+        Clipboard.setString(text);
+        setCopied(true);
+
+        // Hide the message after 2 seconds
+        setTimeout(() => {
+            setCopied(false);
+        }, 2000);
+    };
+
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -49,18 +69,21 @@ export default function ClientSetting() {
         elevation: 0,
         shadowOpacity: 0,
         borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
       },
       headerTitleStyle: {
         fontWeight: 'bold',
         fontSize: 20,
         fontFamily: 'Montserrat',
+        justifyContent: 'center'
         // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{paddingHorizontal: 13}}>
-          <ChevronLeftIcon size={25} />
+            <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>
       ),
     });
@@ -165,7 +188,7 @@ export default function ClientSetting() {
       type: 'hero',
       icon: ChartBarIcon,
       label: 'View Report',
-      modal: 'viewReport',
+      screen: 'Client Report'
     },
     {
       id: 5,
@@ -230,13 +253,58 @@ export default function ClientSetting() {
   //   </TouchableOpacity>
   // );
 
+  const renderVendorItem = () => {
+    switch (selectedModal) {
+      case 'inviteVendor':
+        return (
+          <View>
+             <Modal
+                visible={modalVisible}
+                animationType="slide"
+                transparent
+              >
+              <View style={styles.overlay}>
+                  <View style={styles.modalContainer}>
+                      <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                          <Text style={styles.title}>Share this link</Text>
+                          <View style={{ flexDirection: 'row' }}>
+                              <TouchableOpacity onPress={() => copyToClipboard(inviteLink)} style={{ flexDirection: 'row' }}>
+                                  <ClipboardDocumentIcon size={22} color="#76B117" />
+                                  <Text style={styles.copyText}>Copy Link</Text>
+                              </TouchableOpacity>
+                              <TouchableOpacity onPress={() => setModalVisible(false)} style={styles.closeButton}>
+                                  <XMarkIcon size={24} color="black" />
+                              </TouchableOpacity>
+                          </View>
+                      </View>
+                      <View style={styles.linkBox}>
+                        <Text style={styles.linkText}>{inviteLink}</Text>
+                    </View>
+
+                      {copied && (
+                          <Text style={styles.copiedMessage}>
+                              Link copied. <Text></Text>
+                              <Text style = {{fontWeight: '600'}}>
+                                  Anyone with this link can join
+                              </Text>
+                          </Text>
+                      )}
+                  </View>
+              </View>
+            </Modal>
+          </View>
+        );
+
+      default:
+        return null;
+    }
+  }
+
   const renderModalContent = () => {
     switch (selectedModal) {
       case 'teamsRoles':
         return <Text style={styles.categoryText}>Feature Not Available</Text>;
       case 'viewReport':
-        return <Text style={styles.categoryText}>Feature Not Available</Text>;
-      case 'inviteVendor':
         return <Text style={styles.categoryText}>Feature Not Available</Text>;
       default:
         return null;
@@ -246,6 +314,9 @@ export default function ClientSetting() {
   return (
     <SafeAreaView style={styles.safeArea} className="bg-white">
       <View style={styles.container} className="bg-white">
+       
+
+        
         <Modal
           animationType="slide"
           transparent={true}
@@ -261,6 +332,14 @@ export default function ClientSetting() {
               </TouchableOpacity>
             </View>
           </View>
+        </Modal>
+
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => setModalVisible(false)}>
+              {renderVendorItem()}
         </Modal>
 
         <View style={styles.profileContainer}>
@@ -421,4 +500,56 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
   },
+  overlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0,0,0,0.4)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    modalContainer: {
+        width: '90%',
+        backgroundColor: 'white',
+        borderRadius: 20,
+        padding: 20,
+        elevation: 10,
+    },
+    closeButton: {
+        alignSelf: 'flex-end',
+        marginLeft: 10,
+    },
+     title: {
+        fontSize: 17,
+        fontWeight: '700',
+        fontFamily: 'Montserrat',
+        letterSpacing: 0.5
+    },
+    copyText: {
+        fontSize: 14,
+        fontWeight: '800',
+        fontFamily: 'Montserrat',
+        color: "#76B117",
+        marginLeft: 3
+    },
+    linkBox: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        backgroundColor: '#F4F4F5',
+        borderRadius: 12,
+        padding: 12,
+        marginTop: 10,
+    },
+    linkText: {
+        fontSize: 13,
+        color: '#333',
+        flex: 1,
+        marginRight: 10,
+    },
+     copiedMessage: {
+        marginTop: 8,
+        color: '#323232',
+        fontSize: 15,
+        fontWeight: 'bold',
+        fontFamily: 'Montserrat',
+    },
 });

@@ -5,17 +5,37 @@ import { useNavigation } from "@react-navigation/native";
 
 export default function ApprovalPending(){
     const navigation = useNavigation();
-    let order_id = 1548745
+    let order_id = 1548745;
+    useLayoutEffect(() => {
+        navigation.setOptions({
+          headerShown: true,
+          headerTitle: 'Approval Pending',
+          headerStyle: {
+            backgroundColor: '#f8f8f8',
+            elevation: 0,
+            shadowOpacity: 0,
+            borderBottomWidth: 0,
+            justifyContent: 'center',
+            alignItems: 'center',
+          },
+          headerTitleStyle: {
+            fontWeight: 'bold',
+            fontSize: 20,
+            fontFamily: 'Montserrat',
+            justifyContent: 'center'
+            // color: 'white',
+          },
+          headerLeft: () => (
+            <TouchableOpacity
+              onPress={() => navigation.goBack()}
+              style={{paddingHorizontal: 13}}>
+                <ChevronLeftIcon size={28} color="#333" />
+            </TouchableOpacity>
+          ),
+        });
+      }, [navigation]);
     return(
         <View style={styles.container}>
-            <View style = {styles.headerView}>
-                <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <ChevronLeftIcon size={22} color={"black"} strokeWidth={4} />
-                </TouchableOpacity>
-                <Text style={styles.headerText}>
-                    Approval Pending
-                </Text>
-            </View>
             <View style = {styles.contentView}>
                 <StarIcon size={50} color={"#76B117"} />
                 <Text style = {styles.contentViewText1}>

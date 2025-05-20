@@ -42,7 +42,34 @@ export default function AddSupplier() {
     };
     fetchPhoneNumber();
   }, []);
-
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerTitle: 'Add Supplier',
+        headerStyle: {
+          backgroundColor: '#f8f8f8',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: 20,
+          fontFamily: 'Montserrat',
+          justifyContent: 'center'
+          // color: 'white',
+        },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: 13}}>
+              <ChevronLeftIcon size={28} color="#333" />
+          </TouchableOpacity>
+        ),
+      });
+    }, [navigation]);
   const handleChange = (field, value) => {
     setForm({...form, [field]: value});
   };
@@ -85,14 +112,7 @@ export default function AddSupplier() {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-      <View style={styles.addSuppliesView}>
-        <TouchableOpacity
-          style={styles.goBackButton}
-          onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={24} color={'black'} strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.addSuppliesText}>Add Supplier</Text>
-      </View>
+
 
       <View style={styles.linkProductsView}>
         <Image

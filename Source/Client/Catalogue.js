@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useLayoutEffect } from "react";
 import { View, Text, StyleSheet, FlatList, Image, TouchableOpacity, ScrollView, Dimensions, TextInput, Animated } from 'react-native';
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
@@ -17,6 +17,36 @@ export default function Catalogue() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchAnim = useRef(new Animated.Value(0)).current;
+
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Your Catalogue',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center'
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+            <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {

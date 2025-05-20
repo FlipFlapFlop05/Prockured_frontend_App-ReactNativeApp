@@ -37,6 +37,7 @@ const Report = () => {
           <TextInput
             style={styles.searchInput}
             placeholder="Search..."
+            placeholderTextColor={'black'}
           />
         </View>
 

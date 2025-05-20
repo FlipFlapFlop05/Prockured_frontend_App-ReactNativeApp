@@ -34,6 +34,35 @@ const ChatSupport = () => {
   const scrollViewRef = useRef();
   const navigation = useNavigation();
 
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerTitle: 'Chat Support',
+        headerStyle: {
+          backgroundColor: '#f8f8f8',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: 20,
+          fontFamily: 'Montserrat',
+          justifyContent: 'center'
+          // color: 'white',
+        },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: 13}}>
+              <ChevronLeftIcon size={28} color="#333" />
+          </TouchableOpacity>
+        ),
+      });
+    }, [navigation]);
+
   useEffect(() => {
     loadMessages();
   }, []);
@@ -102,12 +131,6 @@ const ChatSupport = () => {
     <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={styles.container}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <View style={styles.inner}>
-          <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <ChevronLeftIcon size={20} color={'black'} strokeWidth={3} />
-            </TouchableOpacity>
-            <Text style={styles.headerTitle}>Chat Support</Text>
-          </View>
 
           <ScrollView ref={scrollViewRef} contentContainerStyle={styles.messageContainer} showsVerticalScrollIndicator={false}>
             {messages.map((message, index) => (

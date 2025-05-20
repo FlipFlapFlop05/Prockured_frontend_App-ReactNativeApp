@@ -17,6 +17,34 @@ import {faqData} from '../Constant/constant';
 export default function ClientFAQ(){
   const navigation = useNavigation();
   const [expandedSections, setExpandedSections] = useState({});
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerTitle: 'FAQs',
+        headerStyle: {
+          backgroundColor: '#f8f8f8',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: 20,
+          fontFamily: 'Montserrat',
+          justifyContent: 'center'
+          // color: 'white',
+        },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: 13}}>
+              <ChevronLeftIcon size={28} color="#333" />
+          </TouchableOpacity>
+        ),
+      });
+    }, [navigation]);
 
   const toggleSection = (id) => {
     setExpandedSections((prev) => ({
@@ -29,12 +57,6 @@ export default function ClientFAQ(){
 
   return (
     <ScrollView style={styles.container}>
-      <View style = {{flexDirection: "row"}}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color = "black" strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.header}>FAQs</Text>
-      </View>
       {faqData.map((section) => (
         <View key={section.id} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>

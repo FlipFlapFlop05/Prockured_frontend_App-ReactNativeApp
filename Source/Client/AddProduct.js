@@ -36,6 +36,34 @@ const AddProduct = () => {
   useEffect(() => {
     fetchPhoneNumber();
   }, []);
+  useLayoutEffect(() => {
+      navigation.setOptions({
+        headerShown: true,
+        headerTitle: 'Add Product',
+        headerStyle: {
+          backgroundColor: '#f8f8f8',
+          elevation: 0,
+          shadowOpacity: 0,
+          borderBottomWidth: 0,
+          justifyContent: 'center',
+          alignItems: 'center',
+        },
+        headerTitleStyle: {
+          fontWeight: 'bold',
+          fontSize: 20,
+          fontFamily: 'Montserrat',
+          justifyContent: 'center'
+          // color: 'white',
+        },
+        headerLeft: () => (
+          <TouchableOpacity
+            onPress={() => navigation.goBack()}
+            style={{paddingHorizontal: 13}}>
+              <ChevronLeftIcon size={28} color="#333" />
+          </TouchableOpacity>
+        ),
+      });
+    }, [navigation]);
 
   useEffect(() => {
     if (phoneNumber) {
@@ -126,13 +154,6 @@ const AddProduct = () => {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color = "black" strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Add Product</Text>
-      </View>
-
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.inputContainerView}>
           <View style={{ flexDirection: "column" }}>

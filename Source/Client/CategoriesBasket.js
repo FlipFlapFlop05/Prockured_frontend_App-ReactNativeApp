@@ -8,7 +8,34 @@ export default function CategoriesBasket() {
   const navigation = useNavigation();
   const route = useRoute();
   const { cart, data } = route.params;
-
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Order Summary',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center'
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+            <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
   const openWhatsApp = (phoneNumber, message) => {
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
     Linking.openURL(url)
@@ -66,17 +93,12 @@ export default function CategoriesBasket() {
   };
 
   const handleApproval = async() => {
-    openWhatsApp('7230093372', `${cartItems.map(item => `${item.prodName} - ${item.quantity} kg`).join('\n')}\nTotal: ₹${calculateTotal()}`);
+    openWhatsApp('8306148803', `${cartItems.map(item => `${item.prodName} - ${item.quantity} kg`).join('\n')}\nTotal: ₹${calculateTotal()}`);
     navigation.navigate("Approval Pending");
   }
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>&lt; Order Summary</Text>
-        </TouchableOpacity>
-      </View>
       <View style = {{backgroundColor: "white", padding: 20, borderRadius: 10, marginBottom: 20}}>
         <Text style={styles.orderTotal}>Order Total ₹ {calculateTotal()}</Text>
       </View>

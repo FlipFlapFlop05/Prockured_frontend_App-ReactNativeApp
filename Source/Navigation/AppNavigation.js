@@ -216,6 +216,7 @@ const AppNavigation = () => {
         <Stack.Screen name={'Chat Support'} component={ChatSupport} />
         <Stack.Screen name={'Order Tracking'} component={OrderTracking} />
         <Stack.Screen name={'Link Product'} component={LinkProduct} />
+        <Stack.Screen name={'Client Report'} component={Report} />
         <Stack.Screen
           name={'Specific Order Screen'}
           component={SpecificOrderScreen}
