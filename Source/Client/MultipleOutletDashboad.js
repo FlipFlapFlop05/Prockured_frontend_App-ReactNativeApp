@@ -1,8 +1,4 @@
-<<<<<<< HEAD
-import React, { useEffect, useState } from "react";
-=======
 import React, {useEffect, useLayoutEffect, useState} from 'react';
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
 import {
   View,
   Text,
@@ -22,19 +18,12 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
-<<<<<<< HEAD
-const { width, height } = Dimensions.get('window');
-=======
 const {width, height} = Dimensions.get('window');
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
 
 export default function MultipleOutletDashboard() {
   const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [clientId, setClientId] = useState(null);
-<<<<<<< HEAD
-  const [selectedOutlet, setSelectedOutlet] = useState(null);
-=======
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedOutlet, setSelectedOutlet] = useState(null);
 
@@ -65,7 +54,6 @@ export default function MultipleOutletDashboard() {
       ),
     });
   }, [navigation]);
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
 
   useEffect(() => {
     const fetchClientId = async () => {
@@ -86,13 +74,9 @@ export default function MultipleOutletDashboard() {
     const fetchData = async () => {
       if (clientId) {
         try {
-<<<<<<< HEAD
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`);
-=======
           const response = await axios.get(
             `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`,
           );
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
           setData(Object.values(response.data));
         } catch (error) {
           console.log(error);
@@ -100,14 +84,7 @@ export default function MultipleOutletDashboard() {
       }
     };
 
-<<<<<<< HEAD
-    fetchClientId();
-    if (clientId) {
-      fetchData();
-    }
-=======
     fetchData();
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
   }, [clientId]);
 
   const renderOutletItem = ({item}) => (
@@ -120,45 +97,6 @@ export default function MultipleOutletDashboard() {
           {item.city} {item.state} {item.country}
         </Text>
       </View>
-<<<<<<< HEAD
-      <TouchableOpacity onPress={() => setSelectedOutlet(item)}>
-        <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
-      </TouchableOpacity>
-
-      {selectedOutlet?.outletId === item.outletId && (
-        <Modal
-          transparent={true}
-          visible={true}
-          animationType="slide"
-          onRequestClose={() => setSelectedOutlet(null)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.title}>Choose an Option</Text>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => setSelectedOutlet(null)}>
-                <Text style={styles.buttonText}>Edit Details</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  setSelectedOutlet(null);
-                  navigation.navigate('Outlet Dashboard');
-                }}>
-                <Text style={styles.buttonText}>Dashboard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => setSelectedOutlet(null)}>
-                <Text style={styles.closeText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
-=======
       <TouchableOpacity
         onPress={() => {
           console.log('Selected Outlet:', item); // Debug log
@@ -168,20 +106,10 @@ export default function MultipleOutletDashboard() {
         }}>
         <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
       </TouchableOpacity>
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
     </View>
   );
 
   return (
-<<<<<<< HEAD
-    <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeftIcon size={25} color={"black"} strokeWidth={3} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Outlets</Text>
-=======
     <>
       <Modal
         transparent={true}
@@ -216,7 +144,6 @@ export default function MultipleOutletDashboard() {
               <Text style={styles.closeText}>Cancel</Text>
             </TouchableOpacity>
           </View>
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
         </View>
       </Modal>
       <SafeAreaView style={styles.safeArea}>
@@ -236,17 +163,6 @@ export default function MultipleOutletDashboard() {
 
           <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
 
-<<<<<<< HEAD
-        <FlatList
-          data={data}
-          renderItem={renderOutletItem}
-          keyExtractor={(item) => item.outletId}
-          numColumns={1}
-          contentContainerStyle={styles.flatListContent}
-        />
-      </ScrollView>
-    </SafeAreaView>
-=======
           <FlatList
             data={data}
             renderItem={renderOutletItem}
@@ -257,26 +173,17 @@ export default function MultipleOutletDashboard() {
         </ScrollView>
       </SafeAreaView>
     </>
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-<<<<<<< HEAD
-    backgroundColor: '#F8F9FE',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: 'lightgray',
-=======
     backgroundColor: '#f8f9fe',
   },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fe',
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
   },
   header: {
     flexDirection: 'row',

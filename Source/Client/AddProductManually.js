@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -47,33 +47,33 @@ const AddProductManually = () => {
   }, []);
 
   useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: true,
-        headerTitle: 'Add Product',
-        headerStyle: {
-          backgroundColor: '#f8f8f8',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
-          fontFamily: 'Montserrat',
-          justifyContent: 'center'
-          // color: 'white',
-        },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{paddingHorizontal: 13}}>
-              <ChevronLeftIcon size={28} color="#333" />
-          </TouchableOpacity>
-        ),
-      });
-    }, [navigation]);
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Add Product',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
   useEffect(() => {
     if (clientPhoneNumber) {
       fetchSuppliers();

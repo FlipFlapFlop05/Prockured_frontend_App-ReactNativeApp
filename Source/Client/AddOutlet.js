@@ -55,33 +55,33 @@ export default function AddOutlet() {
   }, [navigation]);
 
   useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: true,
-        headerTitle: 'Add New Outlet',
-        headerStyle: {
-          backgroundColor: '#f8f8f8',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
-          fontFamily: 'Montserrat',
-          justifyContent: 'center'
-          // color: 'white',
-        },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{paddingHorizontal: 13}}>
-              <ChevronLeftIcon size={28} color="#333" />
-          </TouchableOpacity>
-        ),
-      });
-    }, [navigation]);
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Add New Outlet',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
@@ -145,66 +145,6 @@ export default function AddOutlet() {
   };
 
   return (
-<<<<<<< HEAD
-    <ScrollView style={styles.container}>
-      <ValidatedInput
-        label="Name"
-        placeholder="Enter name"
-        value={form.name}
-        onChangeText={value => handleChange('name', value)}
-        validationFunc={validateRequired}
-        errorMessage="Name is required"
-      />
-      <ValidatedInput
-        label="Address"
-        placeholder="Enter address"
-        value={form.address}
-        onChangeText={value => handleChange('address', value)}
-        validationFunc={validateRequired}
-        errorMessage="Address is required"
-      />
-      <ValidatedInput
-        label="City"
-        placeholder="Enter city"
-        value={form.city}
-        onChangeText={value => handleChange('city', value)}
-        validationFunc={validateRequired}
-        errorMessage="City is required"
-      />
-      <ValidatedInput
-        label="Billing Address"
-        placeholder="Enter billing address"
-        value={form.billingAddress}
-        onChangeText={value => handleChange('billingAddress', value)}
-        validationFunc={validateRequired}
-        errorMessage="Billing address is required"
-      />
-      <ValidatedInput
-        label="GST"
-        placeholder="Enter GST number"
-        keyboardType="numeric"
-        value={form.GST}
-        onChangeText={value => handleChange('GST', value)}
-        validationFunc={validateRequired}
-        errorMessage="GST number is required"
-      />
-      <ValidatedInput
-        label="State"
-        placeholder="Enter state"
-        value={form.state}
-        onChangeText={value => handleChange('state', value)}
-        validationFunc={validateRequired}
-        errorMessage="State is required"
-      />
-      <ValidatedInput
-        label="Country"
-        placeholder="Enter country"
-        value={form.country}
-        onChangeText={value => handleChange('country', value)}
-        validationFunc={validateRequired}
-        errorMessage="Country is required"
-      />
-=======
     <>
       <View style={styles.AddOutletHeader}>
         <Text style={styles.AddOutletHeaderText}>Add New Outlet</Text>
@@ -257,7 +197,6 @@ export default function AddOutlet() {
             Billing address same as shipping address
           </Text>
         </View>
->>>>>>> 397e53f02579c3e3098cc265328f040c0cbd8f47
 
         <ValidatedInput
           label="Billing Address"
