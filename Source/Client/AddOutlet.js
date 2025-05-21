@@ -146,7 +146,68 @@ export default function AddOutlet() {
   };
 
   return (
+<<<<<<< Updated upstream
     <>
+=======
+    <ScrollView style={styles.container}>
+      <ValidatedInput
+        label="Name"
+        placeholder="Enter name"
+        value={form.name}
+        onChangeText={value => handleChange('name', value)}
+        validationFunc={validateRequired}
+        errorMessage="Name is required"
+      />
+      <ValidatedInput
+        label="Address"
+        placeholder="Enter address"
+        value={form.address}
+        onChangeText={value => handleChange('address', value)}
+        validationFunc={validateRequired}
+        errorMessage="Address is required"
+      />
+      <ValidatedInput
+        label="City"
+        placeholder="Enter city"
+        value={form.city}
+        onChangeText={value => handleChange('city', value)}
+        validationFunc={validateRequired}
+        errorMessage="City is required"
+      />
+      <ValidatedInput
+        label="Billing Address"
+        placeholder="Enter billing address"
+        value={form.billingAddress}
+        onChangeText={value => handleChange('billingAddress', value)}
+        validationFunc={validateRequired}
+        errorMessage="Billing address is required"
+      />
+      <ValidatedInput
+        label="GST"
+        placeholder="Enter GST number"
+        keyboardType="numeric"
+        value={form.GST}
+        onChangeText={value => handleChange('GST', value)}
+        validationFunc={validateRequired}
+        errorMessage="GST number is required"
+      />
+      <ValidatedInput
+        label="State"
+        placeholder="Enter state"
+        value={form.state}
+        onChangeText={value => handleChange('state', value)}
+        validationFunc={validateRequired}
+        errorMessage="State is required"
+      />
+      <ValidatedInput
+        label="Country"
+        placeholder="Enter country"
+        value={form.country}
+        onChangeText={value => handleChange('country', value)}
+        validationFunc={validateRequired}
+        errorMessage="Country is required"
+      />
+>>>>>>> Stashed changes
       <View style={styles.AddOutletHeader}>
         <Text style={styles.AddOutletHeaderText}>Add New Outlet</Text>
       </View>
@@ -198,7 +259,10 @@ export default function AddOutlet() {
             Billing address same as shipping address
           </Text>
         </View>
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
         <ValidatedInput
           label="Billing Address"
           placeholder="Enter billing address"
@@ -252,7 +316,7 @@ export default function AddOutlet() {
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </>
+    </ScrollView>
   );
 }
 
