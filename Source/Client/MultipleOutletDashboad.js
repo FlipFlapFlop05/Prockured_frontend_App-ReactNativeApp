@@ -25,10 +25,7 @@ export default function MultipleOutletDashboard() {
   const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [clientId, setClientId] = useState(null);
-<<<<<<< Updated upstream
-=======
   const [selectedOutlet, setSelectedOutlet] = useState(null);
->>>>>>> Stashed changes
   const [modalVisible, setModalVisible] = useState(false);
 
   useLayoutEffect(() => {
@@ -88,12 +85,9 @@ export default function MultipleOutletDashboard() {
       }
     };
 
-<<<<<<< Updated upstream
-=======
     if (clientId) {
       fetchData();
     }
->>>>>>> Stashed changes
     fetchData();
   }, [clientId]);
 
@@ -107,8 +101,6 @@ export default function MultipleOutletDashboard() {
           {item.city} {item.state} {item.country}
         </Text>
       </View>
-<<<<<<< Updated upstream
-=======
       <TouchableOpacity onPress={() => setSelectedOutlet(item)}>
         <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
       </TouchableOpacity>
@@ -146,11 +138,9 @@ export default function MultipleOutletDashboard() {
           </View>
         </Modal>
       )}
->>>>>>> Stashed changes
       <TouchableOpacity
         onPress={() => {
           console.log('Selected Outlet:', item); // Debug log
-
           setSelectedOutlet(item);
           setModalVisible(true);
         }}>
@@ -160,9 +150,6 @@ export default function MultipleOutletDashboard() {
   );
 
   return (
-<<<<<<< Updated upstream
-    <>
-=======
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
         <View style={styles.header}>
@@ -171,7 +158,6 @@ export default function MultipleOutletDashboard() {
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Outlets</Text>
         </View>
->>>>>>> Stashed changes
       <Modal
         transparent={true}
         visible={modalVisible}
@@ -223,51 +209,35 @@ export default function MultipleOutletDashboard() {
           </TouchableOpacity>
 
           <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
-
-<<<<<<< Updated upstream
-=======
-        <FlatList
-          data={data}
-          renderItem={renderOutletItem}
-          keyExtractor={(item) => item.outletId}
-          numColumns={1}
-          contentContainerStyle={styles.flatListContent}
-        />
-      </ScrollView>
-    </SafeAreaView>
->>>>>>> Stashed changes
           <FlatList
             data={data}
             renderItem={renderOutletItem}
-            keyExtractor={item => item.outletId}
+            keyExtractor={(item) => item.outletId}
             numColumns={1}
             contentContainerStyle={styles.flatListContent}
           />
         </ScrollView>
       </SafeAreaView>
-<<<<<<< Updated upstream
-    </>
-=======
->>>>>>> Stashed changes
+      <FlatList
+        data={data}
+        renderItem={renderOutletItem}
+        keyExtractor={item => item.outletId}
+        numColumns={1}
+        contentContainerStyle={styles.flatListContent}
+      />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-<<<<<<< Updated upstream
     backgroundColor: '#f8f9fe',
   },
   container: {
     flex: 1,
     backgroundColor: '#f8f9fe',
-=======
-    backgroundColor: '#F8F9FE',
-  },
-  container: {
-    flex: 1,
-    backgroundColor: 'lightgray',
->>>>>>> Stashed changes
   },
   header: {
     flexDirection: 'row',

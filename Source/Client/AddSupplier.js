@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useState, useLayoutEffect} from 'react';
 import {
   View,
   Text,
@@ -94,6 +94,15 @@ export default function AddSupplier() {
     }
 
     const url = `${Config.API_BASE_URL}/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
+    Alert.alert('URL', url);
+    Alert.alert('Phone Number', id);
+    Alert.alert('Supplier Phone Number', supplierPhoneNumber);
+    Alert.alert('Business Name', businessName);
+    Alert.alert('Email', email);
+    Alert.alert('Pincode', pincode);
+    Alert.alert('State', state);
+    Alert.alert('Country', country);
+    
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},
@@ -105,8 +114,14 @@ export default function AddSupplier() {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
       }
     } catch (error) {
-      Alert.alert('Error', `Failed to save profile: ${error.message}`);
-      console.error('Axios error:', error);
+        console.error('Axios Error:', JSON.stringify(error, null, 2));
+        if (error.response) {
+          Alert.alert('Error', `Server Error: ${error.response.status} - ${error.response.data}`);
+        } else if (error.request) {
+          Alert.alert('Error', 'No response received from server');
+        } else {
+          Alert.alert('Error', `Request setup error: ${error.message}`);
+        }
     }
   };
 

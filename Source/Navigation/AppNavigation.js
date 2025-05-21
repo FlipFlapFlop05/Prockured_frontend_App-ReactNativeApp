@@ -183,6 +183,11 @@ const AppNavigation = () => {
         {/*Vendor Main Screen*/}
         <Stack.Screen name={'Vendor App'} component={VendorMainApp} />
         {/*Client Stack*/}
+        <Stack.Screen
+          name={'Home'}
+          component={HomeScreen}
+          options={{headerShown: false}}
+        />
         <Stack.Screen name={'Add Supplier'} component={AddSupplier} />
         <Stack.Screen name={'Search Bar'} component={SearchBar} />
         <Stack.Screen
