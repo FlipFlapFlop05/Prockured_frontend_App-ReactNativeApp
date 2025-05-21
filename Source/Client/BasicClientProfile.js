@@ -13,6 +13,7 @@ import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
+import Config from 'react-native-config';
 
 const {width} = Dimensions.get('window');
 const imageSize = width * 0.25;
@@ -100,7 +101,7 @@ export default function BasicClientProfile() {
       shippingAddress,
     } = form;
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/createClient/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
+    const url = `${Config.API_BASE_URL}/createClient/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
 
     try {
       const response = await axios.get(url, {

@@ -14,6 +14,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
+import Config from 'react-native-config';
 
 const {width, height} = Dimensions.get('window');
 
@@ -43,33 +44,33 @@ export default function AddSupplier() {
     fetchPhoneNumber();
   }, []);
   useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: true,
-        headerTitle: 'Add Supplier',
-        headerStyle: {
-          backgroundColor: '#f8f8f8',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
-          fontFamily: 'Montserrat',
-          justifyContent: 'center'
-          // color: 'white',
-        },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{paddingHorizontal: 13}}>
-              <ChevronLeftIcon size={28} color="#333" />
-          </TouchableOpacity>
-        ),
-      });
-    }, [navigation]);
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Add Supplier',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
   const handleChange = (field, value) => {
     setForm({...form, [field]: value});
   };
@@ -92,7 +93,7 @@ export default function AddSupplier() {
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
+    const url = `${Config.API_BASE_URL}/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},
@@ -112,7 +113,6 @@ export default function AddSupplier() {
   return (
     <ScrollView style={styles.container}>
       {/* Header */}
-
 
       <View style={styles.linkProductsView}>
         <Image

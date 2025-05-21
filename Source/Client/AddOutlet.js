@@ -12,6 +12,7 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
+import Config from 'react-native-config';
 
 export default function AddOutlet() {
   const navigation = useNavigation();
@@ -125,7 +126,7 @@ export default function AddOutlet() {
     }
 
     const outletId = Math.floor(Math.random() * 100000);
-    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
+    const url = `${Config.API_BASE_URL}/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
 
     try {
       const response = await axios.get(url, {

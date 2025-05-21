@@ -18,6 +18,7 @@ import {
   ChevronLeftIcon,
   MagnifyingGlassIcon,
 } from 'react-native-heroicons/outline';
+import Config from 'react-native-config';
 
 const {width, height} = Dimensions.get('window');
 
@@ -78,7 +79,7 @@ export default function Catalogue() {
       if (phoneNumer) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${phoneNumer}`,
+            `${Config.API_BASE_URL}/getCatalogue/${phoneNumer}`,
           );
           const dataArray = Object.values(response.data);
           console.log(dataArray);

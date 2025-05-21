@@ -17,6 +17,7 @@ import axios from 'axios';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
 import {categories} from '../Constant/constant';
 import ValidatedInput from '../components/Inputs/ValidatedInput'; // Make sure this path is correct
+import Config from 'react-native-config';
 
 const {width: screenWidth, height} = Dimensions.get('window');
 
@@ -94,9 +95,7 @@ const AddProductManually = () => {
   const fetchSuppliers = async () => {
     if (clientPhoneNumber) {
       axios
-        .get(
-          `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
-        )
+        .get(`${Config.API_BASE_URL}/getSupplier/${clientPhoneNumber}`)
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);
@@ -151,7 +150,7 @@ const AddProductManually = () => {
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
+    const url = `${Config.API_BASE_URL}/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
 
     try {
       const response = await axios.get(url, {

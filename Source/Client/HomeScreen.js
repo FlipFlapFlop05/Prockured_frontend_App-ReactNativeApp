@@ -25,6 +25,7 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import GenericVectorIcon from '../components/GenericVectorIcon';
+import Config from 'react-native-config';
 
 const {width, height} = Dimensions.get('window');
 
@@ -58,7 +59,7 @@ export default function HomeScreen() {
       if (clientPhoneNumber) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+            `${Config.API_BASE_URL}/getSupplier/${clientPhoneNumber}`,
           );
           const dataArray = Object.values(response.data);
           setData(dataArray);

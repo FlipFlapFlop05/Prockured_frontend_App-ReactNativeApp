@@ -19,7 +19,7 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {Divider} from 'react-native-elements';
-//import useFetchApi from '../../hooks/useFetchApi';
+import Config from 'react-native-config';
 
 const {width: screenWidth} = Dimensions.get('window');
 
@@ -40,14 +40,6 @@ export default function ClientProfile() {
   const [businessName, setBusinessName] = useState('');
   const [email, setEmail] = useState('');
   const [isSameAddress, setIsSameAddress] = useState(false);
-
-  const [getProfileDataResponse, getProfileDataHandler] = useFetchApi(
-    {},
-    response => {
-      return response;
-    },
-    error => {},
-  );
 
   useEffect(() => {
     const fetchClientData = async () => {
@@ -80,12 +72,8 @@ export default function ClientProfile() {
 
         if (storedPhoneNumber) {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedPhoneNumber}`,
+            `${Config.API_BASE_URL}/getClient/${storedPhoneNumber}`,
           );
-          // getProfileDataHandler({
-          //   url: `/getClient/${storedPhoneNumber}`,
-          //   method: 'GET',
-          // });
 
           setData(response.data);
           setName(response.data.Name);
@@ -105,7 +93,6 @@ export default function ClientProfile() {
 
     fetchClientData();
   }, []);
-  console.log('Response:', getProfileDataResponse);
 
   const toggleSameAddress = () => {
     const newValue = !isSameAddress;
@@ -148,7 +135,7 @@ export default function ClientProfile() {
     try {
       // Update API
       await axios.get(
-        `https://api-v7quhc5aza-uc.a.run.app/createClient/${userName}/${userBusinessName}/${userEmail}/${userPincode}/${userState}/${userCountry}/${userGSTNumber}/${userPhoneNumber}/${userBillingAddress}/${userShippingAddress}`,
+        `${Config.API_BASE_URL}/${userName}/${userBusinessName}/${userEmail}/${userPincode}/${userState}/${userCountry}/${userGSTNumber}/${userPhoneNumber}/${userBillingAddress}/${userShippingAddress}`,
       );
 
       Alert.alert('Success', 'Profile updated successfully!');
@@ -191,6 +178,7 @@ export default function ClientProfile() {
   //     Alert.alert('Error', 'Failed to update profile.');
   //   }
   // };
+  console.log(Config.API_BASE_URL);
 
   return (
     <ScrollView style={styles.container}>

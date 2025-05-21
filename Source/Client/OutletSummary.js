@@ -57,17 +57,26 @@ const OutletSummary = () => {
       <Text style={styles.sectionTitle}>Order Summary</Text>
 
       {groupedItems.map((group, idx) => (
-        <View key={idx} style={styles.groupCard}>
-          <View style={styles.groupHeader}>
+        <>
+          <View
+            style={{
+              display: 'flex',
+              flexDirection: 'row',
+              justifyContent: 'space-between',
+              marginVertical: 15,
+              paddingHorizontal: 4,
+            }}>
             <Text style={styles.groupTitle}>{group.category}</Text>
             <Text style={styles.vendorName}>{group.vendor}</Text>
           </View>
-          <FlatList
-            data={group.items}
-            keyExtractor={(_, index) => index.toString()}
-            renderItem={renderItem}
-          />
-        </View>
+          <View key={idx} style={styles.groupCard}>
+            <FlatList
+              data={group.items}
+              keyExtractor={(_, index) => index.toString()}
+              renderItem={renderItem}
+            />
+          </View>
+        </>
       ))}
 
       <Text style={styles.total}>Order Total ₹ {total}</Text>
@@ -108,16 +117,21 @@ const styles = StyleSheet.create({
   },
   groupTitle: {
     fontWeight: 'bold',
-    color: '#16A34A',
+    color: '#76B117',
+    fontFamily: 'OpenSans',
+    fontSize: 14,
   },
   vendorName: {
     fontWeight: 'bold',
-    color: '#0E7490',
+    color: '#76B117',
+    fontFamily: 'OpenSans',
+    fontSize: 14,
   },
   itemRow: {
     flexDirection: 'row',
     alignItems: 'center',
     marginBottom: 12,
+    paddingVertical: 8,
   },
   itemImage: {
     width: 42,
@@ -130,17 +144,20 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#4B5563',
+    fontWeight: '400',
+    color: '#76B117',
+    fontFamily: 'OpenSans',
   },
   itemQuantity: {
     fontSize: 12,
     color: '#9CA3AF',
+    marginTop: 8,
   },
   itemPrice: {
-    fontWeight: 'bold',
-    color: '#111827',
+    // fontWeight: 'bold',
+    color: '#2C3E50',
     fontSize: 14,
+    fontFamily: 'OpenSans',
   },
   total: {
     textAlign: 'center',

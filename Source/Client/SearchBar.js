@@ -1,16 +1,27 @@
-import React, { useEffect, useState } from 'react';
-import {View, Text, TextInput, TouchableOpacity, Image, StyleSheet, FlatList, Modal, Dimensions} from 'react-native';
-import { MagnifyingGlassIcon, QuestionMarkCircleIcon } from 'react-native-heroicons/outline';
-import { BellIcon } from 'react-native-heroicons/solid';
+import React, {useEffect, useState} from 'react';
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  Image,
+  StyleSheet,
+  FlatList,
+  Modal,
+  Dimensions,
+} from 'react-native';
+import {
+  MagnifyingGlassIcon,
+  QuestionMarkCircleIcon,
+} from 'react-native-heroicons/outline';
+import {BellIcon} from 'react-native-heroicons/solid';
 import axios from 'axios';
-import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import {useNavigation} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {worksData} from '../Constant/constant';
+import Config from 'react-native-config';
 
-
-
-const { width } = Dimensions.get('window');
-
+const {width} = Dimensions.get('window');
 
 export default function SearchBar() {
   const navigation = useNavigation();
@@ -35,7 +46,9 @@ export default function SearchBar() {
     const fetchData = async () => {
       if (clientId) {
         try {
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientId}`);
+          const response = await axios.get(
+            `${Config.API_BASE_URL}/getSupplier/${clientId}`,
+          );
           const dataArray = Object.values(response.data);
           setData(dataArray);
         } catch (error) {
@@ -51,7 +64,7 @@ export default function SearchBar() {
   useEffect(() => {
     if (searchTerm) {
       const results = data.filter(item =>
-        item.businessName.toLowerCase().includes(searchTerm.toLowerCase())
+        item.businessName.toLowerCase().includes(searchTerm.toLowerCase()),
       );
       setFilteredData(results);
     } else {
@@ -59,9 +72,17 @@ export default function SearchBar() {
     }
   }, [searchTerm, data]);
 
-  const renderWorkItemModal = ({ item }) => (
-    <View style={{flexDirection: 'column', height: width* 0.45, alignItems: 'center'}}>
-      <Image source={item.image} style={{width: width* 0.4, height: width* 0.3}} />
+  const renderWorkItemModal = ({item}) => (
+    <View
+      style={{
+        flexDirection: 'column',
+        height: width * 0.45,
+        alignItems: 'center',
+      }}>
+      <Image
+        source={item.image}
+        style={{width: width * 0.4, height: width * 0.3}}
+      />
       <Text style={styles.workTitle}>{item.title}</Text>
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
@@ -70,7 +91,8 @@ export default function SearchBar() {
   return (
     <View style={styles.container}>
       <View style={styles.headerIconView}>
-        <TouchableOpacity onPress={() => navigation.navigate('Notification And Search')}>
+        <TouchableOpacity
+          onPress={() => navigation.navigate('Notification And Search')}>
           <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
@@ -82,30 +104,34 @@ export default function SearchBar() {
         animationType="slide"
         transparent={true}
         visible={isWorkDataVisible}
-        onRequestClose={() => setWorkDataVisible(!isWorkDataVisible)}
-      >
+        onRequestClose={() => setWorkDataVisible(!isWorkDataVisible)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <FlatList
               data={worksData}
               renderItem={renderWorkItemModal}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.flatListContent}
             />
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setWorkDataVisible(!isWorkDataVisible)}>
-              <Text style={styles.modalCloseButtonText}>
-                Close
-              </Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setWorkDataVisible(!isWorkDataVisible)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
       <View style={styles.searchBarView}>
-        <MagnifyingGlassIcon size={20} color={'black'} strokeWidth={3} style={styles.searchBarIcon} />
+        <MagnifyingGlassIcon
+          size={20}
+          color={'black'}
+          strokeWidth={3}
+          style={styles.searchBarIcon}
+        />
         <TextInput
           placeholder={'Search any Supplier'}
           style={styles.searchBarTextInput}
-          placeholderTextColor={"black"}
+          placeholderTextColor={'black'}
           value={searchTerm}
           onChangeText={setSearchTerm}
           keyboardType={'default'}
@@ -117,8 +143,8 @@ export default function SearchBar() {
           <>
             <FlatList
               data={searchTerm ? filteredData : data}
-              keyExtractor={(item) => item.supplierId}
-              renderItem={({ item }) => (
+              keyExtractor={item => item.supplierId}
+              renderItem={({item}) => (
                 <View>
                   <View style={styles.itemCard}>
                     <View style={styles.itemCardDetails}>
@@ -127,9 +153,7 @@ export default function SearchBar() {
                         style={styles.itemImage}
                       />
                       <View style={styles.itemDetailsView}>
-                        <Text style={styles.itemName}>
-                          {item.businessName}
-                        </Text>
+                        <Text style={styles.itemName}>{item.businessName}</Text>
                         <Text>{item.email}</Text>
                         <Text>{item.country}</Text>
                       </View>
@@ -145,8 +169,7 @@ export default function SearchBar() {
             />
             <TouchableOpacity
               style={styles.AddSupplierTouchableOpacity}
-              onPress={() => navigation.navigate("Add Supplier")}
-            >
+              onPress={() => navigation.navigate('Add Supplier')}>
               <Text style={styles.AddSupplierText}>+ Add Supplier</Text>
             </TouchableOpacity>
           </>
@@ -158,8 +181,7 @@ export default function SearchBar() {
             />
             <TouchableOpacity
               style={styles.addSupplierTouchableOpacity}
-              onPress={() => navigation.navigate("Add Supplier")}
-            >
+              onPress={() => navigation.navigate('Add Supplier')}>
               <Text style={styles.addSupplierText}>+ Add Supplier</Text>
             </TouchableOpacity>
           </View>
@@ -172,67 +194,67 @@ export default function SearchBar() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    display: "flex",
-    backgroundColor: 'white'
+    display: 'flex',
+    backgroundColor: 'white',
   },
   headerIconView: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     padding: 10,
-    paddingTop: 40
+    paddingTop: 40,
   },
   searchBarView: {
     backgroundColor: 'gainsboro',
-    width: "90%",
-    alignSelf: "center",
+    width: '90%',
+    alignSelf: 'center',
     borderRadius: 20,
-    flexDirection: "row",
-    alignItems: "center"
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   searchBarIcon: {
-    marginLeft: 20
+    marginLeft: 20,
   },
   searchBarTextInput: {
     marginLeft: 10,
-    width: "70%",
-    color: "black"
+    width: '70%',
+    color: 'black',
   },
   itemCard: {
-    flexDirection: "row",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     marginTop: 20,
     padding: 20,
     borderWidth: 2,
     borderColor: 'lightgray',
-    width: "95%",
-    alignSelf: "center",
-    borderRadius: 20
+    width: '95%',
+    alignSelf: 'center',
+    borderRadius: 20,
   },
   itemCardDetails: {
-    flexDirection: "row"
+    flexDirection: 'row',
   },
   itemImage: {
     width: 80,
     height: 80,
-    borderRadius: 20
+    borderRadius: 20,
   },
   itemDetailsView: {
-    flexDirection: "column",
-    justifyContent: "space-evenly"
+    flexDirection: 'column',
+    justifyContent: 'space-evenly',
   },
   itemName: {
-    color: "black",
+    color: 'black',
     fontWeight: 'bold',
-    fontSize: 18
+    fontSize: 18,
   },
   reviewTouchableOpacity: {
-    flexDirection: "column",
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center"
+    flexDirection: 'column',
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   reviewText: {
-    color: "green"
+    color: 'green',
   },
   modalOverlay: {
     flex: 1,
@@ -284,50 +306,50 @@ const styles = StyleSheet.create({
     marginTop: 5,
   },
   addSupplierTouchableOpacity: {
-    backgroundColor: "#76B117",
+    backgroundColor: '#76B117',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 20,
     width: 320,
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
   },
   addSupplierText: {
     fontSize: 18,
-    color: "#fff",
+    color: '#fff',
     fontWeight: 700,
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    font: "Montserrat"
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    font: 'Montserrat',
   },
   addSupplierImage: {
     width: 320,
     height: 320,
-    alignSelf: "center",
-    justifyContent: "center",
-    alignItems: "center",
+    alignSelf: 'center',
+    justifyContent: 'center',
+    alignItems: 'center',
     marginTop: 100,
-    borderRadius: 50
+    borderRadius: 50,
   },
   AddSupplierTouchableOpacity: {
-    backgroundColor: "#76B117",
+    backgroundColor: '#76B117',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 20,
     width: 320,
-    alignSelf: "center",
-    alignItems: "center",
-    justifyContent: "center",
-    marginTop: 30
+    alignSelf: 'center',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 30,
   },
   AddSupplierText: {
     fontSize: 18,
-    color: "#fff",
+    color: '#fff',
     fontWeight: 700,
-    alignSelf: "center",
-    font: "Montserrat"
+    alignSelf: 'center',
+    font: 'Montserrat',
   },
-})
+});

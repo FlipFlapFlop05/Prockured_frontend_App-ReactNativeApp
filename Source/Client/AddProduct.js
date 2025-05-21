@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,61 +9,64 @@ import {
   Image,
   Modal,
   Alert,
-  FlatList, TextInput,
+  FlatList,
+  TextInput,
 } from 'react-native';
-import { useNavigation, useRoute } from "@react-navigation/native";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { ChevronLeftIcon } from 'react-native-heroicons/outline';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import {ChevronLeftIcon} from 'react-native-heroicons/outline';
+import Config from 'react-native-config';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 const AddProduct = () => {
   const route = useRoute();
-  const { category, subcategory, productName, productDesc, productImage } = route.params;
+  const {category, subcategory, productName, productDesc, productImage} =
+    route.params;
   const navigation = useNavigation();
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [suppliers, setSuppliers] = useState([]);
   const [selectedSupplier, setSelectedSupplier] = useState({
     supplierId: '',
-    supplierName: ''
+    supplierName: '',
   });
   const [modalVisible, setModalVisible] = useState(false);
 
-  let prodPrice = "200";
-  let prodUnit = "kg";
+  let prodPrice = '200';
+  let prodUnit = 'kg';
 
   useEffect(() => {
     fetchPhoneNumber();
   }, []);
   useLayoutEffect(() => {
-      navigation.setOptions({
-        headerShown: true,
-        headerTitle: 'Add Product',
-        headerStyle: {
-          backgroundColor: '#f8f8f8',
-          elevation: 0,
-          shadowOpacity: 0,
-          borderBottomWidth: 0,
-          justifyContent: 'center',
-          alignItems: 'center',
-        },
-        headerTitleStyle: {
-          fontWeight: 'bold',
-          fontSize: 20,
-          fontFamily: 'Montserrat',
-          justifyContent: 'center'
-          // color: 'white',
-        },
-        headerLeft: () => (
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={{paddingHorizontal: 13}}>
-              <ChevronLeftIcon size={28} color="#333" />
-          </TouchableOpacity>
-        ),
-      });
-    }, [navigation]);
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Add Product',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
   useEffect(() => {
     if (phoneNumber) {
@@ -85,32 +88,36 @@ const AddProduct = () => {
   const fetchSuppliers = async () => {
     if (phoneNumber) {
       axios
-        .get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${phoneNumber}`)
+        .get(`${Config.API_BASE_URL}getSupplier/${phoneNumber}`)
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);
         })
         .catch(error => {
-          Alert.alert("Error", "Failed to fetch suppliers");
+          Alert.alert('Error', 'Failed to fetch suppliers');
         });
     }
   };
 
-  const handleSelectSupplier = (supplier) => {
+  const handleSelectSupplier = supplier => {
     setSelectedSupplier({
       supplierId: supplier.supplierId,
-      businessName: supplier.businessName
+      businessName: supplier.businessName,
     });
     setModalVisible(false);
   };
 
-  const cleanData = (productName) => {
-    if (typeof productName === "string") {
-      return productName.replace(/\s+/g, " ").trim().replace(/,+/g, ",");
-    } else if (typeof productNAme === "object") {
-      return JSON.parse(JSON.stringify(productName, (key, value) =>
-        typeof value === "string" ? value.replace(/\s+/g, " ").trim().replace(/,+/g, ",") : value
-      ));
+  const cleanData = productName => {
+    if (typeof productName === 'string') {
+      return productName.replace(/\s+/g, ' ').trim().replace(/,+/g, ',');
+    } else if (typeof productNAme === 'object') {
+      return JSON.parse(
+        JSON.stringify(productName, (key, value) =>
+          typeof value === 'string'
+            ? value.replace(/\s+/g, ' ').trim().replace(/,+/g, ',')
+            : value,
+        ),
+      );
     }
     return productName;
   };
@@ -118,8 +125,12 @@ const AddProduct = () => {
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
     const PhoneNumber = phoneNumber;
-    const { supplierId, businessName } = selectedSupplier;
-    if (!selectedSupplier || !selectedSupplier.supplierId || !selectedSupplier.businessName) {
+    const {supplierId, businessName} = selectedSupplier;
+    if (
+      !selectedSupplier ||
+      !selectedSupplier.supplierId ||
+      !selectedSupplier.businessName
+    ) {
       Alert.alert('Error', 'Please select a valid supplier!');
       return;
     }
@@ -128,26 +139,24 @@ const AddProduct = () => {
       return;
     }
 
-
     try {
-      const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${prodUnit}/${prodPrice}/${category}/${supplierId}/${businessName}`;
-
+      const url = `${Config.API_BASE_URL}/addProductManually/${PhoneNumber}/${productId}/${productName}/${prodUnit}/${prodPrice}/${category}/${supplierId}/${businessName}`;
 
       const response = await axios.get(url, {
-        headers: { 'Content-Type': 'application/json' }
+        headers: {'Content-Type': 'application/json'},
       });
 
-      console.log("API Response:", response);
+      console.log('API Response:', response);
 
       if (response.data === 'Ok' || response.status === 200) {
         Alert.alert('Success', 'Product added successfully!');
-        navigation.navigate("Main", { screen: "Home" });
+        navigation.navigate('Main', {screen: 'Home'});
       } else {
         Alert.alert('Error', response.data.message || 'Failed to add product');
       }
     } catch (error) {
-      console.log("Error adding product:", error);
-      console.log("API Error Response:", error.response);
+      console.log('Error adding product:', error);
+      console.log('API Error Response:', error.response);
       Alert.alert('Error', `Failed to add product: ${error.message}`);
     }
   };
@@ -156,46 +165,67 @@ const AddProduct = () => {
     <View style={styles.container}>
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.inputContainerView}>
-          <View style={{ flexDirection: "column" }}>
+          <View style={{flexDirection: 'column'}}>
             <Text style={styles.inputLabel}>Product Name</Text>
-            <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{productName}</Text>
+            <Text
+              style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+              {productName}
+            </Text>
           </View>
-          <Image source={require('../Images/ProckuredImage.jpg')} style={styles.productImage} />
+          <Image
+            source={require('../Images/ProckuredImage.jpg')}
+            style={styles.productImage}
+          />
         </View>
 
         <View style={styles.inputContainerView}>
-          <View style={{ flexDirection: "column" }}>
+          <View style={{flexDirection: 'column'}}>
             <Text style={styles.inputLabel}>Product Description</Text>
-            <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{productDesc}</Text>
+            <Text
+              style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+              {productDesc}
+            </Text>
           </View>
         </View>
         <View style={styles.row}>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>Unit</Text>
-            <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{prodUnit}</Text>
+            <Text
+              style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+              {prodUnit}
+            </Text>
           </View>
         </View>
 
         <View style={styles.row}>
           <View style={styles.inputContainer}>
             <Text style={styles.inputLabel}>My Price</Text>
-            <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{prodPrice}</Text>
+            <Text
+              style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+              {prodPrice}
+            </Text>
           </View>
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Sub Category</Text>
-          <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{subcategory}</Text>
+          <Text style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+            {subcategory}
+          </Text>
         </View>
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Category</Text>
-          <Text style={{fontStyle: "normal", fontWeight: "bold", fontSize: 15}}>{category}</Text>
+          <Text style={{fontStyle: 'normal', fontWeight: 'bold', fontSize: 15}}>
+            {category}
+          </Text>
         </View>
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Supplier *</Text>
-          <TouchableOpacity style={styles.selectButton} onPress={() => setModalVisible(true)}>
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => setModalVisible(true)}>
             <Text style={styles.selectButtonText}>
-              {selectedSupplier.businessName || "Select Supplier"}
+              {selectedSupplier.businessName || 'Select Supplier'}
             </Text>
           </TouchableOpacity>
         </View>
@@ -214,11 +244,13 @@ const AddProduct = () => {
               <View style={styles.modalContent}>
                 <FlatList
                   data={suppliers}
-                  keyExtractor={(item) => item.supplierId.toString()}
-                  renderItem={({ item }) => (
-                    <TouchableOpacity style={styles.modalItem} onPress={() => handleSelectSupplier(item)}>
+                  keyExtractor={item => item.supplierId.toString()}
+                  renderItem={({item}) => (
+                    <TouchableOpacity
+                      style={styles.modalItem}
+                      onPress={() => handleSelectSupplier(item)}>
                       <Image
-                        source={require("../Images/ProckuredImage.jpg")}
+                        source={require('../Images/ProckuredImage.jpg')}
                         style={styles.modalImage}
                       />
                       <Text style={styles.modalText}>{item.businessName}</Text>
@@ -228,16 +260,15 @@ const AddProduct = () => {
               </View>
             </View>
           ) : (
-            <View style = {styles.modalBackdrop}>
+            <View style={styles.modalBackdrop}>
               <TouchableOpacity
                 style={styles.addSupplierButton}
-                onPress={() => navigation.navigate("Add Supplier")}>
+                onPress={() => navigation.navigate('Add Supplier')}>
                 <Text style={styles.addSupplierButtonText}>Add Supplier</Text>
               </TouchableOpacity>
             </View>
           )}
         </Modal>
-
       </ScrollView>
     </View>
   );
@@ -251,7 +282,7 @@ const styles = StyleSheet.create({
   productImage: {
     width: 70,
     height: 70,
-    borderRadius: 20
+    borderRadius: 20,
   },
   header: {
     padding: 15,
@@ -262,15 +293,15 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginLeft: 10
+    marginLeft: 10,
   },
   content: {
     padding: 20,
   },
   inputContainerView: {
     marginBottom: 15,
-    flexDirection: "row",
-    justifyContent: "space-between"
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
   inputContainer: {
     marginBottom: 15,
@@ -278,16 +309,16 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 16,
     marginBottom: 5,
-    color: "#76B117",
-    fontWeight: "bold"
+    color: '#76B117',
+    fontWeight: 'bold',
   },
   input: {
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 10,
     padding: 10,
-    color: "black",
-    width: "100%",
+    color: 'black',
+    width: '100%',
   },
   row: {
     flexDirection: 'row',
@@ -310,7 +341,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    flexDirection: "row"
+    flexDirection: 'row',
   },
   modalImage: {
     width: 50,
@@ -318,7 +349,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalText: {
-    fontWeight: "bold",
+    fontWeight: 'bold',
     marginLeft: 5,
   },
   selectButton: {
@@ -348,10 +379,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'green',
     borderRadius: 20,
     alignItems: 'center',
-    justifyContent: "center",
+    justifyContent: 'center',
     alignSelf: 'center',
     height: 50,
-    width: "90%",
+    width: '90%',
   },
   addSupplierButtonText: {
     color: 'white',

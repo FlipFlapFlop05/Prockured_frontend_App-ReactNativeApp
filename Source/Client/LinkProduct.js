@@ -1,11 +1,26 @@
 import React, {useEffect, useState} from 'react';
-import {View, Text, StyleSheet, Dimensions, ScrollView, TouchableOpacity, Image, TextInput, Alert} from 'react-native';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Dimensions,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Alert,
+} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {useNavigation} from '@react-navigation/native';
-import {ChevronLeftIcon, PencilIcon, PlusIcon} from 'react-native-heroicons/outline';
+import {
+  ChevronLeftIcon,
+  PencilIcon,
+  PlusIcon,
+} from 'react-native-heroicons/outline';
+import Config from 'react-native-config';
 
-const { width: screenWidth } = Dimensions.get('window');
+const {width: screenWidth} = Dimensions.get('window');
 
 const LinkProduct = () => {
   const navigation = useNavigation();
@@ -28,7 +43,9 @@ const LinkProduct = () => {
     const fetchData = async () => {
       if (clientId) {
         try {
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${clientId}`);
+          const response = await axios.get(
+            `${Config.API_BASE_URL}/getCatalogue/${clientId}`,
+          );
           const dataArray = Object.values(response.data);
           setProducts(dataArray);
         } catch (error) {
@@ -41,9 +58,9 @@ const LinkProduct = () => {
     fetchData();
   }, [clientId]);
 
-  const handleProductSelect = (product) => {
+  const handleProductSelect = product => {
     if (selectedProducts.includes(product)) {
-      setSelectedProducts(selectedProducts.filter((p) => p !== product));
+      setSelectedProducts(selectedProducts.filter(p => p !== product));
     } else {
       setSelectedProducts([...selectedProducts, product]);
     }
@@ -57,11 +74,14 @@ const LinkProduct = () => {
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Your Catalog</Text>
         <View style={styles.headerButtons}>
-          <TouchableOpacity style={{alignItems: 'center', flexDirection: 'column'}}>
+          <TouchableOpacity
+            style={{alignItems: 'center', flexDirection: 'column'}}>
             <PencilIcon size={20} color={'black'} strokeWidth={2} />
             <Text style={styles.headerButton}>Edit</Text>
           </TouchableOpacity>
-          <TouchableOpacity onPress={() => navigation.navigate('Add Product Manually')} style={{alignItems: 'center', flexDirection: 'column'}}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Add Product Manually')}
+            style={{alignItems: 'center', flexDirection: 'column'}}>
             <PlusIcon size={20} color={'black'} strokeWidth={2} />
             <Text style={styles.headerButton}>Add</Text>
           </TouchableOpacity>
@@ -77,8 +97,6 @@ const LinkProduct = () => {
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
-
-
         {products.map((product, index) => (
           <View style={{flexDirection: 'column'}}>
             <View style={styles.categoryHeader}>
@@ -86,39 +104,50 @@ const LinkProduct = () => {
             </View>
             <View key={index} style={styles.productRow}>
               <View style={styles.productDetails}>
-                <View style={{ flexDirection: "row", alignItems: 'center' }}>
-                  <Image source={require('../Images/AddProduct.png')} style={styles.productImage} />
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Image
+                    source={require('../Images/AddProduct.png')}
+                    style={styles.productImage}
+                  />
                   <Text style={styles.productName}>{product.prodName}</Text>
                 </View>
                 <TouchableOpacity
-                  style={[styles.linkButton, selectedProducts.includes(product) && styles.linkButtonSelected]}
-                  onPress={() => handleProductSelect(product)}
-                >
+                  style={[
+                    styles.linkButton,
+                    selectedProducts.includes(product) &&
+                      styles.linkButtonSelected,
+                  ]}
+                  onPress={() => handleProductSelect(product)}>
                   <Text style={styles.linkButtonText}>
-                    {selectedProducts.includes(product) ? 'Unlink Product' : 'Link Product'}
+                    {selectedProducts.includes(product)
+                      ? 'Unlink Product'
+                      : 'Link Product'}
                   </Text>
                 </TouchableOpacity>
               </View>
 
-              <View style={{ flexDirection: "column", justifyContent: 'center' }}>
+              <View style={{flexDirection: 'column', justifyContent: 'center'}}>
                 <Text style={styles.productUnit}>{product.prodUnit}</Text>
                 <Text style={styles.productPrice}>₹{product.myPrice}</Text>
               </View>
 
-              <View style={{ flexDirection: "column", justifyContent: 'center' }}>
-                <Text style={{ color: "black" }}>
-                  Bulk Price/10Kg
+              <View style={{flexDirection: 'column', justifyContent: 'center'}}>
+                <Text style={{color: 'black'}}>Bulk Price/10Kg</Text>
+                <Text style={styles.productBulkPrice}>
+                  {product.myPrice * 100}
                 </Text>
-                <Text style={styles.productBulkPrice}>{product.myPrice * 100}</Text>
               </View>
-
             </View>
           </View>
         ))}
       </ScrollView>
 
-      <TouchableOpacity style={styles.linkSelectedButton} onPress={() => navigation.goBack()}>
-        <Text style={styles.linkSelectedButtonText}>Link Selected Products</Text>
+      <TouchableOpacity
+        style={styles.linkSelectedButton}
+        onPress={() => navigation.goBack()}>
+        <Text style={styles.linkSelectedButtonText}>
+          Link Selected Products
+        </Text>
       </TouchableOpacity>
     </View>
   );
@@ -162,7 +191,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 8,
     paddingLeft: 15,
-    color: 'black'
+    color: 'black',
   },
   content: {
     padding: 20,
@@ -180,7 +209,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
-    justifyContent: 'space-between'
+    justifyContent: 'space-between',
   },
   productImage: {
     width: 60,
@@ -189,8 +218,8 @@ const styles = StyleSheet.create({
   },
   productDetails: {
     flex: 1,
-    flexDirection: "column",
-    justifyContent: 'center'
+    flexDirection: 'column',
+    justifyContent: 'center',
   },
   productName: {
     fontSize: 18,
@@ -209,7 +238,7 @@ const styles = StyleSheet.create({
     color: '#666',
     marginRight: 10,
     alignItems: 'center',
-    alignSelf: 'center'
+    alignSelf: 'center',
   },
   linkButton: {
     backgroundColor: '#4CAF50',

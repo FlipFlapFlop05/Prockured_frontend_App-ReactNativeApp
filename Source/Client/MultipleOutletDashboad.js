@@ -17,6 +17,7 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
+import Config from 'react-native-config';
 
 const {width, height} = Dimensions.get('window');
 
@@ -75,7 +76,7 @@ export default function MultipleOutletDashboard() {
       if (clientId) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`,
+            `${Config.API_BASE_URL}/getOutlets/${clientId}`,
           );
           setData(Object.values(response.data));
         } catch (error) {
