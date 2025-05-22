@@ -73,7 +73,6 @@ export default function Catalogue() {
         console.log('Error Fetching Client ID: ', error);
       }
     };
-    console.log(phoneNumer);
 
     const fetchData = async () => {
       if (phoneNumer) {

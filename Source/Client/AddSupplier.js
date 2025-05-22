@@ -102,7 +102,7 @@ export default function AddSupplier() {
     Alert.alert('Pincode', pincode);
     Alert.alert('State', state);
     Alert.alert('Country', country);
-    
+
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},
@@ -114,14 +114,17 @@ export default function AddSupplier() {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
       }
     } catch (error) {
-        console.error('Axios Error:', JSON.stringify(error, null, 2));
-        if (error.response) {
-          Alert.alert('Error', `Server Error: ${error.response.status} - ${error.response.data}`);
-        } else if (error.request) {
-          Alert.alert('Error', 'No response received from server');
-        } else {
-          Alert.alert('Error', `Request setup error: ${error.message}`);
-        }
+      console.error('Axios Error:', JSON.stringify(error, null, 2));
+      if (error.response) {
+        Alert.alert(
+          'Error',
+          `Server Error: ${error.response.status} - ${error.response.data}`,
+        );
+      } else if (error.request) {
+        Alert.alert('Error', 'No response received from server');
+      } else {
+        Alert.alert('Error', `Request setup error: ${error.message}`);
+      }
     }
   };
 

@@ -1,74 +1,62 @@
-import React, {useState} from 'react';
-import {View, Text, TextInput, StyleSheet} from 'react-native';
+import React, {useState, useEffect} from 'react';
+import {View, Text, TextInput} from 'react-native';
 
 export default function ValidatedInput({
   label,
   placeholder,
   value,
   onChangeText,
-  keyboardType = 'default',
   validationFunc,
   errorMessage,
   labelStyle,
-  isRequired,
+  inputStyle,
+  isRequired = true,
+  ...rest
 }) {
   const [touched, setTouched] = useState(false);
-  const isValid = validationFunc ? validationFunc(value) : true;
+  const [error, setError] = useState('');
+
+  // Validate whenever value changes *after* touched
+  useEffect(() => {
+    if (touched && validationFunc) {
+      const isValid = validationFunc(value);
+      setError(isValid ? '' : errorMessage);
+    }
+  }, [value, touched]);
+
+  const handleBlur = () => {
+    setTouched(true);
+
+    if (validationFunc) {
+      const isValid = validationFunc(value);
+      setError(isValid ? '' : errorMessage);
+    }
+  };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.label}>
-        <Text style={StyleSheet.flatten([styles.label, labelStyle])}>
-          {label}
-        </Text>
-        {isRequired && <Text style={styles.asterisk}> *</Text>}
-        {/* <Text style={styles.asterisk}> *</Text> */}
-      </Text>
+    <View style={{marginBottom: 16}}>
+      {label && <Text style={[{marginBottom: 6}, labelStyle]}>{label}</Text>}
+
       <TextInput
-        style={styles.input}
-        placeholder={placeholder}
-        placeholderTextColor="gray"
-        keyboardType={keyboardType}
         value={value}
+        placeholder={placeholder}
         onChangeText={onChangeText}
-        onBlur={() => setTouched(true)}
+        onBlur={handleBlur}
+        style={[
+          {
+            borderWidth: 1,
+            borderColor: error ? 'red' : '#ccc',
+            padding: 10,
+            borderRadius: 8,
+          },
+          inputStyle,
+        ]}
+        {...rest}
       />
-      {!isValid && touched && (
-        <Text style={styles.errorText}>{errorMessage}</Text>
+
+      {touched && error !== '' && (
+        <Text style={{color: 'red', marginTop: 4}}>{error}</Text>
       )}
     </View>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    marginBottom: 16,
-  },
-  label: {
-    flexDirection: 'row',
-    marginBottom: 6,
-  },
-  labelText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'black',
-  },
-  asterisk: {
-    color: 'red',
-    fontSize: 14,
-  },
-  input: {
-    borderWidth: 1,
-    borderColor: '#ccc',
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-    color: 'black',
-    backgroundColor: '#fff',
-  },
-  errorText: {
-    color: 'red',
-    marginTop: 4,
-    fontSize: 13,
-  },
-});
