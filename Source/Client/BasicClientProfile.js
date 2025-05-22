@@ -101,7 +101,7 @@ export default function BasicClientProfile() {
       shippingAddress,
     } = form;
 
-    const url = `${Config.API_BASE_URL}/createClient/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/createClient/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
 
     try {
       const response = await axios.get(url, {

@@ -33,6 +33,8 @@ export default function HomeScreen() {
   const [isChatModalVisible, setChatModalVisible] = useState(false);
   const navigation = useNavigation();
   const [data, setData] = useState([]);
+  const [clientData, setClientData] = useState([]);
+  const [clientOutlet, setClieentOutlet] = useState([]);
   const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorkDataVisible, setWorkDataVisible] = useState(false);
@@ -59,7 +61,7 @@ export default function HomeScreen() {
       if (clientPhoneNumber) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getSupplier/${clientPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
           );
           const dataArray = Object.values(response.data);
           setData(dataArray);
@@ -71,8 +73,40 @@ export default function HomeScreen() {
       }
     };
 
+    const fetchClientData = async () => {
+      if (clientPhoneNumber) {
+        try {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientPhoneNumber}`,
+          );
+          setClientData(response);
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+    const fetchClientOutletData = async () => {
+      if (clientPhoneNumber) {
+        try {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientPhoneNumber}`,
+          );
+          const dataArray = Object.values(response.data);
+          setClieentOutlet(dataArray);
+        } catch (error) {
+          console.log(error);
+        } finally {
+          setIsLoading(false);
+        }
+      }
+    };
+
     fetchPhoneNumber();
     fetchData();
+    fetchClientData();
+    fetchClientOutletData();
   }, [clientPhoneNumber]);
 
   const renderCategoryItem = ({item}) => (
@@ -135,17 +169,26 @@ export default function HomeScreen() {
       ) : data.length > 0 ? (
         <View style={styles.chatScreenHeaderView}>
           <View style={styles.chatScreenHeaderViewIcon}>
-            <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
-              <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
-            </TouchableOpacity>
-            <TouchableOpacity
-              onPress={() => navigation.navigate('Notification And Search')}>
-              <QuestionMarkCircleIcon
-                size={30}
-                color={'#a9a9a9'}
-                strokeWidth={2}
-              />
-            </TouchableOpacity>
+            <View>
+              <Text style = {{fontSize: 16, fontWeight: '200', fontFamily: 'Montserrat'}}>
+                Delivery Address
+              </Text>
+              <Text style = {{fontSize: 20, fontWeight: 'bold', fontFamily: 'Montserrat'}}>
+                dsadshippingAddress
+              </Text>
+            </View>
+            <View style = {{flexDirection: 'row'}}>
+              <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
+                <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => navigation.navigate('Notification And Search')}>
+                <QuestionMarkCircleIcon
+                  size={30}
+                  color={'#a9a9a9'}
+                  strokeWidth={2}
+                />
+              </TouchableOpacity>
+            </View>
           </View>
           <View style={styles.chatScreenTextInputView}>
             <MagnifyingGlassIcon

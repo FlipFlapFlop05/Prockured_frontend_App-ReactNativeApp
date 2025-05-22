@@ -109,7 +109,7 @@ export default function ClientSetting() {
       if (phoneNumber) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getClient/${phoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${phoneNumber}`,
           );
           setData(response.data);
         } catch (error) {

@@ -78,7 +78,7 @@ export default function Catalogue() {
       if (phoneNumer) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getCatalogue/${phoneNumer}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${phoneNumer}`,
           );
           const dataArray = Object.values(response.data);
           console.log(dataArray);

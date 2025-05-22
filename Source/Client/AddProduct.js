@@ -88,7 +88,7 @@ const AddProduct = () => {
   const fetchSuppliers = async () => {
     if (phoneNumber) {
       axios
-        .get(`${Config.API_BASE_URL}getSupplier/${phoneNumber}`)
+        .get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${phoneNumber}`)
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);

@@ -47,7 +47,7 @@ export default function SearchBar() {
       if (clientId) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getSupplier/${clientId}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientId}`,
           );
           const dataArray = Object.values(response.data);
           setData(dataArray);

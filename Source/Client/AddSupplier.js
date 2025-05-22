@@ -93,7 +93,7 @@ export default function AddSupplier() {
       return;
     }
 
-    const url = `${Config.API_BASE_URL}/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
     Alert.alert('URL', url);
     Alert.alert('Phone Number', id);
     Alert.alert('Supplier Phone Number', supplierPhoneNumber);

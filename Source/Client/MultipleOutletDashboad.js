@@ -76,7 +76,7 @@ export default function MultipleOutletDashboard() {
       if (clientId) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getOutlets/${clientId}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`,
           );
           setData(Object.values(response.data));
         } catch (error) {

@@ -126,7 +126,7 @@ export default function AddOutlet() {
     }
 
     const outletId = Math.floor(Math.random() * 100000);
-    const url = `${Config.API_BASE_URL}/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
 
     try {
       const response = await axios.get(url, {

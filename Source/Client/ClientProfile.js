@@ -46,12 +46,8 @@ export default function ClientProfile() {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
         const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const storedShippingAddress = await AsyncStorage.getItem(
-          'shippingAddress',
-        );
-        const storedBillingAddress = await AsyncStorage.getItem(
-          'billingAddress',
-        );
+        const storedShippingAddress = await AsyncStorage.getItem('shippingAddress',);
+        const storedBillingAddress = await AsyncStorage.getItem('billingAddress',);
         const storedGSTNumber = await AsyncStorage.getItem('gstNumber');
 
         if (storedPassword) {
@@ -72,7 +68,7 @@ export default function ClientProfile() {
 
         if (storedPhoneNumber) {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getClient/${storedPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedPhoneNumber}`,
           );
 
           setData(response.data);
@@ -135,7 +131,7 @@ export default function ClientProfile() {
     try {
       // Update API
       await axios.get(
-        `${Config.API_BASE_URL}/${userName}/${userBusinessName}/${userEmail}/${userPincode}/${userState}/${userCountry}/${userGSTNumber}/${userPhoneNumber}/${userBillingAddress}/${userShippingAddress}`,
+        `https://api-v7quhc5aza-uc.a.run.app/createClient/${userName}/${userBusinessName}/${userEmail}/${userPincode}/${userState}/${userCountry}/${userGSTNumber}/${userPhoneNumber}/${userBillingAddress}/${userShippingAddress}`,
       );
 
       Alert.alert('Success', 'Profile updated successfully!');

@@ -150,7 +150,7 @@ const AddProductManually = () => {
       return;
     }
 
-    const url = `${Config.API_BASE_URL}/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
 
     try {
       const response = await axios.get(url, {
