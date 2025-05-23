@@ -111,6 +111,7 @@ export default function BasicClientProfile() {
       if (response.status === 200 || response.status === 201) {
         Alert.alert('Success', 'Profile saved successfully!');
         await AsyncStorage.setItem('clientPhoneNumber', phone);
+        await AsyncStorage.setItem('clientGST', gstNumber);
         navigation.navigate('Main', {screen: 'Home'});
       } else {
         Alert.alert('Error', response.data.message || 'Failed to save profile');

@@ -49,8 +49,8 @@ export default function MultipleOutletDashboard() {
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 13}}>
-          <ChevronLeftIcon size={23} strokeWidth={2} />
+          style={{paddingHorizontal: 13, marginLeft: -20}}>
+          <ChevronLeftIcon size={23} strokeWidth={3} />
         </TouchableOpacity>
       ),
     });
@@ -152,12 +152,6 @@ export default function MultipleOutletDashboard() {
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={() => navigation.goBack()}>
-            <ChevronLeftIcon size={25} color={"black"} strokeWidth={3} />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Outlets</Text>
-        </View>
       <Modal
         transparent={true}
         visible={modalVisible}

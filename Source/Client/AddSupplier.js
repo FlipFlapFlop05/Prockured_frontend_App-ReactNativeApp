@@ -94,14 +94,6 @@ export default function AddSupplier() {
     }
 
     const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
-    Alert.alert('URL', url);
-    Alert.alert('Phone Number', id);
-    Alert.alert('Supplier Phone Number', supplierPhoneNumber);
-    Alert.alert('Business Name', businessName);
-    Alert.alert('Email', email);
-    Alert.alert('Pincode', pincode);
-    Alert.alert('State', state);
-    Alert.alert('Country', country);
 
     try {
       const response = await axios.get(url, {

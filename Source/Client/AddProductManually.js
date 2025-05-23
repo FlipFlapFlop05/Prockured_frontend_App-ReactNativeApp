@@ -95,7 +95,7 @@ const AddProductManually = () => {
   const fetchSuppliers = async () => {
     if (clientPhoneNumber) {
       axios
-        .get(`${Config.API_BASE_URL}/getSupplier/${clientPhoneNumber}`)
+        .get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`)
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);
@@ -106,7 +106,7 @@ const AddProductManually = () => {
 
   const handleSelectSupplier = supplier => {
     setSelectedSupplier({
-      supplierId: supplier.supplierId,
+      supplierId: supplier.phone,
       supplierName: supplier.businessName,
     });
     setModalVisible(false);
@@ -151,7 +151,7 @@ const AddProductManually = () => {
     }
 
     const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
-
+    Alert.alert('URL', url);
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},

@@ -213,7 +213,7 @@ export default function ClientSetting() {
       icon: 'logout',
       iconType: 'AntDesign',
       label: 'Logout',
-      screen: '',
+      action: handleLogout,
     },
   ];
 
@@ -223,6 +223,8 @@ export default function ClientSetting() {
     } else if (item.modal) {
       setSelectedModal(item.modal);
       setModalVisible(true);
+    } else if(item.action) {
+      item.action();
     }
   };
 
@@ -334,6 +336,35 @@ export default function ClientSetting() {
         return null;
     }
   };
+
+  const handleLogout = () => {
+  Alert.alert(
+    'Logout',
+    'Are you sure you want to logout?',
+    [
+      {
+        text: 'Cancel',
+        style: 'cancel',
+      },
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          try {
+            await AsyncStorage.clear();
+            navigation.reset({
+              index: 0,
+              routes: [{ name: 'Authentication', params: { screen: 'LogIn' } }],
+            });
+          } catch (e) {
+            console.error("Error during logout: ", e);
+          }
+        },
+      },
+    ],
+    { cancelable: true }
+  );
+};
 
   return (
     <SafeAreaView style={styles.safeArea} className="bg-white">
