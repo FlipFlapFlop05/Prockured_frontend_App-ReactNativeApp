@@ -18,7 +18,7 @@ import Config from 'react-native-config';
 const {width} = Dimensions.get('window');
 const imageSize = width * 0.25;
 
-export default function BasicClientProfile() {
+export default function BasicVendorProfile() {
   const navigation = useNavigation();
   const [clientId, setClientId] = useState(null);
   const [form, setForm] = useState({
@@ -70,7 +70,6 @@ export default function BasicClientProfile() {
   };
 
   const handleSave = async () => {
-    Alert.alert('Save', 'Save button pressed');
     const allFields = Object.keys(form);
     const errors = allFields.map(field => {
       const validator =
@@ -89,7 +88,6 @@ export default function BasicClientProfile() {
     }
 
     const phone = await AsyncStorage.getItem('phoneNumber');
-    Alert.alert('Phone Number', phone);
     const {
       name,
       businessName,
@@ -102,9 +100,7 @@ export default function BasicClientProfile() {
       billingAddress,
       shippingAddress,
     } = form;
-    Alert.alert('Form Data', JSON.stringify(form, null, 2));
-    const url = `https://api-v7quhc5aza-uc.a.run.app/supplierSignUp/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${supplierPhoneNumber}/${billingAddress}/${shippingAddress}`;
-    Alert.alert('URL', url);
+    const url = `https://api-v7quhc5aza-uc.a.run.app/supplierSignUp/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},
