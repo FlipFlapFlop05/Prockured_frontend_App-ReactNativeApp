@@ -95,21 +95,9 @@ const AppNavigation = () => {
             return <IconComponent size={size} color={color} />;
           },
         })}>
-        <Tab.Screen
-          name={'Home'}
-          component={HomeScreen}
-          options={{headerShown: false}}
-        />
-        <Tab.Screen
-          name={'Orders'}
-          component={Orders}
-          options={{headerShown: false}}
-        />
-        <Tab.Screen
-          name={'Catalogue'}
-          component={Catalogue}
-          options={{headerShown: false}}
-        />
+        <Tab.Screen name={'Home'} component={HomeScreen} options={{headerShown: false}} />
+        <Tab.Screen name={'Orders'} component={Orders} options={{headerShown: false}} />
+        <Tab.Screen name={'Catalogue'} component={Catalogue} options={{headerShown: false}} />
         <Tab.Screen name={'Setting'} component={ClientSetting} />
       </Tab.Navigator>
     );
@@ -205,14 +193,12 @@ const AppNavigation = () => {
         <Stack.Screen name={'Specific Vendor Order Now'} component={SpecificVendorOrderNow} />
         <Stack.Screen name={'Outlet Dashboard'} component={OutletDashboard} />
         <Stack.Screen name={'OutletSummary'} component={OutletSummary} />
+        <Stack.Screen name={'Orders'} component={Orders} options={{headerShown: false}} />
         {/*Vendor Stack*/}
         <Stack.Screen name={'Basic Vendor Profile'} component={BasicVendorProfile} />
         <Stack.Screen name={'Customer Details'} component={CustomerDetails} />
         <Stack.Screen name={'Customers'} component={Customers} />
-        <Stack.Screen
-          name={'Vendor Existing Presets'}
-          component={VendorExistingPresets}
-        />
+        <Stack.Screen name={'Vendor Existing Presets'} component={VendorExistingPresets}/>
         <Stack.Screen name={'Vendor FAQ'} component={SupplierFAQ} />
         <Stack.Screen name={'Supplier Notification And Search'} component={SupplierNotificationAndSearch}n/>
         <Stack.Screen name={'Vendor Add Product'} component={VendorAddProduct}/>

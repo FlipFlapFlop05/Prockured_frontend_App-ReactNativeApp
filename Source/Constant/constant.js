@@ -48,7 +48,7 @@ export const Vegetable_Categories = [
 export const worksData = [
   { id: 1, title: 'Find your supplies', description: 'Discover top vendors', image: AddSupplierImage, screen: 'Search Bar'},
   { id: 2, title: 'Explore', description: 'Effortless browsing!', image: ExploreImage},
-  { id: 3, title: 'Stay Informed', description: 'Track your orders easily', image: StayInformedImage},
+  { id: 3, title: 'Stay Informed', description: 'Track your orders easily', image: StayInformedImage, screen: 'Orders'},
   { id: 4, title: 'Enjoy the experience', description: 'Share your feedback', image: EnjoyTheExperienceImage},
 ];
 export const Fruit_Categories = [
