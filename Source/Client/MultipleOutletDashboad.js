@@ -48,7 +48,7 @@ export default function MultipleOutletDashboard() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('Setting')}
           style={{paddingHorizontal: 13, marginLeft: -20}}>
           <ChevronLeftIcon size={23} strokeWidth={3} />
         </TouchableOpacity>
@@ -79,6 +79,9 @@ export default function MultipleOutletDashboard() {
             `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`,
           );
           setData(Object.values(response.data));
+          Alert.alert("Raw response:", response.data);
+          Alert.alert("Parsed values:", Object.values(response.data));
+
         } catch (error) {
           console.log(error);
         }
@@ -88,7 +91,6 @@ export default function MultipleOutletDashboard() {
     if (clientId) {
       fetchData();
     }
-    fetchData();
   }, [clientId]);
 
   const renderOutletItem = ({item}) => (
@@ -118,7 +120,10 @@ export default function MultipleOutletDashboard() {
 
               <TouchableOpacity
                 style={styles.button}
-                onPress={() => setSelectedOutlet(null)}>
+                onPress={() => {
+                  setModalVisible(false);
+                  navigation.navigate('Outlet Edit Details', {outletData: selectedOutlet});
+                }}>
                 <Text style={styles.buttonText}>Edit Details</Text>
               </TouchableOpacity>
 
@@ -138,87 +143,72 @@ export default function MultipleOutletDashboard() {
           </View>
         </Modal>
       )}
-      <TouchableOpacity
-        onPress={() => {
-          console.log('Selected Outlet:', item); // Debug log
-          setSelectedOutlet(item);
-          setModalVisible(true);
-        }}>
-        <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
-      </TouchableOpacity>
     </View>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <ScrollView style={styles.container}>
-      <Modal
-        transparent={true}
-        visible={modalVisible}
-        animationType="slide"
-        onRequestClose={() => setModalVisible(false)}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <Text style={styles.title}>Choose an Option</Text>
+        <Modal
+          transparent={true}
+          visible={modalVisible}
+          animationType="slide"
+          onRequestClose={() => setModalVisible(false)}>
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalContainer}>
+              <Text style={styles.title}>Choose an Option</Text>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                setModalVisible(false);
-                navigation.navigate('Add Outlet', {outlet: selectedOutlet});
-              }}>
-              <Text style={styles.buttonText}>Edit Details</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  setModalVisible(false);
+                  navigation.navigate('Outlet Edit Details', {outletData: selectedOutlet});
+                }}>
+                <Text style={styles.buttonText}>Edit Details</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.button}
-              onPress={() => {
-                setModalVisible(false);
-                navigation.navigate('Outlet Dashboard', {
-                  outlet: selectedOutlet,
-                });
-              }}>
-              <Text style={styles.buttonText}>Dashboard</Text>
-            </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => {
+                  setModalVisible(false);
+                  navigation.navigate('Outlet Dashboard', {
+                    outlet: selectedOutlet,
+                  });
+                }}>
+                <Text style={styles.buttonText}>Dashboard</Text>
+              </TouchableOpacity>
 
-            <TouchableOpacity onPress={() => setModalVisible(false)}>
-              <Text style={styles.closeText}>Cancel</Text>
-            </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <Text style={styles.closeText}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-        </View>
-      </Modal>
-      <SafeAreaView style={styles.safeArea}>
-        <ScrollView style={styles.container} keyboardShouldPersistTaps="always">
-          {/* <View style={styles.header}>
-            <TouchableOpacity onPress={() => navigation.goBack()}>
-              <ChevronLeftIcon size={25} color={'black'} strokeWidth={3} />
+        </Modal>
+        <SafeAreaView style={styles.safeArea}>
+          <ScrollView style={styles.container} keyboardShouldPersistTaps="always">
+            {/* <View style={styles.header}>
+              <TouchableOpacity onPress={() => navigation.goBack()}>
+                <ChevronLeftIcon size={25} color={'black'} strokeWidth={3} />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>Outlets</Text>
+            </View> */}
+
+            <TouchableOpacity
+              style={styles.addOutletButton}
+              onPress={() => navigation.navigate('Add Outlet')}>
+              <Text style={styles.addOutletText}>+ Add New Outlet</Text>
             </TouchableOpacity>
-            <Text style={styles.headerTitle}>Outlets</Text>
-          </View> */}
 
-          <TouchableOpacity
-            style={styles.addOutletButton}
-            onPress={() => navigation.navigate('Add Outlet')}>
-            <Text style={styles.addOutletText}>+ Add New Outlet</Text>
-          </TouchableOpacity>
-
-          <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
-          <FlatList
-            data={data}
-            renderItem={renderOutletItem}
-            keyExtractor={(item) => item.outletId}
-            numColumns={1}
-            contentContainerStyle={styles.flatListContent}
-          />
-        </ScrollView>
-      </SafeAreaView>
-      <FlatList
-        data={data}
-        renderItem={renderOutletItem}
-        keyExtractor={item => item.outletId}
-        numColumns={1}
-        contentContainerStyle={styles.flatListContent}
-      />
+            <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
+          </ScrollView>
+        </SafeAreaView>
+        <FlatList
+          data={data}
+          renderItem={renderOutletItem}
+          keyExtractor={item => item.outletId}
+          numColumns={1}
+          contentContainerStyle={styles.flatListContent}
+        />
       </ScrollView>
     </SafeAreaView>
   );

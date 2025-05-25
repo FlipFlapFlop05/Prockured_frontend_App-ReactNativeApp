@@ -13,8 +13,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
 import Config from 'react-native-config';
+import {useRoute} from '@react-navigation/native';
 
-export default function AddOutlet() {
+export default function OutletEditDetails() {
+  const route = useRoute();
+  const { outletData } = route.params;
   const navigation = useNavigation();
   const [phoneNumber, setPhoneNumber] = useState(null);
   const [form, setForm] = useState({
@@ -27,11 +30,23 @@ export default function AddOutlet() {
     country: '',
   });
   const [sameAsShipping, setSameAsShipping] = useState(false);
-
+  useEffect(() => {
+    if(outletData) {
+      setForm({
+        name: outletData.OutletName || '',
+        address: outletData.Address || '',
+        city: outletData.city || '',
+        billingAddress: outletData.BillingAddress || '',
+        GST: outletData.GST || '',
+        state: outletData.state || '',
+        country: outletData.country || '',
+      });
+    }
+  }, [outletData]);
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      headerTitle: 'Outlets',
+      headerTitle: 'Edit Details',
       headerStyle: {
         backgroundColor: '#f8f9fe',
         elevation: 0,
@@ -47,7 +62,7 @@ export default function AddOutlet() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate('Multiple Outlet Dashboard')}
           style={{paddingHorizontal: 13}}>
           <ChevronLeftIcon size={23} strokeWidth={2} />
         </TouchableOpacity>
@@ -58,7 +73,7 @@ export default function AddOutlet() {
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      headerTitle: 'Add New Outlet',
+      headerTitle: 'Edit Details',
       headerStyle: {
         backgroundColor: '#f8f8f8',
         elevation: 0,
@@ -149,7 +164,8 @@ export default function AddOutlet() {
     <ScrollView style={styles.container}>
       <ValidatedInput
         label="Name"
-        placeholder="Enter name"
+        placeholder={outletData?.OutletName || 'Enter outlet name'}
+        placeholderTextColor="black"
         value={form.name}
         onChangeText={value => handleChange('name', value)}
         validationFunc={validateRequired}
@@ -157,7 +173,8 @@ export default function AddOutlet() {
       />
       <ValidatedInput
         label="Address"
-        placeholder="Enter address"
+        placeholder={outletData?.Address || 'Enter address'}
+        placeholderTextColor="black"
         value={form.address}
         onChangeText={value => handleChange('address', value)}
         validationFunc={validateRequired}
@@ -165,31 +182,17 @@ export default function AddOutlet() {
       />
       <ValidatedInput
         label="City"
-        placeholder="Enter city"
+        placeholder={outletData?.city || 'Enter city'}
+        placeholderTextColor="black"
         value={form.city}
         onChangeText={value => handleChange('city', value)}
         validationFunc={validateRequired}
         errorMessage="City is required"
       />
-      <View style={styles.checkboxContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              const newVal = !sameAsShipping;
-              setSameAsShipping(newVal);
-              if (newVal) {
-                setForm(prev => ({...prev, billingAddress: prev.address}));
-              }
-            }}
-            style={styles.checkbox}>
-            {sameAsShipping && <View style={styles.checkboxTick} />}
-          </TouchableOpacity>
-          <Text style={styles.checkboxLabel}>
-            Billing address same as shipping address
-          </Text>
-        </View>
       <ValidatedInput
         label="Billing Address"
-        placeholder="Enter billing address"
+        placeholder={outletData?.BillingAddress || 'Enter billing address'}
+        placeholderTextColor="black"
         value={form.billingAddress}
         onChangeText={value => handleChange('billingAddress', value)}
         validationFunc={validateRequired}
@@ -197,7 +200,8 @@ export default function AddOutlet() {
       />
       <ValidatedInput
         label="GST"
-        placeholder="Enter GST number"
+        placeholder={outletData?.GST || 'Enter GST number'}
+        placeholderTextColor="black"
         keyboardType="numeric"
         value={form.GST}
         onChangeText={value => handleChange('GST', value)}
@@ -206,7 +210,8 @@ export default function AddOutlet() {
       />
       <ValidatedInput
         label="State"
-        placeholder="Enter state"
+        placeholder={outletData?.state || 'Enter state'}
+        placeholderTextColor="black"
         value={form.state}
         onChangeText={value => handleChange('state', value)}
         validationFunc={validateRequired}
@@ -214,7 +219,8 @@ export default function AddOutlet() {
       />
       <ValidatedInput
         label="Country"
-        placeholder="Enter country"
+        placeholder={outletData?.country || 'Enter country'}
+        placeholderTextColor="black"
         value={form.country}
         onChangeText={value => handleChange('country', value)}
         validationFunc={validateRequired}

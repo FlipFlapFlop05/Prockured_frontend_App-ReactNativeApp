@@ -66,6 +66,7 @@ import ClientFAQ from '../Client/FAQ';
 import VendorProfile from '../Vendor/VendorProfile';
 import OutletDashboard from '../Client/OutletDashboard';
 import OutletSummary from '../Client/OutletSummary';
+import OutletEditDetails from '../Client/OutletEditDetails';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -194,6 +195,8 @@ const AppNavigation = () => {
         <Stack.Screen name={'Outlet Dashboard'} component={OutletDashboard} />
         <Stack.Screen name={'OutletSummary'} component={OutletSummary} />
         <Stack.Screen name={'Orders'} component={Orders} options={{headerShown: false}} />
+        <Stack.Screen name={'Outlet Edit Details'} component={OutletEditDetails} />
+        <Stack.Screen name={'Setting'} component={ClientSetting} />
         {/*Vendor Stack*/}
         <Stack.Screen name={'Basic Vendor Profile'} component={BasicVendorProfile} />
         <Stack.Screen name={'Customer Details'} component={CustomerDetails} />
