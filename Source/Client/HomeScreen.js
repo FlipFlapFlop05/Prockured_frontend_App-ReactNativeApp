@@ -43,12 +43,12 @@ export default function HomeScreen() {
   const [showHowItWorks, setShowHowItWorks] = useState(true);
 
   const filteredData = data.filter(item =>
-    item.businessName.toLowerCase().includes(searchText.toLowerCase()),
+    item?.businessName?.toLowerCase().includes(searchText.toLowerCase()),
   );
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
         if (storedPhoneNumber) {
           setClientPhoneNumber(storedPhoneNumber);
         }
@@ -58,10 +58,11 @@ export default function HomeScreen() {
     };
 
     const fetchData = async () => {
-      if (clientPhoneNumber) {
+      const gst = await AsyncStorage.getItem('phoneNumber');
+      if (gst) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${gst}`,
           );
           const dataArray = Object.values(response.data);
           setData(dataArray);
@@ -74,10 +75,11 @@ export default function HomeScreen() {
     };
 
     const fetchClientData = async () => {
-      if (clientPhoneNumber) {
+      const gstNumber = await AsyncStorage.getItem('clientGST');
+      if (gstNumber) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
           );
           setClientData(response);
         } catch (error) {

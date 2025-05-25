@@ -25,8 +25,14 @@ export const tagColors = {
   "Ring Marg": "#FF1493",
 }
 export const categories = [
-  {name: 'Vegetables', image: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7'},
-  {name: 'Fruits', image: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Ffruits.png?alt=media&token=211f8eaa-5971-417f-bc7f-c134a957b8c9'},
+  {
+    name: 'Vegetables', 
+    image: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7'
+  },
+  {
+    name: 'Fruits', 
+    image: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Ffruits.png?alt=media&token=211f8eaa-5971-417f-bc7f-c134a957b8c9'
+  }
 ]
 export const Vegetable_Categories = [
   {id: 1, title: 'Beetroot'},

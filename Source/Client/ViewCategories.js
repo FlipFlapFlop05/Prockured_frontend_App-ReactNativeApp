@@ -56,7 +56,7 @@ const ViewCategories = () => {
     if (!subcategory) return;
     try {
       const response = await fetch(
-        `${Config.API_BASE_URL}/getItems/${displayedTitle}/${subcategory}`,
+        `https://api-v7quhc5aza-uc.a.run.app/getItems/${displayedTitle}/${subcategory}`,
       );
       const fetchedData = await response.json();
 

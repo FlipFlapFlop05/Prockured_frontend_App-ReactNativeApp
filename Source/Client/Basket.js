@@ -1,4 +1,4 @@
-import React from "react";
+import React, {useLayoutEffect} from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Linking } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
 

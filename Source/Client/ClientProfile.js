@@ -45,7 +45,7 @@ export default function ClientProfile() {
     const fetchClientData = async () => {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
         const storedShippingAddress = await AsyncStorage.getItem('shippingAddress',);
         const storedBillingAddress = await AsyncStorage.getItem('billingAddress',);
         const storedGSTNumber = await AsyncStorage.getItem('gstNumber');

@@ -33,7 +33,7 @@ export default function AddSupplier() {
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
         if (storedPhoneNumber) {
           setPhoneNumber(storedPhoneNumber);
         }
@@ -93,8 +93,8 @@ export default function AddSupplier() {
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}`;
-
+    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}/'aaaddd'`;
+    console.log('Request URL:', url);
     try {
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},

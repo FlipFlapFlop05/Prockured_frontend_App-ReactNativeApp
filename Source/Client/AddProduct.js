@@ -76,7 +76,7 @@ const AddProduct = () => {
 
   const fetchPhoneNumber = async () => {
     try {
-      const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+      const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
       if (storedPhoneNumber) {
         setPhoneNumber(storedPhoneNumber);
       }
