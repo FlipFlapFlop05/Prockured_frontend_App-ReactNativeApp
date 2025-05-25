@@ -244,6 +244,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     marginTop: 20,
+    marginBottom: 30
   },
   addSupplierButtonText: {
     color: 'white',
