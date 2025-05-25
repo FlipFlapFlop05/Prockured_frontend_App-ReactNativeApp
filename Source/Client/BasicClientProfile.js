@@ -13,7 +13,6 @@ import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
-import Config from 'react-native-config';
 
 const {width} = Dimensions.get('window');
 const imageSize = width * 0.25;
@@ -34,8 +33,6 @@ export default function BasicClientProfile() {
     shippingAddress: '',
   });
 
-  const [touchedFields, setTouchedFields] = useState({});
-
   useEffect(() => {
     const fetchClientId = async () => {
       try {
@@ -52,54 +49,41 @@ export default function BasicClientProfile() {
     setForm(prev => ({...prev, [field]: value}));
   };
 
-  const validateRequired = value => {
-    if (!value || value.trim() === '') return 'This field is required';
-    return null;
-  };
-
-  const validateEmail = value => {
-    if (!value) return 'This field is required';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(value) ? null : 'Invalid email address';
-  };
-
-  const validatePincode = value => {
-    if (!value) return 'This field is required';
-    if (!/^\d{6}$/.test(value)) return 'Pincode must be 6 digits';
-    return null;
-  };
+  const isFilled = text => text.trim().length > 0;
+  const isValidEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+  const isValidPincode = text => /^\d{6}$/.test(text);
 
   const handleSave = async () => {
-    const allFields = Object.keys(form);
-    const errors = allFields.map(field => {
-      const validator =
-        field === 'email'
-          ? validateEmail
-          : field === 'pincode'
-          ? validatePincode
-          : validateRequired;
-      return validator(form[field]);
-    });
+    const {
+      name,
+      businessName,
+      email,
+      city,
+      pincode,
+      state,
+      country,
+      gstNumber,
+      billingAddress,
+      shippingAddress,
+    } = form;
 
-    const hasErrors = errors.some(err => err !== null);
-    if (hasErrors) {
+    if (
+      !isFilled(name) ||
+      !isFilled(businessName) ||
+      !isValidEmail(email) ||
+      !isFilled(city) ||
+      !isValidPincode(pincode) ||
+      !isFilled(state) ||
+      !isFilled(country) ||
+      !isFilled(gstNumber) ||
+      !isFilled(billingAddress) ||
+      !isFilled(shippingAddress)
+    ) {
       Alert.alert('Error', 'Please correct the errors before submitting');
       return;
     }
 
     const phone = await AsyncStorage.getItem('phoneNumber');
-    const {
-      name,
-      businessName,
-      email,
-      pincode,
-      state,
-      country,
-      city,
-      gstNumber,
-      billingAddress,
-      shippingAddress,
-    } = form;
 
     const url = `https://api-v7quhc5aza-uc.a.run.app/createClient/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
 
@@ -140,7 +124,7 @@ export default function BasicClientProfile() {
         value={form.name}
         onChangeText={v => handleChange('name', v)}
         placeholder="Enter name"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Name is required"
       />
       <ValidatedInput
@@ -148,7 +132,7 @@ export default function BasicClientProfile() {
         value={form.businessName}
         onChangeText={v => handleChange('businessName', v)}
         placeholder="Enter business name"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Business name is required"
       />
       <ValidatedInput
@@ -156,7 +140,7 @@ export default function BasicClientProfile() {
         value={form.email}
         onChangeText={v => handleChange('email', v)}
         placeholder="Enter email"
-        validationFunc={validateEmail}
+        validationFunc={isValidEmail}
         errorMessage="Invalid email address"
       />
       <ValidatedInput
@@ -164,7 +148,7 @@ export default function BasicClientProfile() {
         value={form.city}
         onChangeText={v => handleChange('city', v)}
         placeholder="Enter city"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="City is required"
       />
       <ValidatedInput
@@ -173,7 +157,7 @@ export default function BasicClientProfile() {
         onChangeText={v => handleChange('pincode', v)}
         placeholder="Enter pincode"
         keyboardType="numeric"
-        validationFunc={validatePincode}
+        validationFunc={isValidPincode}
         errorMessage="Pincode must be 6 digits"
       />
       <ValidatedInput
@@ -181,7 +165,7 @@ export default function BasicClientProfile() {
         value={form.state}
         onChangeText={v => handleChange('state', v)}
         placeholder="Enter state"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="State is required"
       />
       <ValidatedInput
@@ -189,7 +173,7 @@ export default function BasicClientProfile() {
         value={form.country}
         onChangeText={v => handleChange('country', v)}
         placeholder="Enter country"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Country is required"
       />
       <ValidatedInput
@@ -197,7 +181,7 @@ export default function BasicClientProfile() {
         value={form.gstNumber}
         onChangeText={v => handleChange('gstNumber', v)}
         placeholder="Enter GST number"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="GST number is required"
       />
       <ValidatedInput
@@ -205,7 +189,7 @@ export default function BasicClientProfile() {
         value={form.billingAddress}
         onChangeText={v => handleChange('billingAddress', v)}
         placeholder="Enter billing address"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Billing address is required"
       />
       <ValidatedInput
@@ -213,7 +197,7 @@ export default function BasicClientProfile() {
         value={form.shippingAddress}
         onChangeText={v => handleChange('shippingAddress', v)}
         placeholder="Enter shipping address"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Shipping address is required"
       />
 
