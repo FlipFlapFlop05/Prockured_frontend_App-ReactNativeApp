@@ -74,7 +74,7 @@ export default function VendorSetting() {
         alignItems: 'center',
       },
       headerTitleStyle: {
-        fontWeight: 'bold',
+        fontWeight: '700',
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
@@ -83,8 +83,8 @@ export default function VendorSetting() {
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 13}}>
-          <ChevronLeftIcon size={28} color="#333" />
+          style={{paddingHorizontal: 15}}>
+          <ChevronLeftIcon size={22} color="#333" strokeWidth={2} />
         </TouchableOpacity>
       ),
     });
@@ -126,7 +126,7 @@ export default function VendorSetting() {
   const menuItems = [
     {
       id: 1,
-      type: 'vector', // from react-native-vector-icons
+      type: 'vector',
       icon: 'account-edit-outline',
       iconType: 'MaterialCommunityIcons',
       label: 'Edit Profile Details',
@@ -135,25 +135,25 @@ export default function VendorSetting() {
     {
       id: 2,
       type: 'vector',
-      iconType: 'FontAwesome',
-      icon: 'users',
+      iconType: 'Ionicons',
+      icon: 'receipt-outline',
       label: 'Minimum Order Value',
     },
     {
       id: 2,
       type: 'vector',
-      iconType: 'FontAwesome',
-      icon: 'users',
-      label: 'Teams & Roles',
-      modal: 'teamsRoles',
+      iconType: 'Feather',
+      icon: 'user-check',
+      label: 'Customer',
+      screen: 'Customers',
     },
     {
       id: 3,
       type: 'vector',
-      icon: 'widgets-outline',
+      icon: 'account-group-outline',
       iconType: 'MaterialCommunityIcons',
-      label: 'Customer',
-      screen: 'Customers',
+      label: 'Teams & Roles',
+      modal: 'teamsRoles',
     },
     {
       id: 4,
@@ -176,7 +176,7 @@ export default function VendorSetting() {
       type: 'vector',
       icon: 'logout',
       iconType: 'AntDesign',
-      label: 'Logout',
+      label: 'Log out',
       action: handleLogout,
     },
   ];
@@ -187,7 +187,7 @@ export default function VendorSetting() {
     } else if (item.modal) {
       setSelectedModal(item.modal);
       setModalVisible(true);
-    } else if(item.action) {
+    } else if (item.action) {
       item.action();
     }
   };
@@ -199,13 +199,17 @@ export default function VendorSetting() {
           type={item.iconType}
           name={item.icon}
           size={item.iconType === 'FontAwesome' ? 24 : 28}
-          color={item.label === 'Logout' ? '#900' : '#333'}
+          color={item.label === 'Log out' ? '#900' : '#333'}
           style={styles.menuItemIcon}
         />
       ) : (
         <item.icon size={28} color="#333" style={styles.menuItemIcon} />
       )}
-      <Text style={styles.menuItemText}>{item.label}</Text>
+      {item.label === 'Log out' ? (
+        <Text style={{color: '#900', fontSize: 16}}>{item.label}</Text>
+      ) : (
+        <Text style={styles.menuItemText}>{item.label}</Text>
+      )}
     </TouchableOpacity>
   );
 
@@ -291,33 +295,33 @@ export default function VendorSetting() {
   };
 
   const handleLogout = () => {
-  Alert.alert(
-    'Logout',
-    'Are you sure you want to logout?',
-    [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await AsyncStorage.clear();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Authentication', params: { screen: 'LogIn' } }],
-            });
-          } catch (e) {
-            console.error("Error during logout: ", e);
-          }
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
         },
-      },
-    ],
-    { cancelable: true }
-  );
-};
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
+              });
+            } catch (e) {
+              console.error('Error during logout: ', e);
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
 
   return (
     <SafeAreaView style={styles.safeArea} className="bg-white">

@@ -35,7 +35,11 @@ export default function ValidatedInput({
 
   return (
     <View style={{marginBottom: 16}}>
-      {label && <Text style={[{marginBottom: 6}, labelStyle]}>{label}</Text>}
+      {label && (
+        <Text style={[{marginBottom: 6}, labelStyle]}>
+          {label} {isRequired && '*'}
+        </Text>
+      )}
 
       <TextInput
         value={value}

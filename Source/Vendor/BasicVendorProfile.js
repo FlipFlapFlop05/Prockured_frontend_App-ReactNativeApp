@@ -14,6 +14,7 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
 import Config from 'react-native-config';
+import {PencilIcon} from 'react-native-heroicons/outline';
 
 const {width} = Dimensions.get('window');
 const imageSize = width * 0.25;
@@ -110,7 +111,7 @@ export default function BasicVendorProfile() {
         Alert.alert('Success', 'Profile saved successfully!');
         await AsyncStorage.setItem('supplierPhoneNumber', phone);
         await AsyncStorage.setItem('supplierGST', gstNumber);
-        navigation.navigate("Vendor App", { screen: "Chat" });
+        navigation.navigate('Vendor App', {screen: 'Chat'});
         Alert.alert('Success', 'Profile saved successfully!');
       } else {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
@@ -121,17 +122,31 @@ export default function BasicVendorProfile() {
     }
   };
 
+  const isFilled = text => text.trim().length > 0;
+  const isValidEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+  const isValidPincode = text => /^\d{6}$/.test(text);
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.profileView}>
-        <View>
+        <View style={{paddingLeft: '5%'}}>
           <Text style={styles.createText}>Create</Text>
           <Text style={styles.profileText}>Profile</Text>
         </View>
-        <Image
-          source={require('../Images/ProckuredImage.jpg')}
-          style={styles.profileImage}
-        />
+        <View style={styles.profileContainer}>
+          <Image
+            source={{
+              uri: 'https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg',
+            }}
+            style={styles.profileImage}
+          />
+
+          <View style={styles.iconWrapper}>
+            <TouchableOpacity style={styles.editIconButton}>
+              <PencilIcon fill={'#fff'} size={16} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
       </View>
 
       <ValidatedInput
@@ -139,32 +154,36 @@ export default function BasicVendorProfile() {
         value={form.name}
         onChangeText={v => handleChange('name', v)}
         placeholder="Enter name"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Name is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Business Name"
         value={form.businessName}
         onChangeText={v => handleChange('businessName', v)}
         placeholder="Enter business name"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Business name is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Email"
         value={form.email}
         onChangeText={v => handleChange('email', v)}
         placeholder="Enter email"
-        validationFunc={validateEmail}
+        validationFunc={isValidEmail}
         errorMessage="Invalid email address"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="City"
         value={form.city}
         onChangeText={v => handleChange('city', v)}
         placeholder="Enter city"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="City is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Pincode"
@@ -172,48 +191,54 @@ export default function BasicVendorProfile() {
         onChangeText={v => handleChange('pincode', v)}
         placeholder="Enter pincode"
         keyboardType="numeric"
-        validationFunc={validatePincode}
+        validationFunc={isValidPincode}
         errorMessage="Pincode must be 6 digits"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="State"
         value={form.state}
         onChangeText={v => handleChange('state', v)}
         placeholder="Enter state"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="State is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Country"
         value={form.country}
         onChangeText={v => handleChange('country', v)}
         placeholder="Enter country"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Country is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="GST Number"
         value={form.gstNumber}
         onChangeText={v => handleChange('gstNumber', v)}
         placeholder="Enter GST number"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="GST number is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Billing Address"
         value={form.billingAddress}
         onChangeText={v => handleChange('billingAddress', v)}
         placeholder="Enter billing address"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Billing address is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
         label="Shipping Address"
         value={form.shippingAddress}
         onChangeText={v => handleChange('shippingAddress', v)}
         placeholder="Enter shipping address"
-        validationFunc={validateRequired}
+        validationFunc={isFilled}
         errorMessage="Shipping address is required"
+        labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
 
       <TouchableOpacity onPress={handleSave}>
@@ -230,26 +255,61 @@ const styles = StyleSheet.create({
   profileView: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 20,
+    marginBottom: '5',
+    marginTop: '6%',
   },
-  createText: {fontWeight: 'bold', fontSize: 34},
-  profileText: {fontWeight: 'bold', fontSize: 34},
+  createText: {fontWeight: 'bold', fontSize: 36, fontFamily: 'Montserrat'},
+  profileText: {fontWeight: 'bold', fontSize: 36, fontFamily: 'Montserrat'},
   profileImage: {
     width: imageSize,
     height: imageSize,
     borderRadius: imageSize / 2,
   },
   saveButtonView: {
-    backgroundColor: 'green',
+    backgroundColor: '#76B117',
     paddingVertical: 15,
     paddingHorizontal: 30,
-    borderRadius: 100,
+    borderRadius: 10,
     alignItems: 'center',
     alignSelf: 'center',
     justifyContent: 'center',
     marginTop: 20,
-    width: width * 0.7,
+    width: '100%',
     marginBottom: 40,
   },
-  saveButtonText: {color: 'white', fontSize: 20},
+  saveButtonText: {color: 'white', fontSize: 20, fontFamily: 'Montserrat'},
+  profileContainer: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  profileImage: {
+    width: 100,
+    height: 100,
+    borderRadius: 100,
+    marginBottom: -12,
+    borderWidth: 1,
+    borderColor: '#76B117',
+    marginTop: '5%',
+  },
+  iconWrapper: {
+    position: 'absolute',
+    top: 80,
+    right: 1,
+  },
+
+  editIconButton: {
+    backgroundColor: '#76B117',
+    borderColor: '#fff',
+    borderWidth: 2,
+    borderRadius: 20,
+    width: 30,
+    height: 30,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3, // Optional: for slight shadow on Android
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowOffset: {width: 0, height: 1},
+    shadowRadius: 1.5,
+  },
 });
