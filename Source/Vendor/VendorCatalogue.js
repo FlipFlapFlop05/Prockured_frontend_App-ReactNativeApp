@@ -33,7 +33,7 @@ export default function VendorCatalogue() {
     const fetchData = async () => {
       if (phoneNumber) {
         try {
-          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${phoneNumber}`);
+          const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/1234`);
           const dataArray = Object.values(response.data);
           setData(dataArray);
         } catch (error) {

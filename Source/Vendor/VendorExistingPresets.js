@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -23,17 +23,40 @@ export default function VendorExistingPresets(){
       [id]: !prev[id],
     }));
   };
-
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Existing Presets',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
 
 
   return (
     <ScrollView style={styles.container}>
-      <View style={{flexDirection: 'row'}}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color="black" strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.header}>Existing Presets</Text>
-      </View>
       {vendorExistingPresets.map(section => (
         <View key={section.id} style={styles.section}>
           <Text style={styles.sectionTitle}>{section.title}</Text>

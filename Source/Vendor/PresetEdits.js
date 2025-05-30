@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, FlatList} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon, MagnifyingGlassIcon} from 'react-native-heroicons/outline';
@@ -57,15 +57,40 @@ export default function PresetEdits() {
     }
   }, [searchTerm, items]);
 
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Preset Edit',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+
   return (
     <ScrollView style = {styles.container}>
-      {/*Header View*/}
-      <View style={styles.headerView}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color="black" strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.header}>Preset Edit</Text>
-      </View>
+
 
       {/*Date Bar*/}
       <View style={styles.dateView}>

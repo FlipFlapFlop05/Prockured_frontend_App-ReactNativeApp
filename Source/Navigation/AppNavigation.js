@@ -67,6 +67,7 @@ import VendorProfile from '../Vendor/VendorProfile';
 import OutletDashboard from '../Client/OutletDashboard';
 import OutletSummary from '../Client/OutletSummary';
 import OutletEditDetails from '../Client/OutletEditDetails';
+import CampaignOverview from '../Vendor/CampaignOverview';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -211,6 +212,7 @@ const AppNavigation = () => {
         <Stack.Screen name={'Vendor Chat Support'} component={VendorChatSupport}/>
         <Stack.Screen name={'Catalogue'} component={VendorCatalogue} />
         <Stack.Screen name={'Vendor Profile'} component={VendorProfile} />
+        <Stack.Screen name={"Campaign Overview"} component={CampaignOverview} />
       </Stack.Navigator>
     </NavigationContainer>
   );

@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image, ScrollView, TextInput, FlatList, Alert} from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon, MagnifyingGlassIcon} from 'react-native-heroicons/outline';
@@ -26,24 +26,83 @@ export default function NewCampaign() {
     taglineText: ''
   });
   const [productData, setProductData] = useState({});
+  const [selectedProductData, setSelectedProductData] = useState([]);
   const [audienceData, setAudienceData] = useState({});
+  const [selected, setSelected] = useState('AM');
 
 
   {/*Const*/}
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({...prev, [field]: value}));
   }
-
-  const handleSubmit = async () => {
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'New Campaign',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
+  const handleSubmit = () => {
     const {date, month, year, timeHour, timeMinute, taglineText} = formData;
-    navigation.navigate('Vendor App', {screen: 'Chat'})
-    Alert.alert('Data', `Date: ${date}, Month: ${month}, Year: ${year}, Hour: ${timeHour}, Minute: ${timeMinute}, Tagline Text: ${taglineText}`);
-  }
+    if (!date || !month || !year || !timeHour || !timeMinute || !taglineText) {
+      Alert.alert("Error", "Please fill all fields.");
+      return;
+    }
+    if (selectedProductData.length === 0) {
+      Alert.alert("Error", "Please select at least one product.");
+      return;
+    }
+    Alert.alert("Selected Products", JSON.stringify(selectedProductData.map(p => p.prodName).join(", ")));
+    const campaignData = {
+      date,
+      month,
+      year,
+      timeHour,
+      timeMinute,
+      period: selected,
+      taglineText,
+      selectedProducts: selectedProductData,
+    };
+    // Navigate or process
+    navigation.navigate("Campaign Overview", {campaignData});
+    Alert.alert('Data', `Date: ${date}, Month: ${month}, Year: ${year}, Hour: ${timeHour}, Minute: ${timeMinute}, Tagline Text: ${taglineText}, Selected Time: ${selected}`);
+  };
+
 
   {/*Functions*/}
   const toggleSelection = (id) => {
-    setSelectedItems((prev) => ({...prev, [id]: !prev[id]}));
-  }
+    setSelectedItems((prev) => {
+      const newState = {...prev, [id]: !prev[id]};
+      const selectedIds = Object.keys(newState).filter(key => newState[key]);
+      const selectedProducts = items.filter(item => selectedIds.includes(item.productId));
+      setSelectedProductData(selectedProducts);
+      return newState;
+    });
+  };
+
 
   {/*Use Effect*/}
   useEffect(() => {
@@ -71,13 +130,6 @@ export default function NewCampaign() {
 
   return (
     <ScrollView style = {styles.container}>
-      {/*Header View*/}
-      <View style={styles.headerView}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color="black" strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.header}>Preset Edit</Text>
-      </View>
 
       {/*Date Bar*/}
       <View style={styles.dateView}>
@@ -149,6 +201,20 @@ export default function NewCampaign() {
               value={formData.timeMinute}
               onChangeText={(text) => handleInputChange('timeMinute', text)}
             />
+          </View>
+          <View style={styles.pickerContainer}>
+            <TouchableOpacity
+              style={[styles.option, selected === 'AM' && styles.selected]}
+              onPress={() => setSelected('AM')}
+            >
+              <Text style={[styles.text, selected === 'AM' && styles.selectedText]}>AM</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.option, selected === 'PM' && styles.selected]}
+              onPress={() => setSelected('PM')}
+            >
+              <Text style={[styles.text, selected === 'PM' && styles.selectedText]}>PM</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </View>
@@ -471,15 +537,14 @@ const styles = StyleSheet.create({
     height: 50,
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: 10
+    borderRadius: 10,
+    alignContent: 'center'
   },
   timeEntryHourText: {
-    backgroundColor: '#EEEEEE',
-    width: 50,
-    height: 50,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 10
+    fontStyle: 'normal',
+    fontFamily: 'Open Sans',
+    fontWeight: '600',
+    fontSize: 16
   },
   timeEntryColonView: {
     alignItems: 'center',
@@ -558,11 +623,13 @@ const styles = StyleSheet.create({
       height: 2
     },
     shadowRadius: 4,
-    elevation: 2
+    elevation: 2,
+    borderColor: 'black'
   },
   checkBoxContainerStyle: {
     padding: 0,
-    margin: 0
+    margin: 0,
+    borderColor: '#76B117'
   },
   supplierDataView: {
     flex: 1,
@@ -588,4 +655,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'green'
   },
+  option: {
+    flex: 1,
+    paddingVertical: 10,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+  },
+  selected: {
+    backgroundColor: '#69B946',
+  },
+  text: {
+    color: '#333',
+    fontWeight: '500',
+  },
+  selectedText: {
+    color: '#fff',
+  },
+  pickerContainer: {
+    flexDirection: 'row',
+    borderRadius: 8,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    width: 80,
+    marginLeft: 20
+  }
 });

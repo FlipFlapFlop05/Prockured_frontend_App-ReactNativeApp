@@ -78,9 +78,9 @@ export default function VendorProfile() {
           setPincode(response.data.pincode || '');
           setState(response.data.state || '');
           setCountry(response.data.country || '');
-          setBillingAddress(response.data.billingAddress);
+          setBillingAddress(response.data.BillingAddress);
           setGstNumber(response.data.gst || '');
-          setShippingAddress(response.data.shippingAddress || '');
+          setShippingAddress(response.data.ShippingAddress || '');
         }
       } catch (error) {
         console.log('Error Fetching Client Data: ', error);
@@ -280,7 +280,6 @@ export default function VendorProfile() {
       <View style={styles.inputContainer}>
         <Text style={styles.detailLabel}>Shipping Address</Text>
         <TextInput
-          placeholder={'Enter Shipping Address'}
           keyboardType={'default'}
           style={styles.input}
           value={shippingAddress}
@@ -306,7 +305,6 @@ export default function VendorProfile() {
       <View style={styles.inputContainer}>
         <Text style={styles.detailLabel}>Billing Address</Text>
         <TextInput
-          placeholder={'Enter Billing Address'}
           keyboardType={'default'}
           style={styles.input}
           value={billingAddress}

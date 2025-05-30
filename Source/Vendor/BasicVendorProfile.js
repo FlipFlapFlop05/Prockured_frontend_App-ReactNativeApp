@@ -21,7 +21,7 @@ const imageSize = width * 0.25;
 
 export default function BasicVendorProfile() {
   const navigation = useNavigation();
-  const [clientId, setClientId] = useState(null);
+  const [supplierId, setSupplierId] = useState(null);
   const [form, setForm] = useState({
     name: '',
     businessName: '',
@@ -40,8 +40,8 @@ export default function BasicVendorProfile() {
   useEffect(() => {
     const fetchClientId = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('ClientUserId');
-        if (storedId) setClientId(storedId);
+        const storedId = await AsyncStorage.getItem('SupplierUserId');
+        if (storedId) setSupplierId(storedId);
       } catch (error) {
         console.log('Error Fetching Client ID: ', error);
       }
@@ -281,15 +281,6 @@ const styles = StyleSheet.create({
   profileContainer: {
     alignItems: 'center',
     marginBottom: 30,
-  },
-  profileImage: {
-    width: 100,
-    height: 100,
-    borderRadius: 100,
-    marginBottom: -12,
-    borderWidth: 1,
-    borderColor: '#76B117',
-    marginTop: '5%',
   },
   iconWrapper: {
     position: 'absolute',

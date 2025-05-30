@@ -1,17 +1,42 @@
-import React from "react";
+import React, {useLayoutEffect} from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Image} from 'react-native';
 import {ChevronLeftIcon, UserIcon} from "react-native-heroicons/outline";
 import {useNavigation} from '@react-navigation/native';
 
 export default function VendorMarketingPage() {
   const navigation = useNavigation();
+  useLayoutEffect(() => {
+    navigation.setOptions({
+      headerShown: true,
+      headerTitle: 'Marketing',
+      headerStyle: {
+        backgroundColor: '#f8f8f8',
+        elevation: 0,
+        shadowOpacity: 0,
+        borderBottomWidth: 0,
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      headerTitleStyle: {
+        fontWeight: 'bold',
+        fontSize: 20,
+        fontFamily: 'Montserrat',
+        justifyContent: 'center',
+        // color: 'white',
+      },
+      headerLeft: () => (
+        <TouchableOpacity
+          onPress={() => {
+            navigation.goBack();
+          }}
+          style={{paddingHorizontal: 13}}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
+      ),
+    });
+  }, [navigation]);
   return(
     <View style = {styles.container}>
-      <View style = {styles.chooseModeView}>
-        <Text style={styles.chooseModeText}>
-          Marketing
-        </Text>
-      </View>
       <View style = {styles.clientModeView}>
         <Image
           source={require('../Images/MoreImage.png')}
