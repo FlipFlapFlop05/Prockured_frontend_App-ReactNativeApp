@@ -83,7 +83,7 @@ const AddProductManually = () => {
 
   const fetchPhoneNumber = async () => {
     try {
-      const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+      const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
       if (storedPhoneNumber) {
         setClientPhoneNumber(storedPhoneNumber);
       }

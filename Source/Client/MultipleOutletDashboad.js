@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
+  Alert
 } from 'react-native';
 import {
   ChevronLeftIcon,
