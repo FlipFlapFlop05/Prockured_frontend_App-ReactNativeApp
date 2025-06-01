@@ -31,7 +31,8 @@ const LinkProduct = () => {
   useEffect(() => {
     const fetchClientId = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('ClientUserId');
+        // const storedId = await AsyncStorage.getItem('ClientUserId');
+        const storedId = await AsyncStorage.getItem('clientGST');
         if (storedId) {
           setClientId(storedId);
         }
@@ -44,7 +45,7 @@ const LinkProduct = () => {
       if (clientId) {
         try {
           const response = await axios.get(
-            `${Config.API_BASE_URL}/getCatalogue/${clientId}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${clientId}`,
           );
           const dataArray = Object.values(response.data);
           setProducts(dataArray);

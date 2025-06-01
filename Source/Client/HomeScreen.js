@@ -61,9 +61,13 @@ export default function HomeScreen() {
       const gst = await AsyncStorage.getItem('phoneNumber');
       if (gst) {
         try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${gst}`,
+          console.log(
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
           );
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+          );
+
           const dataArray = Object.values(response.data);
           setData(dataArray);
         } catch (error) {
@@ -172,18 +176,29 @@ export default function HomeScreen() {
         <View style={styles.chatScreenHeaderView}>
           <View style={styles.chatScreenHeaderViewIcon}>
             <View>
-              <Text style = {{fontSize: 16, fontWeight: '200', fontFamily: 'Montserrat'}}>
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '200',
+                  fontFamily: 'Montserrat',
+                }}>
                 Delivery Address
               </Text>
-              <Text style = {{fontSize: 20, fontWeight: 'bold', fontFamily: 'Montserrat'}}>
+              <Text
+                style={{
+                  fontSize: 20,
+                  fontWeight: 'bold',
+                  fontFamily: 'Montserrat',
+                }}>
                 dsadshippingAddress
               </Text>
             </View>
-            <View style = {{flexDirection: 'row'}}>
+            <View style={{flexDirection: 'row'}}>
               <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
                 <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
               </TouchableOpacity>
-              <TouchableOpacity onPress={() => navigation.navigate('Notification And Search')}>
+              <TouchableOpacity
+                onPress={() => navigation.navigate('Notification And Search')}>
                 <QuestionMarkCircleIcon
                   size={30}
                   color={'#a9a9a9'}

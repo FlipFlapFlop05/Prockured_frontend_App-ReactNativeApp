@@ -93,7 +93,7 @@ export default function VendorSetting() {
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const storedPhoneNumber = await AsyncStorage.getItem('supplierGST');
         if (storedPhoneNumber) {
           setPhoneNumber(storedPhoneNumber);
         }

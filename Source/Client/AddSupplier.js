@@ -28,6 +28,7 @@ export default function AddSupplier() {
     state: '',
     country: '',
     supplierPhoneNumber: '',
+    supplierGstNumber: '',
   });
 
   useEffect(() => {
@@ -77,8 +78,15 @@ export default function AddSupplier() {
 
   const handleSave = async () => {
     const id = phoneNumber;
-    const {businessName, email, pincode, state, country, supplierPhoneNumber} =
-      form;
+    const {
+      businessName,
+      email,
+      pincode,
+      state,
+      country,
+      supplierPhoneNumber,
+      supplierGstNumber,
+    } = form;
 
     if (
       !id ||
@@ -87,13 +95,14 @@ export default function AddSupplier() {
       !pincode ||
       !state ||
       !country ||
-      !supplierPhoneNumber
+      !supplierPhoneNumber ||
+      !supplierGstNumber
     ) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${email}/${pincode}/${state}/${country}/'aaaddd'`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${supplierGstNumber}/${email}/${pincode}/${state}/${country}'`;
     console.log('Request URL:', url);
     try {
       const response = await axios.get(url, {
@@ -192,6 +201,17 @@ export default function AddSupplier() {
         validationFunc={text => /^\d{10}$/.test(text)}
         errorMessage="Enter a valid 10-digit phone number"
       />
+      <ValidatedInput
+        label="Supplier GST Number (e.g. 27ABCDE1234F1Z5)"
+        placeholder="Enter Supplier GST Number"
+        value={form.supplierGstNumber}
+        // keyboardType=""
+        onChangeText={value => handleChange('supplierGstNumber', value)}
+        validationFunc={text =>
+          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
+        }
+        errorMessage="Enter a valid GST number"
+      />
 
       <TouchableOpacity onPress={handleSave}>
         <View style={styles.addSupplierButtonView}>
@@ -244,7 +264,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 10,
     marginTop: 20,
-    marginBottom: 30
+    marginBottom: 30,
   },
   addSupplierButtonText: {
     color: 'white',

@@ -1,4 +1,4 @@
-import React, {useEffect, useState, useRef, useLayoutEffect} from 'react';
+import React, {useEffect, useState, useRef} from 'react';
 import {
   View,
   Text,
@@ -10,105 +10,99 @@ import {
   Dimensions,
   TextInput,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import {
+  ChevronDownIcon,
   ChevronLeftIcon,
   MagnifyingGlassIcon,
+  ShoppingCartIcon,
 } from 'react-native-heroicons/outline';
-import Config from 'react-native-config';
+import {categories} from '../Constant/constant';
 
-const {width, height} = Dimensions.get('window');
+const {width} = Dimensions.get('window');
 
 export default function Catalogue() {
   const navigation = useNavigation();
   const [phoneNumer, setPhoneNumber] = useState(null);
   const [data, setData] = useState([]);
-  const [selectedCategory, setSelectedCategory] = useState('All');
   const [cart, setCart] = useState({});
-  const categoryScrollViewRef = useRef(null);
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchAnim = useRef(new Animated.Value(0)).current;
-
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      headerTitle: 'Your Catalogue',
-      headerStyle: {
-        backgroundColor: '#f8f8f8',
-        elevation: 0,
-        shadowOpacity: 0,
-        borderBottomWidth: 0,
-        // justifyContent: 'center',
-        // alignItems: 'center',
-      },
-      headerTitleStyle: {
-        fontWeight: 'bold',
-        fontSize: 20,
-        fontFamily: 'Montserrat',
-        // justifyContent: 'center',
-        // color: 'white',
-      },
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 13}}>
-          <ChevronLeftIcon size={28} color="#333" />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
+  const [selectedMainCategory, setSelectedMainCategory] = useState(
+    categories[0]?.name || '',
+  );
+  const [isDropdownVisible, setIsDropdownVisible] = useState(false);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplierTab, setSelectedSupplierTab] =
+    useState('My Catalogue');
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchPhoneNumber = async () => {
+    const fetchData = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
+        console.log(storedPhoneNumber);
+
+        if (storedPhoneNumber) setPhoneNumber(storedPhoneNumber);
+
         if (storedPhoneNumber) {
-          setPhoneNumber(storedPhoneNumber);
+          const [catalogueResponse, suppliersResponse] = await Promise.all([
+            axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${storedPhoneNumber}`,
+            ),
+            axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
+            ),
+          ]);
+
+          const supplierArray = Object.values(suppliersResponse?.data);
+          setSuppliers(supplierArray);
+
+          const dataArray = Object.values(catalogueResponse?.data);
+          setData(dataArray);
         }
       } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
+        console.log('Error fetching data:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    const fetchData = async () => {
-      if (phoneNumer) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${phoneNumer}`,
-          );
-          const dataArray = Object.values(response.data);
-          console.log(dataArray);
-
-          setData(dataArray);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-
-    fetchPhoneNumber();
     fetchData();
-  }, [phoneNumer]);
+  }, []);
 
-  const groupedData = data.reduce((acc, item) => {
-    const category = item.SupplierName;
-    if (!acc[category]) {
-      acc[category] = [];
+  // Filter data based on selected category and supplier tab
+  const filteredData = data.filter(item => {
+    // First filter by the selected category (case insensitive)
+    const categoryMatch =
+      item.CategoryName?.toLowerCase() === selectedMainCategory?.toLowerCase();
+
+    // Then filter by supplier if not "My Catalogue" (case insensitive)
+    if (selectedSupplierTab === 'My Catalogue') {
+      return categoryMatch;
+    } else {
+      return (
+        categoryMatch &&
+        item.SupplierName?.toLowerCase() === selectedSupplierTab?.toLowerCase()
+      );
     }
-    acc[category].push(item);
-    return acc;
-  }, {});
+  });
 
-  const categories = ['All', ...Object.keys(groupedData)];
+  console.log('Selected category:', selectedMainCategory);
+  console.log('Selected supplier tab:', selectedSupplierTab);
+  console.log('Filtered data:', filteredData);
+  console.log('data:', data);
+  console.log('suppliers:', suppliers);
 
-  const filteredData =
-    selectedCategory === 'All'
-      ? groupedData
-      : {[selectedCategory]: groupedData[selectedCategory]};
+  // Filter items based on search term
+  const searchedItems = filteredData.filter(item =>
+    item.prodName?.toLowerCase().includes(searchTerm.toLowerCase()),
+  );
 
   const handleAddToCart = productId => {
     setCart(prevCart => ({
@@ -130,20 +124,10 @@ export default function Catalogue() {
     }
   };
 
-  const calculateTotalItems = () => {
-    return Object.values(cart).reduce((sum, qty) => sum + qty, 0);
-  };
+  const calculateTotalItems = () =>
+    Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  const updateCartFromBasket = updatedCart => {
-    setCart(updatedCart);
-  };
-
-  const handleCategoryPress = category => {
-    setSelectedCategory(category);
-    if (categoryScrollViewRef.current) {
-      categoryScrollViewRef.current.scrollTo({x: 0, y: 0, animated: true});
-    }
-  };
+  const updateCartFromBasket = updatedCart => setCart(updatedCart);
 
   const toggleSearch = () => {
     setIsSearchVisible(!isSearchVisible);
@@ -159,127 +143,189 @@ export default function Catalogue() {
     outputRange: [0, width * 0.9],
   });
 
-  const searchOpacity = searchAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
+  const handleCategoryChange = category => {
+    setSelectedMainCategory(category);
+    setSelectedSupplierTab('My Catalogue'); // Reset to My Catalogue when category changes
+    setIsDropdownVisible(false);
+  };
 
-  const filteredItems = Object.keys(filteredData).reduce((acc, category) => {
-    acc[category] = filteredData[category].filter(item =>
-      item.prodName.toLowerCase().includes(searchTerm.toLowerCase()),
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#76B117" />
+      </View>
     );
-    return acc;
-  }, {});
+  }
 
   return (
     <View style={styles.outerContainer}>
-      <ScrollView style={styles.container}>
-        {isSearchVisible && ( // Conditionally render the search bar
-          <Animated.View style={[styles.searchContainer, {width: searchWidth}]}>
-            <TextInput
-              style={styles.searchInput}
-              placeholder="Search products..."
-              placeholderTextColor="gray"
-              value={searchTerm}
-              onChangeText={setSearchTerm}
-            />
-          </Animated.View>
-        )}
+      <View
+        style={{flexDirection: 'row', alignItems: 'center', marginTop: '3%'}}>
+        <TouchableOpacity
+          onPress={() => navigation.goBack()}
+          style={{marginLeft: '5%', position: 'relative', bottom: '10%'}}>
+          <ChevronLeftIcon size={21} color="#333" strokeWidth={2} />
+        </TouchableOpacity>
+        <View style={{marginLeft: '2%'}}>
+          <Text
+            style={{
+              fontWeight: 'bold',
+              fontSize: 20,
+              fontFamily: 'Montserrat',
+            }}>
+            {data?.length == 0 ? 'Catalogue' : selectedMainCategory}
+          </Text>
 
-        {data.length !== 0 ? (
-          <View style={styles.mainContent}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              style={styles.categoryScroll}
-              ref={categoryScrollViewRef}>
-              {categories.map(category => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryButton,
-                    selectedCategory === category &&
-                      styles.selectedCategoryButton,
-                  ]}
-                  onPress={() => handleCategoryPress(category)}>
-                  <Text
-                    style={[
-                      styles.categoryText,
-                      selectedCategory === category &&
-                        styles.selectedCategoryText,
-                    ]}>
-                    {category}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
+          {data?.length > 0 ? (
+            <TouchableOpacity
+              onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
+              <View
+                style={{
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  marginTop: '2%',
+                }}>
+                <Text style={{color: '#76B117'}}>Change Category</Text>
+                <ChevronDownIcon
+                  size={18}
+                  color="#76B117"
+                  style={{marginLeft: 4}}
+                />
+              </View>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      </View>
 
-            {Object.keys(filteredItems).map((category, index) => (
-              <FlatList
-                key={index}
-                data={filteredItems[category]}
-                keyExtractor={item => item.productId}
-                renderItem={({item}) => (
-                  <View style={styles.productCard}>
-                    <Image
-                      source={{
-                        uri: 'https://www.themealdb.com/images/category/beef.png',
-                      }}
-                      style={styles.productImageCard}
-                    />
-                    <View style={styles.productDetailsCard}>
-                      <Text style={styles.productNameCard}>
-                        {item.prodName}
-                      </Text>
-                      <Text style={styles.productCategoryCard}>
-                        {item.CategoryName}
-                      </Text>
-                      <Text style={styles.productPriceCard}>
-                        ₹ {item.myPrice}
-                      </Text>
-                    </View>
-                    <View style={styles.quantityControlsCard}>
-                      <TouchableOpacity
-                        style={styles.quantityButtonCard}
-                        onPress={() => handleRemoveFromCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantityTextCard}>
-                        {cart[item.productId] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.quantityButtonCard}
-                        onPress={() => handleAddToCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
+      {isDropdownVisible && (
+        <View style={styles.dropdown}>
+          {categories.map((cat, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.dropdownItem}
+              onPress={() => handleCategoryChange(cat.name)}>
+              <Text style={{color: '#333'}}>{cat.name}</Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+      )}
+      {data.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Image
+            source={{
+              uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fdiary.png?alt=media&token=28574722-8076-44a0-a093-53e6132b9945',
+            }}
+            style={styles.emptyStateImage}
+          />
+          <TouchableOpacity
+            style={styles.addProductButton}
+            onPress={() => navigation.navigate('Add Product Manually')}>
+            <Text style={styles.addProductText}>+ Add Product</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <ScrollView style={styles.container}>
+          {isSearchVisible && (
+            <Animated.View
+              style={[styles.searchContainer, {width: searchWidth}]}>
+              <TextInput
+                style={styles.searchInput}
+                placeholder="Search products..."
+                placeholderTextColor="gray"
+                value={searchTerm}
+                onChangeText={setSearchTerm}
               />
-            ))}
+            </Animated.View>
+          )}
 
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            style={{paddingHorizontal: 16, marginBottom: 10}}>
             <TouchableOpacity
-              style={styles.floatingButton}
-              onPress={() => navigation.navigate('Add Product Manually')}>
-              <Text style={styles.floatingButtonText}>+</Text>
+              style={[
+                styles.filterButton,
+                selectedSupplierTab === 'My Catalogue' &&
+                  styles.filterButtonActive,
+              ]}
+              onPress={() => setSelectedSupplierTab('My Catalogue')}>
+              <Text
+                style={[
+                  styles.filterButtonText,
+                  selectedSupplierTab === 'My Catalogue' &&
+                    styles.filterButtonTextActive,
+                ]}>
+                My Catalogue
+              </Text>
             </TouchableOpacity>
-          </View>
-        ) : (
-          <View style={styles.emptyState}>
-            <Image
-              source={{
-                uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fdiary.png?alt=media&token=28574722-8076-44a0-a093-53e6132b9945',
-              }}
-              style={styles.emptyStateImage}
+            {suppliers.map(supplier => (
+              <TouchableOpacity
+                key={supplier.supplierId}
+                style={[
+                  styles.filterButton,
+                  selectedSupplierTab === supplier.businessName &&
+                    styles.filterButtonActive,
+                ]}
+                onPress={() => setSelectedSupplierTab(supplier.businessName)}>
+                <Text
+                  style={[
+                    styles.filterButtonText,
+                    selectedSupplierTab === supplier.businessName &&
+                      styles.filterButtonTextActive,
+                  ]}>
+                  {supplier.businessName}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+
+          {searchedItems.length > 0 ? (
+            <FlatList
+              data={searchedItems}
+              keyExtractor={item => item.productId}
+              renderItem={({item}) => (
+                <View style={styles.productCard}>
+                  <Image
+                    source={{
+                      uri: 'https://www.themealdb.com/images/category/beef.png',
+                    }}
+                    style={styles.productImageCard}
+                  />
+                  <View style={styles.productDetailsCard}>
+                    <Text style={styles.productNameCard}>{item.prodName}</Text>
+                    <Text style={styles.productCategoryCard}>
+                      {item.CategoryName}
+                    </Text>
+                    <Text style={styles.productPriceCard}>
+                      ₹ {item.myPrice}
+                    </Text>
+                  </View>
+                  <View style={styles.quantityControlsCard}>
+                    <TouchableOpacity
+                      onPress={() => handleRemoveFromCart(item.productId)}>
+                      <Text style={styles.quantityButtonTextCard}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityTextCard}>
+                      {cart[item.productId] || 0}
+                    </Text>
+                    <TouchableOpacity
+                      onPress={() => handleAddToCart(item.productId)}>
+                      <Text style={styles.quantityButtonTextCard}>+</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              )}
             />
-            <TouchableOpacity
-              style={styles.addProductButton}
-              onPress={() => navigation.navigate('Add Product Manually')}>
-              <Text style={styles.addProductText}>+ Add Product</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      </ScrollView>
+          ) : (
+            <Text style={styles.noProductsText}>
+              {searchTerm
+                ? 'No matching products found'
+                : 'No products available in this category'}
+            </Text>
+          )}
+        </ScrollView>
+      )}
+
       {calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
@@ -290,9 +336,9 @@ export default function Catalogue() {
               updateCart: updateCartFromBasket,
             })
           }>
-          <Text style={styles.viewBasketText}>
-            View Basket ({calculateTotalItems()})
-          </Text>
+          <Text style={styles.viewBasketText}>View Basket</Text>
+          <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
+          <Text style={styles.basketCount}> {calculateTotalItems()}</Text>
         </TouchableOpacity>
       )}
     </View>
@@ -300,96 +346,116 @@ export default function Catalogue() {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {
+  outerContainer: {flex: 1, backgroundColor: '#f9f9f9'},
+  container: {padding: 15},
+  loadingContainer: {
     flex: 1,
-  },
-  container: {
-    flex: 1,
-    padding: 15,
-    backgroundColor: '#f5f5f5',
-  },
-  header: {
-    justifyContent: 'space-between',
-    flexDirection: 'row',
-    paddingTop: 10,
-    width: width * 0.9,
-    position: 'relative', // Ensure header is positioned relatively
-  },
-  headerText: {
-    fontWeight: 'bold',
-    fontSize: 22,
-  },
-  mainContent: {
-    marginTop: 20,
-  },
-  categoryScroll: {
-    marginBottom: 10,
-    paddingVertical: 5,
-  },
-  categoryButton: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    borderRadius: 20,
-    marginRight: 10,
-    backgroundColor: '#e0e0e0',
-  },
-  selectedCategoryButton: {
-    backgroundColor: '#76B117',
-  },
-  categoryText: {
-    fontSize: 16,
-    color: '#333',
-  },
-  selectedCategoryText: {
-    color: '#fff',
-  },
-  productCard: {
-    flexDirection: 'row',
-    backgroundColor: 'white',
-    borderRadius: 10,
-    padding: 10,
-    marginVertical: 8,
+    justifyContent: 'center',
     alignItems: 'center',
   },
-  productImageCard: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  dropdown: {
+    position: 'absolute',
+    top: 70,
+    left: 20,
+    right: 20,
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 999,
+    maxHeight: 300,
+  },
+  dropdownItem: {
+    padding: 12,
+    borderBottomColor: '#eee',
+    borderBottomWidth: 1,
+  },
+  filterButton: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 18,
+    backgroundColor: '#fff',
     marginRight: 10,
+    borderColor: '#76B117',
+    borderWidth: 1,
   },
-  productDetailsCard: {
-    flex: 1,
+  filterButtonActive: {
+    backgroundColor: '#76B117',
+    color: '#FFF',
+    fontFamily: 'Open Sans',
   },
-  productNameCard: {
-    fontSize: 16,
-    fontWeight: 'bold',
+  filterButtonText: {color: '#333', fontWeight: '400', fontFamily: 'Open Sans'},
+  filterButtonTextActive: {color: '#fff'},
+  productCard: {
+    flexDirection: 'row',
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 10,
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+    alignItems: 'center',
   },
-  productCategoryCard: {
-    fontSize: 14,
-    color: 'gray',
-  },
+  productImageCard: {width: 50, height: 50, borderRadius: 25, marginRight: 10},
+  productDetailsCard: {flex: 1},
+  productNameCard: {fontSize: 16, fontWeight: '700', color: '#76B117'},
+  productCategoryCard: {fontSize: 13, color: 'gray'},
   productPriceCard: {
     fontSize: 16,
-    marginTop: 5,
+    color: '#76B117',
+    fontWeight: '600',
+    marginTop: 4,
   },
   quantityControlsCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#76B117',
+    borderWidth: 1,
+    borderColor: '#76B117',
     borderRadius: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    backgroundColor: '#76B117',
   },
-  quantityButtonCard: {
-    padding: 5,
+  quantityButtonTextCard: {color: '#fff', fontSize: 18, fontWeight: '400'},
+  quantityTextCard: {marginHorizontal: 8, fontWeight: '600', color: '#fff'},
+  viewBasketButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#76B117',
+    padding: 14,
+    borderRadius: 10,
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
   },
-  quantityButtonTextCard: {
-    color: 'white',
+  viewBasketText: {
+    color: '#fff',
     fontSize: 18,
+    fontWeight: 400,
+    fontFamily: 'Montserrat',
   },
-  quantityTextCard: {
-    color: 'white',
+  basketCount: {color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 6},
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 10,
     fontSize: 16,
-    marginHorizontal: 8,
+    color: '#000',
+  },
+  noProductsText: {
+    textAlign: 'center',
+    marginTop: 20,
+    fontSize: 16,
+    color: '#666',
   },
   emptyState: {
     alignItems: 'center',
@@ -419,51 +485,5 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 'fit-content',
     textAlign: 'center',
-  },
-  viewBasketButton: {
-    backgroundColor: '#76B117',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    width: '90%',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    marginLeft: 20,
-    marginBottom: 10,
-  },
-  viewBasketText: {
-    color: 'white',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  searchInput: {
-    padding: 10,
-    color: 'black',
-    width: '90%',
-  },
-  floatingButton: {
-    backgroundColor: '#76B117',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    position: 'absolute',
-    bottom: 80,
-    right: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  floatingButtonText: {
-    color: 'white',
-    fontSize: 24,
-    fontWeight: 'bold',
   },
 });

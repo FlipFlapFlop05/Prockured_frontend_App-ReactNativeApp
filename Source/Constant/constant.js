@@ -25,7 +25,7 @@ export const tagColors = {
 };
 export const categories = [
   {
-    name: 'Vegetables',
+    name: 'Vegetable',
     image:
       'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
   },
@@ -36,22 +36,24 @@ export const categories = [
   },
 ];
 export const Vegetable_Categories = [
-  {id: 1, title: 'Beetroot'},
-  {id: 2, title: 'Brinjal'},
-  {id: 3, title: 'Broccoli'},
-  {id: 4, title: 'Cabbage'},
-  {id: 5, title: 'Carrots'},
-  {id: 6, title: 'Cauliflower'},
-  {id: 7, title: 'Celery'},
-  {id: 8, title: 'Cucumber'},
-  {id: 9, title: 'Garlic'},
-  {id: 10, title: 'Ginger'},
-  {id: 11, title: 'Lettuce'},
-  {id: 12, title: 'Mushroom'},
-  {id: 13, title: 'Onion'},
-  {id: 14, title: 'Potato'},
-  {id: 15, title: 'Pumpkin'},
+  {id: 1, title: 'all'},
+  {id: 2, title: 'Beetroot'},
+  {id: 3, title: 'Brinjal'},
+  {id: 4, title: 'Broccoli'},
+  {id: 5, title: 'Cabbage'},
+  {id: 6, title: 'Carrots'},
+  {id: 7, title: 'Cauliflower'},
+  {id: 8, title: 'Celery'},
+  {id: 9, title: 'Cucumber'},
+  {id: 10, title: 'Garlic'},
+  {id: 11, title: 'Ginger'},
+  {id: 12, title: 'Lettuce'},
+  {id: 13, title: 'Mushroom'},
+  {id: 14, title: 'Onion'},
+  {id: 15, title: 'Potato'},
+  {id: 16, title: 'Pumpkin'},
 ];
+
 export const worksData = [
   {
     id: 1,
@@ -81,17 +83,19 @@ export const worksData = [
   },
 ];
 export const Fruit_Categories = [
-  {id: 1, title: 'Apple'},
-  {id: 2, title: 'Apricot'},
-  {id: 3, title: 'Banana'},
-  {id: 4, title: 'Cherry'},
-  {id: 5, title: 'Coconut'},
-  {id: 6, title: 'Guava'},
-  {id: 7, title: 'Lemon'},
-  {id: 8, title: 'Mango'},
-  {id: 9, title: 'Orange'},
-  {id: 10, title: 'Peach'},
+  {id: 1, title: 'All'},
+  {id: 2, title: 'Apple'},
+  {id: 3, title: 'Apricot'},
+  {id: 4, title: 'Banana'},
+  {id: 5, title: 'Cherry'},
+  {id: 6, title: 'Coconut'},
+  {id: 7, title: 'Guava'},
+  {id: 8, title: 'Lemon'},
+  {id: 9, title: 'Mango'},
+  {id: 10, title: 'Orange'},
+  {id: 11, title: 'Peach'},
 ];
+
 export const customers = [
   {
     id: 1,

@@ -10,6 +10,7 @@ import {
   Dimensions,
   TextInput,
   Animated,
+  ActivityIndicator,
 } from 'react-native';
 import {
   ChevronLeftIcon,
@@ -36,6 +37,8 @@ const ViewCategories = () => {
   const [filteredSubcategories, setFilteredSubcategories] = useState([]);
   const [data, setData] = useState([]);
   const [cart, setCart] = useState({});
+  const [loading, setLoading] = useState(false);
+
   const categories =
     name === 'Fruits' ? Fruit_Categories : Vegetable_Categories;
   const displayedTitle = name === 'Fruits' ? 'Fruits' : 'Vegetable';
@@ -52,34 +55,92 @@ const ViewCategories = () => {
     setSelectedSubcategory(subcategory);
     fetchData(subcategory);
   };
+  // const fetchData = async subcategory => {
+  //   if (!subcategory) return;
+  //   try {
+  //     console.log(subcategory);
+
+  //     const response = await fetch(
+  //       `https://api-v7quhc5aza-uc.a.run.app/getItems/${displayedTitle}/${subcategory}`,
+  //     );
+  //     const fetchedData = await response.json();
+  //     console.log('fetchedData:', fetchedData);
+
+  //     if (fetchedData && typeof fetchedData === 'object') {
+  //       const transformedData = Object.keys(fetchedData).map(key => ({
+  //         id: key,
+  //         ...fetchedData[key],
+  //       }));
+  //       setDisplayedItems(transformedData);
+  //       setFilteredItems(transformedData);
+  //       setData(transformedData); // ✅ Ensuring data is properly set
+  //     } else {
+  //       setDisplayedItems([]);
+  //       setFilteredItems([]);
+  //       setData([]); // ✅ Reset data to avoid empty references
+  //     }
+  //   } catch (error) {
+  //     console.error('Failed to fetch data:', error);
+  //     setDisplayedItems([]);
+  //     setFilteredItems([]);
+  //     setData([]);
+  //   }
+  // };
+
   const fetchData = async subcategory => {
     if (!subcategory) return;
-    try {
-      const response = await fetch(
-        `https://api-v7quhc5aza-uc.a.run.app/getItems/${displayedTitle}/${subcategory}`,
-      );
-      const fetchedData = await response.json();
+    setLoading(true); // Show spinner
 
-      if (fetchedData && typeof fetchedData === 'object') {
-        const transformedData = Object.keys(fetchedData).map(key => ({
-          id: key,
-          ...fetchedData[key],
-        }));
-        setDisplayedItems(transformedData);
-        setFilteredItems(transformedData);
-        setData(transformedData); // ✅ Ensuring data is properly set
+    try {
+      let fetchedData = [];
+
+      if (subcategory.toLowerCase() === 'all') {
+        const response = await fetch(
+          `https://api-v7quhc5aza-uc.a.run.app/getItems/${displayedTitle}/all`,
+        );
+        const allData = await response.json();
+
+        if (allData && typeof allData === 'object') {
+          Object.entries(allData).forEach(([subCatId, items]) => {
+            Object.entries(items).forEach(([itemId, itemDetails]) => {
+              fetchedData.push({
+                id: itemId,
+                ...itemDetails,
+                subCategory: subCatId,
+              });
+            });
+          });
+        }
       } else {
-        setDisplayedItems([]);
-        setFilteredItems([]);
-        setData([]); // ✅ Reset data to avoid empty references
+        const response = await fetch(
+          `https://api-v7quhc5aza-uc.a.run.app/getItems/${displayedTitle}/${subcategory}`,
+        );
+        const singleData = await response.json();
+
+        if (singleData && typeof singleData === 'object') {
+          fetchedData = Object.keys(singleData).map(key => ({
+            id: key,
+            ...singleData[key],
+          }));
+        }
       }
+
+      setDisplayedItems(fetchedData);
+      setFilteredItems(fetchedData);
+      setData(fetchedData);
     } catch (error) {
       console.error('Failed to fetch data:', error);
       setDisplayedItems([]);
       setFilteredItems([]);
       setData([]);
     }
+
+    setLoading(false); // Hide spinner
   };
+
+  console.log('displayedItems:', displayedItems);
+  console.log('filteredItems:', filteredItems);
+  console.log('data:', data);
 
   const handleSearch = query => {
     setSearchQuery(query);
@@ -123,6 +184,7 @@ const ViewCategories = () => {
       [id]: (prevCart[id] || 0) + 1,
     }));
   };
+  console.log(cart);
 
   const handleRemoveFromCart = id => {
     setCart(prevCart => {
@@ -182,53 +244,61 @@ const ViewCategories = () => {
                   selectedSubcategory === category.title &&
                     styles.selectedSubcategoryText,
                 ]}>
-                {category.title}
+                {category.title == 'all' ? 'All' : category.title}
               </Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
-        <FlatList
-          data={filteredItems}
-          keyExtractor={item => item.id}
-          renderItem={({item}) => (
-            <View style={styles.itemCard}>
-              <View style={styles.itemRow}>
-                <Image
-                  source={require('../Images/ProckuredImage.jpg')}
-                  style={styles.itemImage}
-                />
-                <View style={styles.itemDetails}>
-                  <Text style={styles.itemName}>{item.Name}</Text>
-                  <Text style={styles.itemDesc}>
-                    {item.Desc?.length > 14
-                      ? item.Desc.substring(0, 14) + '...'
-                      : item.Desc}
-                  </Text>
-                </View>
-                <View style={styles.quantityControlsCard}>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCard}
-                    onPress={() => handleRemoveFromCart(item.id)}>
-                    <Text style={styles.quantityButtonTextCard}>-</Text>
-                  </TouchableOpacity>
-                  <Text style={styles.quantityTextCard}>
-                    {cart[item.id] || 0}
-                  </Text>
-                  <TouchableOpacity
-                    style={styles.quantityButtonCard}
-                    onPress={() => handleAddToCart(item.id)}>
-                    <Text style={styles.quantityButtonTextCard}>+</Text>
-                  </TouchableOpacity>
+        {loading ? (
+          <ActivityIndicator
+            size="large"
+            color="#00AA00"
+            style={{marginTop: 20}}
+          />
+        ) : (
+          <FlatList
+            data={filteredItems}
+            keyExtractor={item => item.id}
+            renderItem={({item}) => (
+              <View style={styles.itemCard}>
+                <View style={styles.itemRow}>
+                  <Image
+                    source={require('../Images/ProckuredImage.jpg')}
+                    style={styles.itemImage}
+                  />
+                  <View style={styles.itemDetails}>
+                    <Text style={styles.itemName}>{item.Name}</Text>
+                    <Text style={styles.itemDesc}>
+                      {item.Desc?.length > 14
+                        ? item.Desc.substring(0, 14) + '...'
+                        : item.Desc}
+                    </Text>
+                  </View>
+                  <View style={styles.quantityControlsCard}>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCard}
+                      onPress={() => handleRemoveFromCart(item.id)}>
+                      <Text style={styles.quantityButtonTextCard}>-</Text>
+                    </TouchableOpacity>
+                    <Text style={styles.quantityTextCard}>
+                      {cart[item.id] || 0}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.quantityButtonCard}
+                      onPress={() => handleAddToCart(item.id)}>
+                      <Text style={styles.quantityButtonTextCard}>+</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
-            </View>
-          )}
-          ListEmptyComponent={() => (
-            <Text style={styles.placeholderText}>No items available</Text>
-          )}
-          contentContainerStyle={styles.flatListContainer}
-        />
+            )}
+            ListEmptyComponent={() => (
+              <Text style={styles.placeholderText}>No items available</Text>
+            )}
+            contentContainerStyle={styles.flatListContainer}
+          />
+        )}
       </View>
       {calculateTotalItems() > 0 && (
         <TouchableOpacity

@@ -46,9 +46,14 @@ export default function VendorProfile() {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
         const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const storedShippingAddress = await AsyncStorage.getItem('shippingAddress',);
-        const storedBillingAddress = await AsyncStorage.getItem('billingAddress',);
+        const storedShippingAddress = await AsyncStorage.getItem(
+          'shippingAddress',
+        );
+        const storedBillingAddress = await AsyncStorage.getItem(
+          'billingAddress',
+        );
         const storedGSTNumber = await AsyncStorage.getItem('gstNumber');
+        const supplierGst = await AsyncStorage.getItem('supplierGST');
 
         if (storedPassword) {
           setClientPassword(storedPassword);
@@ -68,7 +73,7 @@ export default function VendorProfile() {
 
         if (storedPhoneNumber) {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${storedPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${supplierGst}`,
           );
 
           setData(response.data);
