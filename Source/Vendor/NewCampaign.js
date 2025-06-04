@@ -103,7 +103,7 @@ export default function NewCampaign() {
     });
   };
 
-
+  
   {/*Use Effect*/}
   useEffect(() => {
     const fetchData = async () => {

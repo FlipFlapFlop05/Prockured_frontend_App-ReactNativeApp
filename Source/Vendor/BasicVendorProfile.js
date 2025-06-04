@@ -154,6 +154,7 @@ export default function BasicVendorProfile() {
         value={form.name}
         onChangeText={v => handleChange('name', v)}
         placeholder="Enter name"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Name is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -163,6 +164,7 @@ export default function BasicVendorProfile() {
         value={form.businessName}
         onChangeText={v => handleChange('businessName', v)}
         placeholder="Enter business name"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Business name is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -172,6 +174,7 @@ export default function BasicVendorProfile() {
         value={form.email}
         onChangeText={v => handleChange('email', v)}
         placeholder="Enter email"
+        placeholderTextColor="black"
         validationFunc={isValidEmail}
         errorMessage="Invalid email address"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -181,6 +184,7 @@ export default function BasicVendorProfile() {
         value={form.city}
         onChangeText={v => handleChange('city', v)}
         placeholder="Enter city"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="City is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -190,6 +194,7 @@ export default function BasicVendorProfile() {
         value={form.pincode}
         onChangeText={v => handleChange('pincode', v)}
         placeholder="Enter pincode"
+        placeholderTextColor="black"
         keyboardType="numeric"
         validationFunc={isValidPincode}
         errorMessage="Pincode must be 6 digits"
@@ -200,6 +205,7 @@ export default function BasicVendorProfile() {
         value={form.state}
         onChangeText={v => handleChange('state', v)}
         placeholder="Enter state"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="State is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -209,6 +215,7 @@ export default function BasicVendorProfile() {
         value={form.country}
         onChangeText={v => handleChange('country', v)}
         placeholder="Enter country"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Country is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -218,6 +225,7 @@ export default function BasicVendorProfile() {
         value={form.gstNumber}
         onChangeText={v => handleChange('gstNumber', v)}
         placeholder="Enter GST number"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="GST number is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -227,6 +235,7 @@ export default function BasicVendorProfile() {
         value={form.billingAddress}
         onChangeText={v => handleChange('billingAddress', v)}
         placeholder="Enter billing address"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Billing address is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
@@ -236,6 +245,7 @@ export default function BasicVendorProfile() {
         value={form.shippingAddress}
         onChangeText={v => handleChange('shippingAddress', v)}
         placeholder="Enter shipping address"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Shipping address is required"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}

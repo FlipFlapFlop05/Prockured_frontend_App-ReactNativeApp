@@ -7,6 +7,25 @@ import {ChevronRightIcon} from "react-native-heroicons/solid";
 const { width: screenWidth } = Dimensions.get('window');
 
 const ExistingPresets = () => {
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (phoneNumber) {
+        try {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${gstNumber}`,
+          );
+          setData(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    };
+
+    if (phoneNumber) {
+      fetchData();
+    }
+  }, [phoneNumber]);
   const data = [
     {
       "id": "drafts",

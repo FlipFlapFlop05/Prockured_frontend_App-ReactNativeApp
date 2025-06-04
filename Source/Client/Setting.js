@@ -123,46 +123,11 @@ export default function ClientSetting() {
     }
   }, [phoneNumber]);
 
-  // Define menu items with corresponding modals
-  // const menuItems = [
-  //   {
-  //     id: 1,
-  //     icon: 'account-edit-outline',
-  //     label: 'Edit Profile Details',
-  //     screen: 'Client Profile',
-  //   },
-  //   {
-  //     id: 2,
-  //     icon: DocumentChartBarIcon,
-  //     label: 'Teams & Roles',
-  //     modal: 'teamsRoles',
-  //   },
-  //   {
-  //     id: 3,
-  //     icon: 'widgets-outline',
-  //     label: 'Multiple Outlet Dashboard',
-  //     screen: 'Multiple Outlet Dashboard',
-  //   },
-  //   {id: 4, icon: ChartBarIcon, label: 'View Report', modal: 'viewReport'},
-  //   {id: 5, icon: UserPlusIcon, label: 'Invite Vendor', modal: 'inviteVendor'},
-  //   {
-  //     id: 6,
-  //     icon: BookOpenIcon,
-  //     label: 'Manage your catalogs',
-  //     screen: 'Catalogue',
-  //   },
-  //   {
-  //     id: 7,
-  //     icon: BookOpenIcon,
-  //     label: 'Logout',
-  //     screen: '',
-  //   },
-  // ];
 
   const menuItems = [
     {
       id: 1,
-      type: 'vector', // from react-native-vector-icons
+      type: 'vector', 
       icon: 'account-edit-outline',
       iconType: 'MaterialCommunityIcons',
       label: 'Edit Profile Details',

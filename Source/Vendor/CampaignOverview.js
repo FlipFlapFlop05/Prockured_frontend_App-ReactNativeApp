@@ -58,9 +58,7 @@ export default function CampaignOverview() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => {
-            navigation.navigate('Vendor App', {screen: 'Chat'});
-          }}
+          onPress={goBack}
           style={{paddingHorizontal: 13}}>
           <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>
@@ -143,6 +141,49 @@ export default function CampaignOverview() {
       prodPrice: product?.myPrice?.toString() || '',
       tagLine: campaignData.taglineText,
       live: 'true',
+    };
+
+    try {
+      setCompleteData(payload); // Optional
+      const response = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/createCampaign', // Replace with actual API endpoint
+        payload,
+      );
+      console.log('Submitted successfully:', response.data);
+      Alert.alert('Success', 'Campaign sent successfully!');
+      navigation.navigate('Vendor App', {screen: 'Chat'});
+    } catch (error) {
+      console.log('Submission error:', error);
+      Alert.alert('Error', 'Something went wrong while sending data.');
+    }
+  };
+
+  const goBack = async () => {
+    if (
+      !gstNumber ||
+      !campaignData.selectedProducts ||
+      campaignData.selectedProducts.length === 0
+    ) {
+      Alert.alert('Error', 'Missing GST or Products');
+      return;
+    }
+
+    const product = campaignData.selectedProducts[0]; // You can loop if needed
+
+    const payload = {
+      gstNumber: gstNumber,
+      day: campaignData.date,
+      month: campaignData.month,
+      year: campaignData.year,
+      hour: campaignData.timeHour,
+      minute: campaignData.timeMinute,
+      dayFormat: campaignData.period,
+      audienceTag: 'All Restaurant',
+      prodName: product?.prodName || '',
+      prodCategory: product?.CategoryName || '',
+      prodPrice: product?.myPrice?.toString() || '',
+      tagLine: campaignData.taglineText,
+      live: 'false',
     };
 
     try {

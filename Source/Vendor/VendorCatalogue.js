@@ -33,7 +33,7 @@ export default function VendorCatalogue() {
     const fetchClientId = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const supplierGst = await AsyncStorage.getItem('supplierGst');
+        const supplierGst = await AsyncStorage.getItem('supplierGST');
         if (storedPhoneNumber) {
           // setPhoneNumber(storedPhoneNumber);
           setPhoneNumber(supplierGst);

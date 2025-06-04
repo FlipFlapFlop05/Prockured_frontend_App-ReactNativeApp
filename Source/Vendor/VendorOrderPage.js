@@ -1,5 +1,5 @@
 import {useNavigation} from '@react-navigation/native';
-import React, {useLayoutEffect, useState} from 'react';
+import React, {useLayoutEffect, useState, useEffect} from 'react';
 import {
   View,
   Text,
@@ -17,29 +17,19 @@ import {
   PencilIcon,
   XCircleIcon,
 } from 'react-native-heroicons/outline';
-import {CheckCircleIcon as CheckCircleIconSolid} from 'react-native-heroicons/solid';
+import axios from 'axios';
 import GenericVectorIcon from '../components/GenericVectorIcon';
 
 const tabs = ['Pending Order', 'Confirmed Order', 'Past Order'];
 
 export default function VendorOrderPage() {
   const [activeTab, setActiveTab] = useState('Pending Order');
-  const [pendingOrders, setPendingOrders] = useState([
-    {id: '1', name: "Jade's Cafe"},
-    {id: '2', name: 'Bite & Co.'},
-    {id: '3', name: 'Savor'},
-    {id: '4', name: "Jade's "},
-    {id: '5', name: 'NBC'},
-    {id: '6', name: 'Jockey'},
-    {id: '7', name: "Jade's Casse"},
-    {id: '8', name: 'Bite dssad Co.'},
-    {id: '9', name: 'Savior'},
-  ]);
+  const [pendingOrders, setPendingOrders] = useState([]);
   const [confirmedOrders, setConfirmedOrders] = useState([]);
   const [pastOrders, setPastOrders] = useState([]);
-
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [gstNumber, setGSTNumber] = useState(null);
   const [toast, setToast] = useState('');
   const navigation = useNavigation();
 
@@ -47,65 +37,88 @@ export default function VendorOrderPage() {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   };
+  useEffect(() => {
+    const fetchGSTNumber = async () => {
+      try {
+        const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
+        if (storedGSTNumber) {
+          setGSTNumber(storedGSTNumber);
+        }
+      } catch (error) {
+        console.log('Error Fetching Supplier GST: ', error);
+      }
+    };
+    fetchGSTNumber();
+  }, []);
+  const fetchOrders = async () => {
+    try {
+      let response;
+      if (activeTab === 'Pending Order') {
+        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getPendingOrders', {"supplierGST": gstNumber});
+        setPendingOrders(response.data);
+      } else if (activeTab === 'Confirmed Order') {
+        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getSupplierConfirmedOrders', {"supplierGST": gstNumber});
+        setConfirmedOrders(response.data);
+      } else if (activeTab === 'Past Order') {
+        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {"supplierGST": gstNumber});
+        setPastOrders(response.data);
+      }
+    } catch (err) {
+      console.error('Fetch error:', err);
+      showToast('Failed to fetch orders.');
+    }
+  };
+
+  useLayoutEffect(() => {
+    if(gstNumber){
+      fetchOrders();
+    }
+  }, [activeTab]);
 
   const handleAcceptPress = order => {
     setSelectedOrder(order);
     setModalVisible(true);
   };
 
-  const confirmAccept = () => {
-    if (activeTab === 'Pending Order') {
-      const updated = pendingOrders.filter(o => o.id !== selectedOrder.id);
-      setPendingOrders(updated);
-      setConfirmedOrders([...confirmedOrders, selectedOrder]);
-      showToast(
-        `Confirmed \n The order from ${selectedOrder.name} is confirmed`,
-      );
-    } else if (activeTab === 'Confirmed Order') {
-      const updated = confirmedOrders.filter(o => o.id !== selectedOrder.id);
-      setConfirmedOrders(updated);
-      setPastOrders([...pastOrders, {...selectedOrder, delivered: true}]);
-      showToast(`Order from ${selectedOrder.name} has been dispatched`);
+  const confirmAccept = async () => {
+    if (!selectedOrder) return;
+    try {
+      if (activeTab === 'Pending Order') {
+        await axios.post('https://api-v7quhc5aza-uc.a.run.app/acceptOrder', {
+          orderId: selectedOrder.id,
+          supplierGST: gstNumber,
+        });
+        showToast(`Confirmed\nOrder from ${selectedOrder.name} is confirmed`);
+      } else if (activeTab === 'Confirmed Order') {
+        await axios.post('https://api-v7quhc5aza-uc.a.run.app/orderDelivered', {
+          orderId: selectedOrder.id,
+          supplierGST: gstNumber,
+        });
+        showToast(`Order from ${selectedOrder.name} has been dispatched`);
+      }
+      setModalVisible(false);
+      setSelectedOrder(null);
+      fetchOrders();
+    } catch (err) {
+      console.error('Accept error:', err);
+      showToast('Action failed');
     }
-    setModalVisible(false);
-    setSelectedOrder(null);
   };
 
   const confirmRejection = () => {
     if (activeTab === 'Pending Order') {
-      const updated = pendingOrders.filter(o => o.id !== selectedOrder.id);
+      const updated = pendingOrders.filter(o => o.id !== selectedOrder?.id);
       setPendingOrders(updated);
-      showToast(`You have rejected the order from ${selectedOrder.name}`);
+      showToast(`You rejected the order from ${selectedOrder?.name}`);
     }
     setModalVisible(false);
     setSelectedOrder(null);
   };
 
   const renderOrder = order => (
-    <View
-      style={{
-        backgroundColor: '#fff',
-        borderRadius: 12,
-        padding: 12,
-        marginBottom: 16,
-
-        // Shadow for iOS
-        shadowColor: '#000',
-        shadowOffset: {width: 0, height: 4},
-        shadowOpacity: 0.1,
-        shadowRadius: 6,
-
-        // Shadow for Android
-        elevation: 5,
-      }}>
+    <View style={styles.card}>
       <View style={styles.orderItem}>
-        <View
-          style={{
-            flexDirection: 'row',
-            gap: 10,
-            alignItems: 'center',
-            marginLeft: -20,
-          }}>
+        <View style={styles.vendorInfo}>
           <Image
             source={require('../Images/VendorProfileImage.png')}
             style={{width: 50, height: 50, borderRadius: 25}}
@@ -113,28 +126,15 @@ export default function VendorOrderPage() {
           <View>
             <Text style={styles.vendorName}>{order.name}</Text>
             {activeTab === 'Pending Order' && (
-              <TouchableOpacity
-                style={{
-                  backgroundColor: '#76B117',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  borderRadius: 10,
-                  height: 26,
-                  width: 100,
-                  marginTop: '12%',
-                }}>
+              <TouchableOpacity style={styles.chatBtn}>
                 <Text style={{color: 'white'}}>View Chat</Text>
               </TouchableOpacity>
             )}
             {activeTab === 'Confirmed Order' && (
-              <Text style={{color: '#FBBC05', fontWeight: '500', fontSize: 14}}>
-                Confirmed
-              </Text>
+              <Text style={styles.confirmedText}>Confirmed</Text>
             )}
             {activeTab === 'Past Order' && (
-              <Text style={{color: '#FBBC05', fontWeight: '500', fontSize: 14}}>
-                Completed
-              </Text>
+              <Text style={styles.confirmedText}>Completed</Text>
             )}
           </View>
         </View>
@@ -149,6 +149,7 @@ export default function VendorOrderPage() {
             </TouchableOpacity>
           </View>
         )}
+
         {activeTab === 'Confirmed Order' && (
           <View>
             <TouchableOpacity
@@ -161,6 +162,7 @@ export default function VendorOrderPage() {
             </TouchableOpacity>
           </View>
         )}
+
         {activeTab === 'Past Order' && (
           <View>
             <TouchableOpacity style={styles.actionButton}>
@@ -174,32 +176,11 @@ export default function VendorOrderPage() {
       </View>
 
       {activeTab === 'Pending Order' && (
-        <View
-          style={{
-            flexDirection: 'row',
-            // alignItems: 'center',
-            gap: 8,
-            marginTop: 10,
-            borderWidth: 1,
-            borderColor: '#C8C8C8',
-            paddingVertical: '3%',
-            borderRadius: 10,
-          }}>
-          <PencilIcon
-            size={24}
-            color="#76B117"
-            strokeWidth={3}
-            style={{marginLeft: '4%', marginTop: '3%'}}
-          />
+        <View style={styles.commentBox}>
+          <PencilIcon size={24} color="#76B117" strokeWidth={3} />
           <TextInput
             placeholder="Add a comment"
-            style={{
-              flex: 1,
-              // borderBottomWidth: 1,
-              // borderColor: '#ccc',
-              paddingVertical: 4,
-              alignSelf: 'flex-start',
-            }}
+            style={{flex: 1, paddingVertical: 4}}
           />
         </View>
       )}
@@ -214,21 +195,16 @@ export default function VendorOrderPage() {
 
   return (
     <View style={styles.container}>
-      <View
-        style={{
-          marginBottom: 16,
-          display: 'flex',
-          flexDirection: 'row',
-          alignItems: 'center',
-          paddingLeft: '1%',
-        }}>
+      <View style={styles.header}>
         <ChevronLeftIcon size={20} strokeWidth={2} />
         <Text style={styles.heading}>Order</Text>
       </View>
+
       <TextInput
         style={styles.search}
         placeholder="Search Vendor or Order ID..."
       />
+
       <View style={styles.tabs}>
         {tabs.map(tab => (
           <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
@@ -246,23 +222,18 @@ export default function VendorOrderPage() {
         contentContainerStyle={{paddingBottom: 100}}
       />
 
+      {/* Modal */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
             <TouchableOpacity
               onPress={() => setModalVisible(false)}
-              style={{
-                position: 'absolute',
-                top: 10,
-                right: 10,
-                zIndex: 1,
-              }}>
+              style={{position: 'absolute', top: 10, right: 10}}>
               <GenericVectorIcon
                 name={'cross'}
                 type={'Entypo'}
                 color="#757575"
                 size={30}
-                // onPress={() => setModalVisible(false)}
               />
             </TouchableOpacity>
             <Text style={styles.modalText}>
@@ -274,9 +245,7 @@ export default function VendorOrderPage() {
               <Text style={{color: '#76B117'}}>{selectedOrder?.name}?</Text>
             </Text>
             <View style={{flexDirection: 'row', gap: 60}}>
-              <TouchableOpacity
-                style={styles.modalButton}
-                onPress={confirmAccept}>
+              <TouchableOpacity style={styles.modalButton} onPress={confirmAccept}>
                 <CheckCircleIcon size={36} color="green" />
               </TouchableOpacity>
               <TouchableOpacity
@@ -299,19 +268,14 @@ export default function VendorOrderPage() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    padding: 16,
+  container: {flex: 1, backgroundColor: '#fff', padding: 16},
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+    paddingLeft: '1%',
   },
-  heading: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    marginVertical: 8,
-    alignContent: 'center',
-    fontFamily: 'Montserrat',
-    marginLeft: '3%',
-  },
+  heading: {fontSize: 22, fontWeight: 'bold', marginLeft: '3%'},
   search: {
     borderWidth: 1,
     borderColor: '#ccc',
@@ -319,11 +283,7 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 16,
   },
-  tabs: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 16,
-  },
+  tabs: {flexDirection: 'row', justifyContent: 'space-around', marginBottom: 16},
   tab: {
     fontSize: 16,
     padding: 8,
@@ -338,6 +298,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 2,
     borderColor: '#76B117',
   },
+  card: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
+  },
   orderItem: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -345,33 +316,43 @@ const styles = StyleSheet.create({
     paddingHorizontal: '5%',
     width: '100%',
   },
-
-  vendorName: {fontSize: 16, fontWeight: '500'},
-  actions: {
+  vendorInfo: {
     flexDirection: 'row',
-    // gap: 12,
+    gap: 10,
+    alignItems: 'center',
+    marginLeft: -20,
   },
-  accept: {
-    fontSize: 24,
-    color: 'green',
+  vendorName: {fontSize: 16, fontWeight: '500'},
+  chatBtn: {
+    backgroundColor: '#76B117',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 26,
+    width: 100,
+    marginTop: '12%',
   },
-  reject: {
-    fontSize: 24,
-    color: 'red',
-  },
+  confirmedText: {color: '#FBBC05', fontWeight: '500', fontSize: 14},
+  actions: {flexDirection: 'row'},
   actionButton: {
     borderColor: '#76B117',
     padding: 8,
     borderRadius: 20,
     borderWidth: 1,
-    alignContent: 'center',
-    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 10,
   },
-  actionText: {
-    color: 'green',
-    fontWeight: '600',
+  actionText: {color: 'green', fontWeight: '600'},
+  commentBox: {
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
+    borderWidth: 1,
+    borderColor: '#C8C8C8',
+    paddingVertical: '3%',
+    borderRadius: 10,
+    paddingHorizontal: '4%',
+    alignItems: 'center',
   },
   modalContainer: {
     flex: 1,
@@ -389,19 +370,10 @@ const styles = StyleSheet.create({
     fontSize: 18,
     marginBottom: 12,
     textAlign: 'center',
-    fontFamily: 'Montserrat',
     fontWeight: 'bold',
     marginTop: '5%',
   },
-  modalButton: {
-    // backgroundColor: '#eefcf1',
-    padding: 10,
-    borderRadius: 20,
-  },
-  modalButtonText: {
-    fontSize: 24,
-    color: 'green',
-  },
+  modalButton: {padding: 10, borderRadius: 20},
   toast: {
     position: 'absolute',
     bottom: 30,
@@ -421,7 +393,6 @@ const styles = StyleSheet.create({
   toastText: {
     color: 'white',
     fontWeight: 'bold',
-    fontFamily: 'Montserrat',
     fontSize: 16,
   },
 });

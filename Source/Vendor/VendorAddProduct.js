@@ -28,7 +28,8 @@ const VendorAddProduct = () => {
     productPrice: "",
     productCategory: "",
   })
-  const [phoneNumber, setPhoneNumber] = useState(null);
+  const [gstNumber, setGSTNumber] = useState(null);
+  const [responseMessage, setResponseMessage] = useState('');
 
 
   useEffect(() => {
@@ -38,45 +39,54 @@ const VendorAddProduct = () => {
 
   const fetchSupplierId = async () => {
     try {
-      const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-      if (storedPhoneNumber) {
-        setPhoneNumber(storedPhoneNumber);
+      const storedGSTNumber = await AsyncStorage.getItem('phoneNumber');
+      if (storedGSTNumber) {
+        setGSTNumber(storedGSTNumber);
       }
     } catch (error) {
-      console.log('Error Fetching Client ID: ', error);
+      console.log('Error Fetching GST ID: ', error);
     }
   }
 
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
-    const PhoneNumber = phoneNumber;
+    const GSTNumber = gstNumber;
     const { productName, productUnit, productCategory, productPrice } = formData;
 
-    if (!PhoneNumber || !productName || !productUnit || !productPrice) {
+    if (!GSTNumber || !productName || !productUnit || !productPrice) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
-
-    const url = `https://api-v7quhc5aza-uc.a.run.app/supplierAddProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${productCategory}`;
-    console.log(url);
-
-
-    try {
-      const response = await axios.get(url, {
-        headers: { 'Content-Type': 'application/json' }
-      })
-      if (response.status === 201 || response.status === 200) {
-        Alert.alert('Success', 'Product added successfully!');
-        navigation.navigate('Vendor App', {screen: 'Chat'})
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to add product');
-        Alert.alert(url);
-      }
-    } catch (error) {
-      Alert.alert('Error', `Failed to save product: ${error.message}`);
-      console.error('Axios error:', error);
+    const payload = {
+      phone: gstNumber,
+      productId: productId,
+      prodName: productName,
+      prodUnit: productUnit,
+      myPrice : productPrice,
+      CategoryName: productCategory,
     }
-  }
+    Alert.alert('Payload', JSON.stringify(payload, null, 2));
+    try {
+      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/supplierAddProductManually',
+        payload);
+
+      setResponseMessage('Success: ' + response.data.message);
+      navigation.navigate('Vendor App', {screen: "Chat"});
+      Alert.alert('Success', 'Product added successfully!');
+    } catch (error) {
+      if (error.response) {
+        // Server responded with a status other than 2xx
+        setResponseMessage('Error: ' + error.response.data.message);
+      } else if (error.request) {
+        // Request was made but no response received
+        setResponseMessage('No response from server');
+      } else {
+        // Something else happened
+        setResponseMessage('Request error: ' + error.message);
+      }
+    }
+  };
+   
 
 
   return (

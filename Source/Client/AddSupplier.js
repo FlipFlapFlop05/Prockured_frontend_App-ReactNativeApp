@@ -102,29 +102,28 @@ export default function AddSupplier() {
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/createSupplier/${supplierPhoneNumber}/${id}/${businessName}/${supplierGstNumber}/${email}/${pincode}/${state}/${country}'`;
-    console.log('Request URL:', url);
+     const payload = {
+      phone: id,
+      supplierGST: supplierGstNumber,
+      supplierPhone: supplierPhoneNumber,
+      businessName: businessName,
+      email : email,
+      pincode: pincode,
+      state: state,
+      country: country,
+    }
     try {
-      const response = await axios.get(url, {
-        headers: {'Content-Type': 'application/json'},
-      });
-      if (response.data === 'Ok' || response.status === 200) {
-        Alert.alert('Success', 'Profile saved successfully!');
-        navigation.navigate('Main', {screen: 'Home'});
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to save profile');
-      }
+      
+      Alert.alert('Payload', JSON.stringify(payload, null, 2));
+      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/createSupplier',
+        payload);
+      navigation.navigate('Main', {screen: "Home"});
+      Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
-      console.error('Axios Error:', JSON.stringify(error, null, 2));
+      console.error('Axios Error:', error);
       if (error.response) {
-        Alert.alert(
-          'Error',
-          `Server Error: ${error.response.status} - ${error.response.data}`,
-        );
-      } else if (error.request) {
-        Alert.alert('Error', 'No response received from server');
-      } else {
-        Alert.alert('Error', `Request setup error: ${error.message}`);
+        // Server responded with a status other than 2xx
+        Alert.alert('Error', error.response.data.message);
       }
     }
   };

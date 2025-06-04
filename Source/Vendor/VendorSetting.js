@@ -44,7 +44,7 @@ export default function VendorSetting() {
   const [selectedModal, setSelectedModal] = useState(null);
   const navigation = useNavigation();
   const [data, setData] = useState([]);
-  const [phoneNumber, setPhoneNumber] = useState(null);
+  const [gstNumber, setGSTNumber] = useState(null);
   const [inviteVendor, setInviteVendor] = useState(false);
   const [copied, setCopied] = useState(false);
 
@@ -91,25 +91,25 @@ export default function VendorSetting() {
   }, [navigation]);
 
   useEffect(() => {
-    const fetchPhoneNumber = async () => {
+    const fetchGSTNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('supplierGST');
-        if (storedPhoneNumber) {
-          setPhoneNumber(storedPhoneNumber);
+        const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
+        if (storedGSTNumber) {
+          setGSTNumber(storedGSTNumber);
         }
       } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
+        console.log('Error Fetching GST ID: ', error);
       }
     };
-    fetchPhoneNumber();
+    fetchGSTNumber();
   }, []);
 
   useEffect(() => {
     const fetchData = async () => {
-      if (phoneNumber) {
+      if (gstNumber) {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${phoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${gstNumber}` // Use the correct endpoint,
           );
           setData(response.data);
         } catch (error) {
@@ -118,10 +118,10 @@ export default function VendorSetting() {
       }
     };
 
-    if (phoneNumber) {
+    if (gstNumber) {
       fetchData();
     }
-  }, [phoneNumber]);
+  }, [gstNumber]);
 
   const menuItems = [
     {

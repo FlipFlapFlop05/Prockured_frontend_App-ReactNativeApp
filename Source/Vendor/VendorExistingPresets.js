@@ -1,10 +1,11 @@
-import React, {useLayoutEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
-  ScrollView
+  ScrollView,
+  Alert
 } from "react-native";
 import {
   ChevronLeftIcon,
@@ -16,6 +17,8 @@ import {vendorExistingPresets} from '../Constant/constant';
 export default function VendorExistingPresets(){
   const navigation = useNavigation();
   const [expandedSections, setExpandedSections] = useState({});
+  const [gstNumber, setGSTNumber] = useState(null);
+  const [data, setData] = useState([]);
 
   const toggleSection = (id) => {
     setExpandedSections((prev) => ({
@@ -23,6 +26,22 @@ export default function VendorExistingPresets(){
       [id]: !prev[id],
     }));
   };
+
+  useEffect(() => {
+    const fetchGSTId = async () => {
+      try {
+        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const supplierGst = await AsyncStorage.getItem('phoneNumber');
+        if (supplierGst) {
+          setGSTNumber(supplierGst);
+        }
+      } catch (error) {
+        console.log('Error Fetching GST ID: ', error);
+      }
+    };
+    fetchGSTId();
+  }, [gstNumber]);
+
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -53,8 +72,34 @@ export default function VendorExistingPresets(){
       ),
     });
   }, [navigation]);
+  useEffect(() => {
+   Alert.alert('GST Number:', gstNumber); 
+    const getData = async() => {
+      try{
+        const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCampaign', {
+          "gstNumber": "Haha",
+        });
 
+        const allData = response.data.data;
+        const keys = Object.keys(allData);
+        const firstKey = keys[0];
 
+        const campaignData = allData[firstKey];
+        Alert.alert('Product Name:', campaignData.product.name);
+        Alert.alert('Price:', campaignData.product.price);
+        Alert.alert('Schedule Year:', campaignData.schedule.year);
+        Alert.alert('Tagline:', campaignData.tagLine);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+        Alert.alert('Error', 'Failed to fetch data. Please try again later.');
+      }
+    };
+    if(gstNumber)
+    {
+      getData();
+    }
+  }, []);
+  
   return (
     <ScrollView style={styles.container}>
       {vendorExistingPresets.map(section => (

@@ -150,22 +150,35 @@ const AddProductManually = () => {
       return;
     }
 
-    const url = `https://api-v7quhc5aza-uc.a.run.app/addProductManually/${PhoneNumber}/${productId}/${productName}/${productUnit}/${productPrice}/${selectedCategory.categoryName}/${selectedSupplier.supplierId}/${selectedSupplier.supplierName}`;
-    Alert.alert('URL', url);
+    const payload = {
+      phone: PhoneNumber,
+      productId: productId,
+      prodName: productName,
+      prodUnit: productUnit,
+      myPrice : productPrice,
+      CategoryName: productCategory,
+      supplierPhone: selectedSupplier.supplierId,
+      supplierName: selectedSupplier.supplierName,
+    }
+    Alert.alert('Payload', JSON.stringify(payload, null, 2));
     try {
-      const response = await axios.get(url, {
-        headers: {'Content-Type': 'application/json'},
-      });
+      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/addProductManually',
+        payload);
 
-      if (response.status === 201 || response.status === 200) {
-        Alert.alert('Success', 'Product added successfully!');
-        navigation.navigate('Main', {screen: 'Home'});
-      } else {
-        Alert.alert('Error', response.data.message || 'Failed to add product');
-      }
+      setResponseMessage('Success: ' + response.data.message);
+      navigation.navigate('Main', {screen: "Home"});
+      Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
-      Alert.alert('Error', `Failed to save product: ${error.message}`);
-      console.error('Axios error:', error);
+      if (error.response) {
+        // Server responded with a status other than 2xx
+        setResponseMessage('Error: ' + error.response.data.message);
+      } else if (error.request) {
+        // Request was made but no response received
+        setResponseMessage('No response from server');
+      } else {
+        // Something else happened
+        setResponseMessage('Request error: ' + error.message);
+      }
     }
   };
 
