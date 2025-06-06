@@ -1,4 +1,4 @@
-import React, {useLayoutEffect, useState} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -9,6 +9,7 @@ import {
   Image,
   Modal,
   Pressable,
+  ActivityIndicator,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -16,8 +17,8 @@ import {
   ChevronDownIcon,
   MagnifyingGlassIcon,
 } from 'react-native-heroicons/outline';
-import {orders} from '../Constant/constant';
 import {useNavigation} from '@react-navigation/native';
+import axios from 'axios';
 
 const Order = () => {
   const navigation = useNavigation();
@@ -27,7 +28,15 @@ const Order = () => {
   const [selectedStatus, setSelectedStatus] = useState('Pending');
 
   const [modalVisible, setModalVisible] = useState(false);
-  const [modalType, setModalType] = useState(''); // 'sort' | 'date' | 'category'
+  const [modalType, setModalType] = useState('');
+  const [pendingOrders, setPendingOrders] = useState([]);
+  const [confirmedOrders, setConfirmedOrders] = useState([]);
+  const [pastOrders, setPastOrders] = useState([]);
+  const [loading, setLoading] = useState({
+    pending: false,
+    confirmed: false,
+    past: false,
+  });
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -43,7 +52,6 @@ const Order = () => {
         fontWeight: 'bold',
         fontSize: 20,
         fontFamily: 'Montserrat',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -55,24 +63,167 @@ const Order = () => {
     });
   }, [navigation]);
 
-  const filteredOrders = orders.filter(order => {
-    const searchMatch =
-      order.vendor.toLowerCase().includes(searchText.toLowerCase()) ||
-      order.orderValue.includes(searchText);
-    const statusMatch =
-      selectedStatus === 'All' || order.status === selectedStatus;
-    return searchMatch && statusMatch;
-  });
+  useEffect(() => {
+    if (selectedStatus === 'Pending') {
+      fetchPendingOrders();
+    } else if (selectedStatus === 'Confirmed') {
+      fetchConfirmedOrders();
+    } else if (selectedStatus === 'Past') {
+      fetchPastOrders();
+    }
+  }, [selectedStatus]);
+
+  const fetchPendingOrders = async () => {
+    try {
+      setLoading(prev => ({...prev, pending: true}));
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
+        {
+          clientGST: '04030506',
+        },
+      );
+
+      const orders = Object.values(res.data.data).map(order => ({
+        orderId: order.Order_ID,
+        vendor: order.supplierGST, // You might want to map this to actual vendor names
+        status: 'Pending',
+        orderValue: order.supplierId
+          .reduce((sum, item) => sum + item.price * item.quantity, 0)
+          .toFixed(2),
+        // Add the additional fields here
+        items: order.supplierId,
+        supplierGST: order.supplierGST,
+        clientGST: order.clientGST,
+        Order_ID: order.Order_ID,
+        // Add other required fields like logo if available
+      }));
+      setPendingOrders(orders);
+    } catch (err) {
+      console.error('Pending orders fetch failed', err);
+    } finally {
+      setLoading(prev => ({...prev, pending: false}));
+    }
+  };
+
+  const fetchConfirmedOrders = async () => {
+    try {
+      setLoading(prev => ({...prev, confirmed: true}));
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
+        {
+          clientGST: '04030506',
+        },
+      );
+
+      const orders = Object.keys(res.data).map(orderId => {
+        const order = res.data[orderId];
+        return {
+          orderId: order.Order_ID,
+          vendor: order.supplierGST,
+          status: 'Confirmed',
+          orderValue: order.supplierId
+            .reduce((sum, item) => sum + item.price * item.quantity, 0)
+            .toFixed(2),
+          items: order.supplierId,
+          // Additional fields
+          supplierGST: order.supplierGST,
+          clientGST: order.clientGST,
+          Order_ID: order.Order_ID,
+        };
+      });
+      setConfirmedOrders(orders);
+    } catch (err) {
+      console.error('Confirmed orders fetch failed', err);
+    } finally {
+      setLoading(prev => ({...prev, confirmed: false}));
+    }
+  };
+
+  const fetchPastOrders = async () => {
+    try {
+      setLoading(prev => ({...prev, past: true}));
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getClientCompletedOrders',
+        {
+          clientGST: '04030506',
+        },
+      );
+
+      const ordersData = res.data.data || {};
+      const orders = Object.keys(ordersData).map(orderId => {
+        const order = ordersData[orderId];
+        return {
+          orderId: order.Order_ID,
+          vendor: order.supplierGST,
+          status: 'Delivered',
+          orderValue: order.supplierId
+            .reduce((sum, item) => sum + item.price * item.quantity, 0)
+            .toFixed(2),
+          items: order.supplierId,
+          deliveryDate: order.deliveryDate || 'N/A',
+          // Additional fields
+          supplierGST: order.supplierGST,
+          clientGST: order.clientGST,
+          Order_ID: order.Order_ID,
+        };
+      });
+      setPastOrders(orders);
+    } catch (err) {
+      console.error('Past orders fetch failed', err);
+    } finally {
+      setLoading(prev => ({...prev, past: false}));
+    }
+  };
+
+  const getFilteredOrders = () => {
+    let ordersToFilter = [];
+    switch (selectedStatus) {
+      case 'Pending':
+        ordersToFilter = pendingOrders;
+        break;
+      case 'Confirmed':
+        ordersToFilter = confirmedOrders;
+        break;
+      case 'Past':
+        ordersToFilter = pastOrders;
+        break;
+      default:
+        ordersToFilter = [];
+    }
+
+    return ordersToFilter.filter(order => {
+      const searchMatch =
+        order.vendor.toLowerCase().includes(searchText.toLowerCase()) ||
+        order.orderId.includes(searchText);
+      return searchMatch;
+    });
+  };
 
   const renderOrderItem = ({item}) => (
     <View style={styles.orderItem}>
       <View style={styles.orderLeft}>
-        <Image source={item.logo} style={styles.logo} />
+        {/* You might want to replace this with actual vendor logos */}
+        <Image
+          source={{uri: 'https://via.placeholder.com/40'}}
+          style={styles.logo}
+        />
         <View>
           <Text style={styles.vendor}>{item.vendor}</Text>
-          <Text style={styles.status}>{item.status}</Text>
+          <Text
+            style={[
+              styles.status,
+              item.status === 'Pending' && {color: 'orange'},
+              item.status === 'Confirmed' && {color: 'blue'},
+              item.status === 'Delivered' && {color: 'green'},
+            ]}>
+            {item.status}
+          </Text>
           <TouchableOpacity
-            onPress={() => navigation.navigate('Specific Order Screen')}>
+            onPress={() =>
+              navigation.navigate('Specific Order Screen', {
+                order: item,
+              })
+            }>
             <Text style={styles.summary}>View Summary</Text>
           </TouchableOpacity>
         </View>
@@ -87,9 +238,7 @@ const Order = () => {
   };
 
   const handleSelect = option => {
-    if (modalType === 'sort') {
-      // You can handle actual sorting here
-    } else if (modalType === 'date') {
+    if (modalType === 'date') {
       setSelectedDate(option);
     } else if (modalType === 'category') {
       setSelectedCategory(option);
@@ -97,13 +246,53 @@ const Order = () => {
     setModalVisible(false);
   };
 
+  const renderContent = () => {
+    if (
+      (selectedStatus === 'Pending' && loading.pending) ||
+      (selectedStatus === 'Confirmed' && loading.confirmed) ||
+      (selectedStatus === 'Past' && loading.past)
+    ) {
+      return (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#76B117" />
+        </View>
+      );
+    }
+
+    const filteredOrders = getFilteredOrders();
+
+    if (filteredOrders.length === 0) {
+      return (
+        <View style={styles.emptyContainer}>
+          <Text style={styles.emptyText}>
+            No {selectedStatus.toLowerCase()} orders found
+          </Text>
+        </View>
+      );
+    }
+
+    return (
+      <>
+        <View style={styles.tableHeader}>
+          <View style={styles.headerBox}>
+            <Text style={styles.tableHeaderText}>Vendor Name</Text>
+          </View>
+          <View style={styles.headerBox}>
+            <Text style={styles.tableHeaderText}>Order Value</Text>
+          </View>
+        </View>
+        <FlatList
+          data={filteredOrders}
+          renderItem={renderOrderItem}
+          keyExtractor={item => item.orderId}
+          contentContainerStyle={{paddingBottom: 80}}
+        />
+      </>
+    );
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
-      {/* Header */}
-      {/* <View style={styles.header}>
-                <Text style={styles.headerTitle}>Orders</Text>
-            </View> */}
-
       {/* Search Input */}
       <View style={styles.searchBox}>
         <MagnifyingGlassIcon size={20} color="#000" style={styles.searchIcon} />
@@ -161,39 +350,8 @@ const Order = () => {
         ))}
       </View>
 
-      {/* Table Header */}
-      <View style={styles.tableHeader}>
-        <View
-          style={{
-            backgroundColor: '#E9E9E9',
-            width: 110,
-            alignItems: 'center',
-            height: 40,
-            justifyContent: 'center',
-            borderRadius: 20,
-          }}>
-          <Text style={styles.tableHeaderText}>Vendor Name</Text>
-        </View>
-        <View
-          style={{
-            backgroundColor: '#E9E9E9',
-            width: 110,
-            alignItems: 'center',
-            height: 40,
-            justifyContent: 'center',
-            borderRadius: 20,
-          }}>
-          <Text style={styles.tableHeaderText}>Order Value</Text>
-        </View>
-      </View>
-
-      {/* List */}
-      <FlatList
-        data={filteredOrders}
-        renderItem={renderOrderItem}
-        keyExtractor={(item, index) => index.toString()}
-        contentContainerStyle={{paddingBottom: 80}}
-      />
+      {/* Content */}
+      {renderContent()}
 
       {/* Modal */}
       <Modal
@@ -235,44 +393,27 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e0e0e0',
-    justifyContent: 'center',
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-  },
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 20,
     marginHorizontal: 20,
-    // marginVertical: 10,
     borderColor: '#ddd',
     borderWidth: 1,
     borderRadius: 10,
     backgroundColor: '#fff',
     marginBottom: 10,
   },
-
   searchIcon: {
     marginRight: 10,
   },
-
   searchInput: {
     flex: 1,
     fontSize: 16,
     color: 'black',
     paddingVertical: 7,
-    paddingHorizontal: 0, // Avoid double spacing since wrapper has padding
+    paddingHorizontal: 0,
   },
-
   filters: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -300,13 +441,8 @@ const styles = StyleSheet.create({
   },
   tabItem: {
     paddingVertical: 8,
-    color: '#76B117',
-    fontWeight: '600',
-    fontSize: 14,
   },
   activeTabItem: {
-    color: '#6B7280',
-    fontWeight: '700',
     borderBottomWidth: 2,
     borderColor: '#76B117',
   },
@@ -323,6 +459,14 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingHorizontal: 15,
     paddingVertical: 10,
+  },
+  headerBox: {
+    backgroundColor: '#E9E9E9',
+    width: 110,
+    alignItems: 'center',
+    height: 40,
+    justifyContent: 'center',
+    borderRadius: 20,
   },
   tableHeaderText: {
     fontSize: 16,
@@ -354,7 +498,6 @@ const styles = StyleSheet.create({
   },
   status: {
     fontSize: 14,
-    color: 'orange',
   },
   summary: {
     fontSize: 14,
@@ -381,6 +524,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     paddingVertical: 10,
     color: '#333',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#666',
   },
 });
 

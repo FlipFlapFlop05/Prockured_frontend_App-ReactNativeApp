@@ -26,25 +26,83 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import GenericVectorIcon from '../components/GenericVectorIcon';
 import Config from 'react-native-config';
+import {useDispatch, useSelector} from 'react-redux';
+import {setSelectedOutlet, setAllOutlets} from '../../store/slice/OutletSlice';
 
 const {width, height} = Dimensions.get('window');
+
+// Dummy outlet data
+const dummyOutlets = [
+  // {
+  //   id: 1,
+  //   name: 'Main Outlet',
+  //   address: '123 Main St, City',
+  // },
+  // {
+  //   id: 2,
+  //   name: 'Downtown Outlet',
+  //   address: '456 Downtown Ave, City',
+  // },
+  // {
+  //   id: 3,
+  //   name: 'Mall Branch',
+  //   address: '789 Mall Road, City',
+  // },
+];
 
 export default function HomeScreen() {
   const [isChatModalVisible, setChatModalVisible] = useState(false);
   const navigation = useNavigation();
   const [data, setData] = useState([]);
   const [clientData, setClientData] = useState([]);
-  const [clientOutlet, setClieentOutlet] = useState([]);
+  const [clientOutlet, setClientOutlet] = useState(dummyOutlets ?? []);
   const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isWorkDataVisible, setWorkDataVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showCategories, setShowCategories] = useState(true);
   const [showHowItWorks, setShowHowItWorks] = useState(true);
+  // const [selectedOutlet, setSelectedOutlet] = useState(dummyOutlets[0]);
+  const [isOutletDropdownVisible, setIsOutletDropdownVisible] = useState(false);
+
+  const dispatch = useDispatch();
+  const {selectedOutlet, allOutlets} = useSelector(state => state.outlet);
 
   const filteredData = data.filter(item =>
     item?.businessName?.toLowerCase().includes(searchText.toLowerCase()),
   );
+
+  // const DUMMY_OUTLETS = [
+  //   {
+  //     id: 'outlet1',
+  //     name: 'Main Restaurant',
+  //     address: '123 Main Street, New York, NY 10001',
+  //     phone: '+1 212-555-1234',
+  //     gstNumber: '22AAAAA0000A1Z5',
+  //   },
+  //   {
+  //     id: 'outlet2',
+  //     name: 'Downtown Cafe',
+  //     address: '456 Broadway, New York, NY 10003',
+  //     phone: '+1 212-555-5678',
+  //     gstNumber: '22BBBBB0000B1Z5',
+  //   },
+  //   {
+  //     id: 'outlet3',
+  //     name: 'Uptown Bistro',
+  //     address: '789 5th Avenue, New York, NY 10022',
+  //     phone: '+1 212-555-9012',
+  //     gstNumber: '22CCCCC0000C1Z5',
+  //   },
+  //   {
+  //     id: 'outlet4',
+  //     name: 'Harbor View Diner',
+  //     address: '101 Water Street, Brooklyn, NY 11201',
+  //     phone: '+1 718-555-3456',
+  //     gstNumber: '22DDDDD0000D1Z5',
+  //   },
+  // ];
+
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
@@ -61,13 +119,9 @@ export default function HomeScreen() {
       const gst = await AsyncStorage.getItem('phoneNumber');
       if (gst) {
         try {
-          console.log(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
-          );
           const response = await axios.get(
             `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
           );
-
           const dataArray = Object.values(response.data);
           setData(dataArray);
         } catch (error) {
@@ -93,19 +147,26 @@ export default function HomeScreen() {
         }
       }
     };
+
     const fetchClientOutletData = async () => {
-      if (clientPhoneNumber) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientPhoneNumber}`,
-          );
+      try {
+        const response = await axios.get(
+          `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientPhoneNumber}`,
+        );
+
+        if (response.data && Object.keys(response.data).length > 0) {
           const dataArray = Object.values(response.data);
-          setClieentOutlet(dataArray);
-        } catch (error) {
-          console.log(error);
-        } finally {
-          setIsLoading(false);
+          dispatch(setAllOutlets(dataArray));
+          dispatch(setSelectedOutlet(dataArray[0]));
+        } else {
+          dispatch(setAllOutlets(DUMMY_OUTLETS));
+          dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
         }
+      } catch (error) {
+        dispatch(setAllOutlets(DUMMY_OUTLETS));
+        dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
+      } finally {
+        setIsLoading(false);
       }
     };
 
@@ -150,6 +211,7 @@ export default function HomeScreen() {
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
   );
+
   const renderWorkItemModal = ({item}) => (
     <View
       style={{
@@ -166,32 +228,64 @@ export default function HomeScreen() {
     </View>
   );
 
+  const renderOutletItem = ({item}) => (
+    <TouchableOpacity
+      style={styles.outletItem}
+      onPress={() => {
+        dispatch(setSelectedOutlet(item));
+        setIsOutletDropdownVisible(false);
+      }}>
+      <Text style={styles.outletName}>{item.name}</Text>
+      <Text style={styles.outletAddress}>{item.address}</Text>
+    </TouchableOpacity>
+  );
+
   return (
     <SafeAreaView style={styles.safeAreaContainer}>
       {isLoading ? (
         <View style={styles.centeredView}>
           <ActivityIndicator size="large" color="#76B117" />
         </View>
-      ) : data.length > 0 ? (
+      ) : clientOutlet.length > 0 ? (
         <View style={styles.chatScreenHeaderView}>
           <View style={styles.chatScreenHeaderViewIcon}>
-            <View>
-              <Text
-                style={{
-                  fontSize: 16,
-                  fontWeight: '200',
-                  fontFamily: 'Montserrat',
-                }}>
-                Delivery Address
-              </Text>
-              <Text
-                style={{
-                  fontSize: 20,
-                  fontWeight: 'bold',
-                  fontFamily: 'Montserrat',
-                }}>
-                dsadshippingAddress
-              </Text>
+            <View style={{flex: 1}}>
+              <TouchableOpacity
+                onPress={() =>
+                  setIsOutletDropdownVisible(!isOutletDropdownVisible)
+                }
+                style={styles.outletSelector}>
+                <Text style={styles.deliveryAddressLabel}>
+                  Delivery Address
+                </Text>
+                <View style={styles.selectedOutletContainer}>
+                  <Text style={styles.selectedOutletName} numberOfLines={1}>
+                    {selectedOutlet?.name || 'Select Outlet'}
+                  </Text>
+                  <ChevronDownIcon
+                    size={20}
+                    color={'#000'}
+                    style={{
+                      transform: [
+                        {rotate: isOutletDropdownVisible ? '180deg' : '0deg'},
+                      ],
+                    }}
+                  />
+                </View>
+                <Text style={styles.selectedOutletAddress} numberOfLines={1}>
+                  {selectedOutlet?.address || 'No address selected'}
+                </Text>
+              </TouchableOpacity>
+
+              {isOutletDropdownVisible && (
+                <View style={styles.outletDropdown}>
+                  <FlatList
+                    data={clientOutlet}
+                    renderItem={renderOutletItem}
+                    keyExtractor={item => item.id.toString()}
+                  />
+                </View>
+              )}
             </View>
             <View style={{flexDirection: 'row'}}>
               <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
@@ -275,7 +369,7 @@ export default function HomeScreen() {
                   data={categories}
                   numColumns={3}
                   renderItem={renderCategoryItemModal}
-                  keyExtractor={(item, index) => index.toString()} // Add a key extractor
+                  keyExtractor={(item, index) => index.toString()}
                   contentContainerStyle={styles.flatListContent}
                 />
                 <TouchableOpacity
@@ -311,11 +405,7 @@ export default function HomeScreen() {
         </View>
       ) : (
         <SafeAreaView style={styles.safeAreaViewContainer}>
-          {' '}
-          {/* Wrap with SafeAreaView */}
           <ScrollView contentContainerStyle={styles.scrollViewContent}>
-            {' '}
-            {/* Add contentContainerStyle */}
             <View style={styles.header}>
               <Image
                 source={require('../Images/ProckuredImage.jpg')}
@@ -326,7 +416,6 @@ export default function HomeScreen() {
                   onPress={() =>
                     navigation.navigate('Notification And Search')
                   }>
-                  {/* <BellIcon size={30} color={'black'} strokeWidth={2} /> */}
                   <GenericVectorIcon
                     name="bell"
                     type="FontAwesome"
@@ -372,7 +461,7 @@ export default function HomeScreen() {
                 data={categories}
                 numColumns={3}
                 renderItem={renderCategoryItem}
-                keyExtractor={(item, index) => index.toString()} // Add a key extractor
+                keyExtractor={(item, index) => index.toString()}
                 contentContainerStyle={styles.flatListContent}
               />
             )}
@@ -438,7 +527,7 @@ export default function HomeScreen() {
                     data={categories}
                     numColumns={3}
                     renderItem={renderCategoryItemModal}
-                    keyExtractor={(item, index) => index.toString()} // Add a key extractor
+                    keyExtractor={(item, index) => index.toString()}
                     contentContainerStyle={styles.flatListContent}
                   />
                   <TouchableOpacity
@@ -470,7 +559,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     padding: 10,
-    paddingTop: 40,
+    paddingTop: '7%',
+    paddingHorizontal: '5%',
   },
   chatScreenTextInputView: {
     backgroundColor: 'gainsboro',
@@ -777,5 +867,63 @@ const styles = StyleSheet.create({
     letterSpacing: 0.5,
     fontFamily: 'Montserrat',
     color: '#757575',
+  },
+  outletSelector: {
+    // paddingVertical: 8,
+    paddingBottom: '4%',
+  },
+  deliveryAddressLabel: {
+    fontSize: 16,
+    fontWeight: '200',
+    fontFamily: 'Montserrat',
+    color: '#666',
+  },
+  selectedOutletContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  selectedOutletName: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    fontFamily: 'Montserrat',
+    marginRight: 8,
+    maxWidth: width * 0.6,
+  },
+  selectedOutletAddress: {
+    fontSize: 14,
+    color: '#666',
+    fontFamily: 'Montserrat',
+    maxWidth: width * 0.7,
+  },
+  outletDropdown: {
+    position: 'absolute',
+    top: 70,
+    left: 0,
+    right: 0,
+    backgroundColor: 'white',
+    borderRadius: 8,
+    padding: 10,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 5,
+    zIndex: 100,
+    maxHeight: 200,
+  },
+  outletItem: {
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  outletName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+  },
+  outletAddress: {
+    fontSize: 12,
+    color: '#666',
+    marginTop: 4,
   },
 });

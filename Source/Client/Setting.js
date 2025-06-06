@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
+  Alert, // Added Alert import
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -26,9 +27,7 @@ import {
 } from 'react-native-heroicons/outline';
 import {XMarkIcon, ClipboardDocumentIcon} from 'react-native-heroicons/outline';
 import {CheckCircleIcon} from 'react-native-heroicons/solid';
-import {Clipboard} from 'react-native'; // if not using Expo
-
-// import Icon from 'react-native-vector-icons/FontAwesome';
+import {Clipboard} from 'react-native';
 
 import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
 import GenericVectorIcon from '../components/GenericVectorIcon';
@@ -55,7 +54,6 @@ export default function ClientSetting() {
     Clipboard.setString(text);
     setCopied(true);
 
-    // Hide the message after 2 seconds
     setTimeout(() => {
       setCopied(false);
     }, 2000);
@@ -78,7 +76,6 @@ export default function ClientSetting() {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -123,11 +120,43 @@ export default function ClientSetting() {
     }
   }, [phoneNumber]);
 
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
+              });
+            } catch (e) {
+              console.error('Error during logout: ', e);
+              Alert.alert(
+                'Error',
+                'Failed to logout properly. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
 
   const menuItems = [
     {
       id: 1,
-      type: 'vector', 
+      type: 'vector',
       icon: 'account-edit-outline',
       iconType: 'MaterialCommunityIcons',
       label: 'Edit Profile Details',
@@ -188,7 +217,7 @@ export default function ClientSetting() {
     } else if (item.modal) {
       setSelectedModal(item.modal);
       setModalVisible(true);
-    } else if(item.action) {
+    } else if (item.action) {
       item.action();
     }
   };
@@ -206,20 +235,15 @@ export default function ClientSetting() {
       ) : (
         <item.icon size={28} color="#333" style={styles.menuItemIcon} />
       )}
-      <Text style={styles.menuItemText}>{item.label}</Text>
+      <Text
+        style={[
+          styles.menuItemText,
+          item.label === 'Logout' && {color: '#900'},
+        ]}>
+        {item.label}
+      </Text>
     </TouchableOpacity>
   );
-
-  // const renderMenuItem = ({item}) => (
-  //   <TouchableOpacity style={styles.menuItem} onPress={() => handlePress(item)}>
-  //     {/* <item.icon size={20} color={'#333'} style={styles.menuItemIcon} /> */}
-  //     <Icons name={item.icon} size={28} className="mr-1" />
-
-  //     <Text style={styles.menuItemText} className="mx-1">
-  //       {item.label}
-  //     </Text>
-  //   </TouchableOpacity>
-  // );
 
   const renderVendorItem = () => {
     switch (selectedModal) {
@@ -240,7 +264,6 @@ export default function ClientSetting() {
                       <TouchableOpacity
                         onPress={() => copyToClipboard(inviteLink)}
                         style={{flexDirection: 'row'}}>
-                        {/* <ClipboardDocumentIcon size={22} color="#76B117" /> */}
                         <Icon
                           name="content-copy"
                           size={22}
@@ -302,38 +325,9 @@ export default function ClientSetting() {
     }
   };
 
-  const handleLogout = () => {
-  Alert.alert(
-    'Logout',
-    'Are you sure you want to logout?',
-    [
-      {
-        text: 'Cancel',
-        style: 'cancel',
-      },
-      {
-        text: 'Logout',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await AsyncStorage.clear();
-            navigation.reset({
-              index: 0,
-              routes: [{ name: 'Authentication', params: { screen: 'LogIn' } }],
-            });
-          } catch (e) {
-            console.error("Error during logout: ", e);
-          }
-        },
-      },
-    ],
-    { cancelable: true }
-  );
-};
-
   return (
-    <SafeAreaView style={styles.safeArea} className="bg-white">
-      <View style={styles.container} className="bg-white">
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.container}>
         <Modal
           animationType="slide"
           transparent={true}
@@ -382,16 +376,6 @@ export default function ClientSetting() {
           renderItem={renderMenuItem}
           keyExtractor={item => item.id.toString()}
         />
-
-        {/* <TouchableOpacity style={styles.logoutButton}>
-          <ArrowRightStartOnRectangleIcon
-            size={20}
-            color="red"
-            style={styles.logoutIcon}
-          />
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity> */}
-        {/* hhh */}
       </View>
     </SafeAreaView>
   );
@@ -436,7 +420,6 @@ const styles = StyleSheet.create({
     top: 110,
     right: 120,
   },
-
   editIconButton: {
     backgroundColor: '#76B117',
     borderRadius: 20,
@@ -444,7 +427,7 @@ const styles = StyleSheet.create({
     height: 30,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 3, // Optional: for slight shadow on Android
+    elevation: 3,
     shadowColor: '#000',
     shadowOpacity: 0.2,
     shadowOffset: {width: 0, height: 1},
@@ -466,25 +449,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: 'red',
-  },
-  logoutIcon: {
-    marginRight: 10,
-    color: 'red',
-  },
-  logoutButtonText: {
-    color: 'red',
-    fontWeight: 'bold',
-    fontSize: 16,
+    color: '#333',
   },
   modalOverlay: {
     flex: 1,
