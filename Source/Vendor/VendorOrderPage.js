@@ -38,6 +38,7 @@ export default function VendorOrderPage() {
     setTimeout(() => setToast(''), 3000);
   };
   useEffect(() => {
+    Alert.alert("Pending Orders", JSON.stringify(pendingOrders, null, 2));
     const fetchGSTNumber = async () => {
       try {
         const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
@@ -50,30 +51,44 @@ export default function VendorOrderPage() {
     };
     fetchGSTNumber();
   }, []);
-  const fetchOrders = async () => {
-    try {
-      let response;
-      if (activeTab === 'Pending Order') {
-        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getPendingOrders', {"supplierGST": gstNumber});
-        setPendingOrders(response.data);
-      } else if (activeTab === 'Confirmed Order') {
-        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getSupplierConfirmedOrders', {"supplierGST": gstNumber});
-        setConfirmedOrders(response.data);
-      } else if (activeTab === 'Past Order') {
-        response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {"supplierGST": gstNumber});
-        setPastOrders(response.data);
+
+  useEffect(() => {
+    const APIFetch = async () => {
+      try{
+        const fetchPendingOrders = async () => {
+          response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getPendingOrders', {"supplierGST": "Haha"});
+          setPendingOrders(response.data);
+        };
+        const fetchConfirmedOrders = async () => {
+          response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getSupplierConfirmedOrders', {"supplierGST": gstNumber});
+            setConfirmedOrders(response.data);
+        };
+        const fetchPastOrders = async () => {
+          response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {"supplierGST": gstNumber});
+            setPastOrders(response.data);
+        };
+      } catch (err) {
+        console.error('Fetch error:', err);
+        showToast('Failed to fetch orders.');
       }
-    } catch (err) {
-      console.error('Fetch error:', err);
-      showToast('Failed to fetch orders.');
     }
+    APIFetch();
+  })
+  const fetchOrders = async () => {
+    
+      if(activeTab === 'Pending Order'){
+        Alert.alert("Pending Orders", JSON.stringify(response.data, null, 2));
+      } else if (activeTab === 'Confirmed Order') {
+        
+      } else if (activeTab === 'Past Order') {
+        
+      }
+    
   };
 
-  useLayoutEffect(() => {
-    if(gstNumber){
-      fetchOrders();
-    }
-  }, [activeTab]);
+  useEffect(() => {
+    fetchOrders();
+  })
 
   const handleAcceptPress = order => {
     setSelectedOrder(order);
@@ -124,7 +139,7 @@ export default function VendorOrderPage() {
             style={{width: 50, height: 50, borderRadius: 25}}
           />
           <View>
-            <Text style={styles.vendorName}>{order.name}</Text>
+            <Text style={styles.vendorName}>{order.orderId}</Text>
             {activeTab === 'Pending Order' && (
               <TouchableOpacity style={styles.chatBtn}>
                 <Text style={{color: 'white'}}>View Chat</Text>

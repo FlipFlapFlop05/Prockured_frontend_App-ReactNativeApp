@@ -65,7 +65,6 @@ const VendorAddProduct = () => {
       myPrice : productPrice,
       CategoryName: productCategory,
     }
-    Alert.alert('Payload', JSON.stringify(payload, null, 2));
     try {
       const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/supplierAddProductManually',
         payload);

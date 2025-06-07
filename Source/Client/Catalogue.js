@@ -313,6 +313,12 @@ export default function Catalogue() {
                       <Text style={styles.quantityButtonTextCard}>+</Text>
                     </TouchableOpacity>
                   </View>
+                  <TouchableOpacity
+                    style={styles.floatingButton}
+                    onPress={() => navigation.navigate('Add Supplier')}
+                  >
+                        <Text style={styles.floatingButtonText}>+</Text>
+                  </TouchableOpacity>
                 </View>
               )}
             />
@@ -485,5 +491,26 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 'fit-content',
     textAlign: 'center',
+  },
+  floatingButton: {
+    backgroundColor: '#76B117',
+    width: 50,
+    height: 50,
+    borderRadius: 30,
+    position: 'absolute',
+    bottom: 80,
+    right: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
+  },
+  floatingButtonText: {
+    color: 'white',
+    fontSize: 30,
+    fontWeight: 'bold',
   },
 });

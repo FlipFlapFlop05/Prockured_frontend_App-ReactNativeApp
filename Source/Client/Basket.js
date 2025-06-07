@@ -1,13 +1,49 @@
-import React, {useLayoutEffect} from "react";
+import React, {useEffect, useLayoutEffect} from "react";
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Linking } from "react-native";
 import { useNavigation, useRoute } from "@react-navigation/native";
-
-
+import { ChevronLeftIcon } from "react-native-heroicons/solid";
+import axios from "axios";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 export default function Basket() {
   const navigation = useNavigation();
   const route = useRoute();
   const { cart, data } = route.params;
+  const [phoneNumber, setPhoneNumber] = React.useState(null);
+
+  useEffect(() => {
+    const fetchPhoneNumber = async () => {
+      try {
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
+        if (storedPhoneNumber) {
+          setPhoneNumber(storedPhoneNumber);
+        }
+      } catch (error) {
+        console.log('Error Fetching Client ID: ', error);
+      }
+    };
+    fetchPhoneNumber();
+  }, []);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      if (phoneNumber) {
+        try {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${phoneNumber}`,
+          );
+          setData(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    };
+
+    if (phoneNumber) {
+      fetchData();
+    }
+  }, [phoneNumber]);
+
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -61,7 +97,9 @@ export default function Basket() {
         quantity: cart[productId],
         price: product.myPrice,
         category: product.CategoryName,
-        image: product.image, // Assuming you have an image URL in your data
+        image: product.image, 
+        supplierPhone: product.SupplierPhone,
+        supplierName: product.SupplierName,
       };
     }
     return null;
@@ -74,6 +112,43 @@ export default function Basket() {
   const handleApproval = async() => {
     openWhatsApp('8306148803', `${cartItems.map(item => `${item.prodName} - ${item.quantity} kg`).join('\n')}\nTotal: ₹${calculateTotal()}`);
     navigation.navigate("Approval Pending");
+    
+  }
+  
+
+
+  
+
+  const placeOrder = async () => {
+    const supplierGST = supplierPhone;
+    const clientGST = phoneNumber;
+    const generateOrderId = Math.floor(Math.random() * 1000000).toString();
+    const buildPayload = (generateOrderId, supplierGST, clientGST) => ({
+      Open_Orders: {
+        [generateOrderId]: {
+          supplierId: cartItems.map(item => ({
+            itemId: item.productId,        
+            name:   item.prodName,
+            quantity: item.quantity,
+            price:    item.price,
+          })),
+        },
+      },
+      clientGST,
+      supplierGST,
+      Order_ID: generateOrderId,
+    });
+    Alert.alert('Placing Order', JSON.stringify(buildPayload(orderId, supplierGST, clientGST), null, 2));
+
+    try {
+      Alert.alert('Placing Order', 'Please wait while we place your order...');
+      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/placeOrder',
+        buildPayload(orderId, supplierGST, clientGST));
+      navigation.navigate('Main', {screen: "Home"});
+      Alert.alert('Success', 'Product added successfully!');
+    } catch (error) {
+      Alert.alert('Error', error);
+    }
   }
 
   return (
@@ -119,7 +194,7 @@ export default function Basket() {
         </TouchableOpacity>
       </View>
 
-      <TouchableOpacity style={styles.sendButton} onPress={handleApproval}>
+      <TouchableOpacity style={styles.sendButton} onPress={placeOrder}>
         <Text style={styles.sendButtonText}>Send for approval</Text>
       </TouchableOpacity>
     </View>

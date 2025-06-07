@@ -33,29 +33,7 @@ export default function PresetEdits() {
     setSelectedItems((prev) => ({...prev, [id]: !prev[id]}));
   }
 
-  {/*Use Effect*/}
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/1234`);
-        const dataArray = Object.values(response.data);
-        setItems(dataArray);
-      } catch (error) {
-        console.log(error);
-      }
-    };
-    fetchData();
-  }, []);
-  useEffect(() => {
-    if (searchTerm) {
-      const results = items.filter(item =>
-        item.prodName.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      setFilteredData(results);
-    } else {
-      setFilteredData(items);
-    }
-  }, [searchTerm, items]);
+ 
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -100,17 +78,17 @@ export default function PresetEdits() {
         <View style={styles.dateEntryView}>
           <View style={styles.dateEntryDateView}>
             <Text style={styles.dateEntryDateText}>
-              {data.date}
+              {data.schedule.day}
             </Text>
           </View>
           <View style={styles.dateEntryMonthView}>
             <Text style={styles.dateEntryMonthText}>
-              {data.month}
+              {data.schedule.month}
             </Text>
           </View>
           <View style={styles.dateEntryYearView}>
             <Text style={styles.dateEntryYearText}>
-              {data.year}
+              {data.schedule.year}
             </Text>
           </View>
         </View>
@@ -125,7 +103,7 @@ export default function PresetEdits() {
         <View style={styles.timeEntryView}>
           <View style={styles.timeEntryHourView}>
             <Text style={styles.timeEntryHourText}>
-              {data.hourTime}
+              {data.schedule.hour}
             </Text>
           </View>
           <View style={styles.timeEntryColonView}>
@@ -135,7 +113,7 @@ export default function PresetEdits() {
           </View>
           <View style={styles.timeEntryMinuteView}>
             <Text style={styles.timeEntryMinuteText}>
-              {data.hourMinute}
+              {data.schedule.minute}
             </Text>
           </View>
         </View>
@@ -148,11 +126,9 @@ export default function PresetEdits() {
           Choose Audience
         </Text>
         <View style={styles.tagsContainer}>
-          {data.tags.map((tag, index) => (
-            <Text key={index} style={[styles.tag, { backgroundColor: tagColors[tag] || "#ccc" }]}>
-              {tag} x
-            </Text>
-          ))}
+          <Text style={styles.tag}>
+             {data.audienceTag}
+          </Text>
         </View>
       </View>
 
@@ -169,46 +145,16 @@ export default function PresetEdits() {
             style={styles.searchBarInput}
           />
         </View>
-        <View>
-          {
-            (searchTerm ? filteredData : items).length !== 0 ? (
-              <>
-                <FlatList
-                  data={searchTerm ? filteredData : items}
-                  keyExtractor={(item) => item.productId}
-                  renderItem={({item}) => (
-                    <TouchableOpacity
-                      style={styles.dataTouchableOpacity}
-                      onPress={() => toggleSelection(item.productId)}
-                    >
-                      <CheckBox
-                        checked = {!!selectedItems[item.productId]}
-                        onPress={() => toggleSelection(item.productId)}
-                        containerStyle={styles.checkBoxContainerStyle}
-                        checkedColor={'green'}
-                      />
-
-                      <View style={styles.supplierDataView}>
-                        <Text style = {styles.productNameStyle}>
-                          {item.prodName}
-                        </Text>
-                        <Text style={styles.productCategoryStyle}>
-                          {item.CategoryName}
-                        </Text>
-                        <Text style = {styles.productPriceStyle}>
-                          {item.myPrice}
-                        </Text>
-                        <Text style={styles.productDiscountStyle}>
-                          10% off
-                        </Text>
-                      </View>
-                    </TouchableOpacity>
-                  )} />
-              </>
-            ):(
-              <View></View>
-            )
-          }
+        <View style = {{flexDirection: "row", justifyContent: 'space-between'}}>
+          <Text>
+            {data.product.name}
+          </Text>
+          <Text>
+            {data.product.price}
+          </Text>
+          <Text>
+            {data.product.category}
+          </Text>
         </View>
       </View>
 
@@ -229,7 +175,7 @@ export default function PresetEdits() {
         </Text>
         <View style={styles.taglineTextView}>
           <Text style={styles.taglineTextStyle}>
-            {data.taglineText}
+            {data.tagLine}
           </Text>
         </View>
       </View>
@@ -278,7 +224,7 @@ const styles = StyleSheet.create({
     borderRadius: 25
   },
   tag: {
-    color: "white",
+    backgroundColor: "red",
     fontSize: 14,
     paddingVertical: 4,
     paddingHorizontal: 8,

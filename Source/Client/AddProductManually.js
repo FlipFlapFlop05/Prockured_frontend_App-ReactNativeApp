@@ -165,20 +165,10 @@ const AddProductManually = () => {
       const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/addProductManually',
         payload);
 
-      setResponseMessage('Success: ' + response.data.message);
       navigation.navigate('Main', {screen: "Home"});
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
-      if (error.response) {
-        // Server responded with a status other than 2xx
-        setResponseMessage('Error: ' + error.response.data.message);
-      } else if (error.request) {
-        // Request was made but no response received
-        setResponseMessage('No response from server');
-      } else {
-        // Something else happened
-        setResponseMessage('Request error: ' + error.message);
-      }
+      Alert.alert('Error', error);
     }
   };
 

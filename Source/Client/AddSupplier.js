@@ -103,7 +103,7 @@ export default function AddSupplier() {
     }
 
      const payload = {
-      phone: id,
+      clientGST: id,
       supplierGST: supplierGstNumber,
       supplierPhone: supplierPhoneNumber,
       businessName: businessName,

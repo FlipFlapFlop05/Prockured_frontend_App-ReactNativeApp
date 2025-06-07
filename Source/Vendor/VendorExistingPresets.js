@@ -12,14 +12,15 @@ import {
   ChevronRightIcon
 } from "react-native-heroicons/outline";
 import {useNavigation} from '@react-navigation/native';
-import {vendorExistingPresets} from '../Constant/constant';
+import axios from 'axios';
 
 export default function VendorExistingPresets(){
   const navigation = useNavigation();
   const [expandedSections, setExpandedSections] = useState({});
   const [gstNumber, setGSTNumber] = useState(null);
   const [data, setData] = useState([]);
-
+  const [drafts, setDrafts] = useState([]);            // ⬅️ live === false
+  const [previous, setPrevious] = useState([]);  
   const toggleSection = (id) => {
     setExpandedSections((prev) => ({
       ...prev,
@@ -28,18 +29,17 @@ export default function VendorExistingPresets(){
   };
 
   useEffect(() => {
-    const fetchGSTId = async () => {
+    const fetchGSTNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const supplierGst = await AsyncStorage.getItem('phoneNumber');
-        if (supplierGst) {
-          setGSTNumber(supplierGst);
+        const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
+        if (storedGSTNumber) {
+          setGSTNumber(storedGSTNumber);
         }
       } catch (error) {
         console.log('Error Fetching GST ID: ', error);
       }
     };
-    fetchGSTId();
+    fetchGSTNumber();
   }, [gstNumber]);
 
   useLayoutEffect(() => {
@@ -73,33 +73,42 @@ export default function VendorExistingPresets(){
     });
   }, [navigation]);
   useEffect(() => {
-   Alert.alert('GST Number:', gstNumber); 
     const getData = async() => {
+      Alert.alert('GST', gstNumber);
       try{
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCampaign', {
           "gstNumber": "Haha",
         });
 
-        const allData = response.data.data;
-        const keys = Object.keys(allData);
-        const firstKey = keys[0];
-
-        const campaignData = allData[firstKey];
-        Alert.alert('Product Name:', campaignData.product.name);
-        Alert.alert('Price:', campaignData.product.price);
-        Alert.alert('Schedule Year:', campaignData.schedule.year);
-        Alert.alert('Tagline:', campaignData.tagLine);
+        const campaigns = Object.values(response.data.data || {});
+        const liveCampaigns  = campaigns.filter(
+          c => c.live === true || c.live === 'true'
+        );
+        const nonLiveCampaigns = campaigns.filter(
+          c => c.live === false || c.live === 'false'
+        );
+        setPrevious(liveCampaigns);
+        setDrafts(nonLiveCampaigns);
       } catch (error) {
         console.error('Error fetching data:', error);
         Alert.alert('Error', 'Failed to fetch data. Please try again later.');
       }
     };
-    if(gstNumber)
-    {
-      getData();
-    }
+    getData();
   }, []);
   
+  const vendorExistingPresets = [
+  {
+    id: 'drafts',
+    title: 'Drafts',
+    questions: drafts,
+  },
+  {
+    id: 'previousCampaign',
+    title: 'Previous Campaign',
+    questions: previous,
+  },
+];
   return (
     <ScrollView style={styles.container}>
       {vendorExistingPresets.map(section => (
@@ -108,7 +117,7 @@ export default function VendorExistingPresets(){
           {section.questions.map(q => (
             <View key={q.id} style={styles.question}>
               <View styles={styles.question}>
-                <Text style={styles.questionText}>{q.taglineText}</Text>
+                <Text style={styles.questionText}>{q.tagLine}</Text>
               </View>
               <TouchableOpacity onPress={() => navigation.navigate('Edit Preset', {data: q})}>
                 <ChevronRightIcon size={20} color={'black'} strokeWidth={4} />
