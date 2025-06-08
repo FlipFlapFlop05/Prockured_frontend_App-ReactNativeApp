@@ -42,6 +42,20 @@ export default function Catalogue() {
     useState('My Catalogue');
   const [loading, setLoading] = useState(true);
 
+  const getAllAsyncStorageItems = async () => {
+    try {
+      const keys = await AsyncStorage.getAllKeys();
+      const stores = await AsyncStorage.multiGet(keys);
+      stores.forEach(([key, value]) => {
+        console.log(`Key: ${key}, Value: ${value}`);
+      });
+    } catch (error) {
+      console.error('Error fetching AsyncStorage items:', error);
+    }
+  };
+
+  getAllAsyncStorageItems();
+
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -54,9 +68,11 @@ export default function Catalogue() {
           const [catalogueResponse, suppliersResponse] = await Promise.all([
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${storedPhoneNumber}`,
+              // `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/04030506`,
             ),
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
+              // `https://api-v7quhc5aza-uc.a.run.app/getSupplier/04030506`,
             ),
           ]);
 
@@ -280,48 +296,46 @@ export default function Catalogue() {
           </ScrollView>
 
           {searchedItems.length > 0 ? (
-            <FlatList
-              data={searchedItems}
-              keyExtractor={item => item.productId}
-              renderItem={({item}) => (
-                <View style={styles.productCard}>
-                  <Image
-                    source={{
-                      uri: 'https://www.themealdb.com/images/category/beef.png',
-                    }}
-                    style={styles.productImageCard}
-                  />
-                  <View style={styles.productDetailsCard}>
-                    <Text style={styles.productNameCard}>{item.prodName}</Text>
-                    <Text style={styles.productCategoryCard}>
-                      {item.CategoryName}
-                    </Text>
-                    <Text style={styles.productPriceCard}>
-                      ₹ {item.myPrice}
-                    </Text>
+            <>
+              <FlatList
+                data={searchedItems}
+                keyExtractor={item => item.productId}
+                renderItem={({item}) => (
+                  <View style={styles.productCard}>
+                    <Image
+                      source={{
+                        uri: 'https://www.themealdb.com/images/category/beef.png',
+                      }}
+                      style={styles.productImageCard}
+                    />
+                    <View style={styles.productDetailsCard}>
+                      <Text style={styles.productNameCard}>
+                        {item.prodName}
+                      </Text>
+                      <Text style={styles.productCategoryCard}>
+                        {item.CategoryName}
+                      </Text>
+                      <Text style={styles.productPriceCard}>
+                        ₹ {item.myPrice}
+                      </Text>
+                    </View>
+                    <View style={styles.quantityControlsCard}>
+                      <TouchableOpacity
+                        onPress={() => handleRemoveFromCart(item.productId)}>
+                        <Text style={styles.quantityButtonTextCard}>-</Text>
+                      </TouchableOpacity>
+                      <Text style={styles.quantityTextCard}>
+                        {cart[item.productId] || 0}
+                      </Text>
+                      <TouchableOpacity
+                        onPress={() => handleAddToCart(item.productId)}>
+                        <Text style={styles.quantityButtonTextCard}>+</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <View style={styles.quantityControlsCard}>
-                    <TouchableOpacity
-                      onPress={() => handleRemoveFromCart(item.productId)}>
-                      <Text style={styles.quantityButtonTextCard}>-</Text>
-                    </TouchableOpacity>
-                    <Text style={styles.quantityTextCard}>
-                      {cart[item.productId] || 0}
-                    </Text>
-                    <TouchableOpacity
-                      onPress={() => handleAddToCart(item.productId)}>
-                      <Text style={styles.quantityButtonTextCard}>+</Text>
-                    </TouchableOpacity>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.floatingButton}
-                    onPress={() => navigation.navigate('Add Supplier')}
-                  >
-                        <Text style={styles.floatingButtonText}>+</Text>
-                  </TouchableOpacity>
-                </View>
-              )}
-            />
+                )}
+              />
+            </>
           ) : (
             <Text style={styles.noProductsText}>
               {searchTerm
@@ -330,6 +344,16 @@ export default function Catalogue() {
             </Text>
           )}
         </ScrollView>
+      )}
+
+      {searchedItems.length > 0 && (
+        <View>
+          <TouchableOpacity
+            style={styles.floatingButton}
+            onPress={() => navigation.navigate('Add Supplier')}>
+            <Text style={styles.floatingButtonText}>+</Text>
+          </TouchableOpacity>
+        </View>
       )}
 
       {calculateTotalItems() > 0 && (
@@ -498,7 +522,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 30,
     position: 'absolute',
-    bottom: 80,
+    bottom: '5%',
     right: 20,
     justifyContent: 'center',
     alignItems: 'center',

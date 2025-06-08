@@ -1,14 +1,23 @@
-import React, {useEffect, useLayoutEffect} from "react";
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, TextInput, Linking } from "react-native";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { ChevronLeftIcon } from "react-native-heroicons/solid";
-import axios from "axios";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import React, {useEffect, useLayoutEffect} from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  Image,
+  TextInput,
+  Linking,
+} from 'react-native';
+import {useNavigation, useRoute} from '@react-navigation/native';
+import {ChevronLeftIcon} from 'react-native-heroicons/solid';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Basket() {
   const navigation = useNavigation();
   const route = useRoute();
-  const { cart, data } = route.params;
+  const {cart, data} = route.params;
   const [phoneNumber, setPhoneNumber] = React.useState(null);
 
   useEffect(() => {
@@ -44,7 +53,6 @@ export default function Basket() {
     }
   }, [phoneNumber]);
 
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -61,63 +69,70 @@ export default function Basket() {
         fontWeight: 'bold',
         fontSize: 20,
         fontFamily: 'Montserrat',
-        justifyContent: 'center'
+        justifyContent: 'center',
         // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
           style={{paddingHorizontal: 13}}>
-            <ChevronLeftIcon size={28} color="#333" />
+          <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>
       ),
     });
   }, [navigation]);
 
   const openWhatsApp = (phoneNumber, message) => {
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(message)}`;
+    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+      message,
+    )}`;
     Linking.openURL(url)
-      .then((supported) => {
+      .then(supported => {
         if (!supported) {
           alert('Make sure WhatsApp is installed on your device');
         }
       })
-      .catch((err) => console.error('Error opening WhatsApp:', err));
+      .catch(err => console.error('Error opening WhatsApp:', err));
   };
-  
-  const handleRemoveItem = (productId) => {
+
+  const handleRemoveItem = productId => {
     // ... your removal logic ...
   };
-  const cartItems = Object.keys(cart).map((productId) => {
-    const product = data.find((item) => item.productId === productId);
-    if (product) {
-      return {
-        productId: productId,
-        prodName: product.prodName,
-        quantity: cart[productId],
-        price: product.myPrice,
-        category: product.CategoryName,
-        image: product.image, 
-        supplierPhone: product.SupplierPhone,
-        supplierName: product.SupplierName,
-      };
-    }
-    return null;
-  }).filter(item => item !== null);
+  const cartItems = Object.keys(cart)
+    .map(productId => {
+      const product = data.find(item => item.productId === productId);
+      if (product) {
+        return {
+          productId: productId,
+          prodName: product.prodName,
+          quantity: cart[productId],
+          price: product.myPrice,
+          category: product.CategoryName,
+          image: product.image,
+          supplierPhone: product.SupplierPhone,
+          supplierName: product.SupplierName,
+        };
+      }
+      return null;
+    })
+    .filter(item => item !== null);
 
   const calculateTotal = () => {
-    return cartItems.reduce((total, item) => total + item.price * item.quantity, 0);
+    return cartItems.reduce(
+      (total, item) => total + item.price * item.quantity,
+      0,
+    );
   };
 
-  const handleApproval = async() => {
-    openWhatsApp('8306148803', `${cartItems.map(item => `${item.prodName} - ${item.quantity} kg`).join('\n')}\nTotal: ₹${calculateTotal()}`);
-    navigation.navigate("Approval Pending");
-    
-  }
-  
-
-
-  
+  const handleApproval = async () => {
+    openWhatsApp(
+      '8306148803',
+      `${cartItems
+        .map(item => `${item.prodName} - ${item.quantity} kg`)
+        .join('\n')}\nTotal: ₹${calculateTotal()}`,
+    );
+    navigation.navigate('Approval Pending');
+  };
 
   const placeOrder = async () => {
     const supplierGST = supplierPhone;
@@ -127,10 +142,10 @@ export default function Basket() {
       Open_Orders: {
         [generateOrderId]: {
           supplierId: cartItems.map(item => ({
-            itemId: item.productId,        
-            name:   item.prodName,
+            itemId: item.productId,
+            name: item.prodName,
             quantity: item.quantity,
-            price:    item.price,
+            price: item.price,
           })),
         },
       },
@@ -138,34 +153,49 @@ export default function Basket() {
       supplierGST,
       Order_ID: generateOrderId,
     });
-    Alert.alert('Placing Order', JSON.stringify(buildPayload(orderId, supplierGST, clientGST), null, 2));
+    Alert.alert(
+      'Placing Order',
+      JSON.stringify(buildPayload(orderId, supplierGST, clientGST), null, 2),
+    );
 
-    try {
-      Alert.alert('Placing Order', 'Please wait while we place your order...');
-      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/placeOrder',
-        buildPayload(orderId, supplierGST, clientGST));
-      navigation.navigate('Main', {screen: "Home"});
-      Alert.alert('Success', 'Product added successfully!');
-    } catch (error) {
-      Alert.alert('Error', error);
-    }
-  }
+    // try {
+    //   Alert.alert('Placing Order', 'Please wait while we place your order...');
+    //   const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/placeOrder',
+    //     buildPayload(orderId, supplierGST, clientGST));
+    //   navigation.navigate('Main', {screen: "Home"});
+    //   Alert.alert('Success', 'Product added successfully!');
+    // } catch (error) {
+    //   Alert.alert('Error', error);
+    // }
+  };
 
   return (
     <View style={styles.container}>
-        
-        <View style = {{backgroundColor: "white", padding: 20, borderRadius: 10, marginBottom: 20}}>
-            <Text style={styles.orderTotal}>Order Total ₹ {calculateTotal()}</Text>
-        </View>
-        <TouchableOpacity style={styles.editOrderContainer} onPress={() => navigation.goBack()}>
-            <Text style={styles.editOrder}>Edit Order</Text>
-        </TouchableOpacity>
+      <View
+        style={{
+          backgroundColor: 'white',
+          padding: 20,
+          borderRadius: 10,
+          marginBottom: 20,
+        }}>
+        <Text style={styles.orderTotal}>Order Total ₹ {calculateTotal()}</Text>
+      </View>
+      <TouchableOpacity
+        style={styles.editOrderContainer}
+        onPress={() => navigation.goBack()}>
+        <Text style={styles.editOrder}>Edit Order</Text>
+      </TouchableOpacity>
       <FlatList
         data={cartItems}
-        keyExtractor={(item) => item.productId}
-        renderItem={({ item }) => (
+        keyExtractor={item => item.productId}
+        renderItem={({item}) => (
           <View style={styles.cartItem}>
-            <Image source={{ uri: "https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7"}} style={styles.itemImage} />
+            <Image
+              source={{
+                uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
+              }}
+              style={styles.itemImage}
+            />
             <View style={styles.itemDetails}>
               <Text style={styles.itemName}>{item.prodName}</Text>
               <Text style={styles.itemQuantity}>{item.quantity} kg</Text>
@@ -177,19 +207,19 @@ export default function Basket() {
 
       <View style={styles.commentContainer}>
         <TextInput
-            style={styles.commentInput} 
-            placeholder="Leave a Comment"
-            keyboardType="default"
-            placeholderTextColor={'black'}
-         />
+          style={styles.commentInput}
+          placeholder="Leave a Comment"
+          keyboardType="default"
+          placeholderTextColor={'black'}
+        />
       </View>
 
       <View style={styles.deliveryContainer}>
-        <View style = {{flexDirection: "column"}}>
-            <Text style={styles.deliveryLabel}>Delivery by:</Text>
-            <Text style={styles.deliveryDate}>25 July 2024</Text>
+        <View style={{flexDirection: 'column'}}>
+          <Text style={styles.deliveryLabel}>Delivery by:</Text>
+          <Text style={styles.deliveryDate}>25 July 2024</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate("Catalogue")}>
+        <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
           <Text style={styles.cancelOrder}>Cancel order</Text>
         </TouchableOpacity>
       </View>
@@ -204,41 +234,41 @@ export default function Basket() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
+    backgroundColor: '#f5f5f5',
     padding: 20,
   },
   header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   backButton: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   orderTotal: {
     fontSize: 20,
-    fontWeight: "bold",
-    alignContent: "center",
-    alignSelf: "center"
+    fontWeight: 'bold',
+    alignContent: 'center',
+    alignSelf: 'center',
   },
   editOrderContainer: {
     alignItems: 'flex-end', // Align to the right
     marginBottom: 20,
-    marginRight: 20, 
+    marginRight: 20,
   },
   editOrder: {
-    color: "blue",
+    color: 'blue',
   },
   cartItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "white",
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'white',
     borderRadius: 10,
     padding: 15,
     marginBottom: 10,
-    alignSelf: "center"
+    alignSelf: 'center',
   },
   itemImage: {
     width: 50,
@@ -251,15 +281,15 @@ const styles = StyleSheet.create({
   },
   itemName: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   itemQuantity: {
     fontSize: 16,
-    color: "gray",
+    color: 'gray',
   },
   itemPrice: {
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   commentContainer: {
     marginBottom: 20,
@@ -272,13 +302,13 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     height: 40,
     padding: 10,
-    backgroundColor: "white",
-    color: "black",
+    backgroundColor: 'white',
+    color: 'black',
   },
   deliveryContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 20,
   },
   deliveryLabel: {
@@ -286,20 +316,20 @@ const styles = StyleSheet.create({
   },
   deliveryDate: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
   cancelOrder: {
-    color: "red",
+    color: 'red',
   },
   sendButton: {
-    backgroundColor: "#76B117",
+    backgroundColor: '#76B117',
     borderRadius: 10,
     padding: 15,
-    alignItems: "center",
+    alignItems: 'center',
   },
   sendButtonText: {
-    color: "white",
+    color: 'white',
     fontSize: 18,
-    fontWeight: "bold",
+    fontWeight: 'bold',
   },
 });

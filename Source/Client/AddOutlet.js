@@ -126,7 +126,14 @@ export default function AddOutlet() {
     }
 
     const outletId = Math.floor(Math.random() * 100000);
-    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
+    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${encodeURIComponent(
+      phoneNumber,
+    )}/${encodeURIComponent(name)}/${encodeURIComponent(
+      address,
+    )}/${encodeURIComponent(billingAddress)}/${encodeURIComponent(
+      city,
+    )}/${encodeURIComponent(state)}/${encodeURIComponent(country)}`;
+    console.log(url);
 
     try {
       const response = await axios.get(url, {
@@ -172,21 +179,21 @@ export default function AddOutlet() {
         errorMessage="City is required"
       />
       <View style={styles.checkboxContainer}>
-          <TouchableOpacity
-            onPress={() => {
-              const newVal = !sameAsShipping;
-              setSameAsShipping(newVal);
-              if (newVal) {
-                setForm(prev => ({...prev, billingAddress: prev.address}));
-              }
-            }}
-            style={styles.checkbox}>
-            {sameAsShipping && <View style={styles.checkboxTick} />}
-          </TouchableOpacity>
-          <Text style={styles.checkboxLabel}>
-            Billing address same as shipping address
-          </Text>
-        </View>
+        <TouchableOpacity
+          onPress={() => {
+            const newVal = !sameAsShipping;
+            setSameAsShipping(newVal);
+            if (newVal) {
+              setForm(prev => ({...prev, billingAddress: prev.address}));
+            }
+          }}
+          style={styles.checkbox}>
+          {sameAsShipping && <View style={styles.checkboxTick} />}
+        </TouchableOpacity>
+        <Text style={styles.checkboxLabel}>
+          Billing address same as shipping address
+        </Text>
+      </View>
       <ValidatedInput
         label="Billing Address"
         placeholder="Enter billing address"
@@ -220,16 +227,16 @@ export default function AddOutlet() {
         validationFunc={validateRequired}
         errorMessage="Country is required"
       />
-      <View style = {styles.buttonsView}>
-        <TouchableOpacity style = {styles.cancelTouchableOpacity} onPress={() => navigation.goBack()}>
-            <Text style = {styles.cancelText}>
-              Cancel
-            </Text>
+      <View style={styles.buttonsView}>
+        <TouchableOpacity
+          style={styles.cancelTouchableOpacity}
+          onPress={() => navigation.goBack()}>
+          <Text style={styles.cancelText}>Cancel</Text>
         </TouchableOpacity>
-        <TouchableOpacity style = {styles.saveTouchableOpacity} onPress={handleSave}>
-          <Text style = {styles.saveText}>
-            Save
-          </Text>
+        <TouchableOpacity
+          style={styles.saveTouchableOpacity}
+          onPress={handleSave}>
+          <Text style={styles.saveText}>Save</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

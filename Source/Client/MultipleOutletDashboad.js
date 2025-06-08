@@ -5,11 +5,10 @@ import {
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  ScrollView,
   SafeAreaView,
   Dimensions,
   Modal,
-  Alert
+  Alert,
 } from 'react-native';
 import {
   ChevronLeftIcon,
@@ -18,7 +17,6 @@ import {
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import Config from 'react-native-config';
 
 const {width, height} = Dimensions.get('window');
 
@@ -60,7 +58,7 @@ export default function MultipleOutletDashboard() {
   useEffect(() => {
     const fetchClientId = async () => {
       try {
-        const storedId = await AsyncStorage.getItem('phoneNumber');
+        const storedId = await AsyncStorage.getItem('clientGST');
         if (storedId) {
           setClientId(storedId);
         }
@@ -80,9 +78,7 @@ export default function MultipleOutletDashboard() {
             `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientId}`,
           );
           setData(Object.values(response.data));
-          Alert.alert("Raw response:", response.data);
-          Alert.alert("Parsed values:", Object.values(response.data));
-
+          console.log(response?.data);
         } catch (error) {
           console.log(error);
         }
@@ -104,117 +100,79 @@ export default function MultipleOutletDashboard() {
           {item.city} {item.state} {item.country}
         </Text>
       </View>
-      <TouchableOpacity onPress={() => setSelectedOutlet(item)}>
+      <TouchableOpacity
+        onPress={() => {
+          setSelectedOutlet(item);
+          setModalVisible(true);
+        }}>
         <ChevronRightIcon size={20} color={'#76B117'} strokeWidth={5} />
       </TouchableOpacity>
-
-      {selectedOutlet?.outletId === item.outletId && (
-        <Modal
-          transparent={true}
-          visible={true}
-          animationType="slide"
-          onRequestClose={() => setSelectedOutlet(null)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.title}>Choose an Option</Text>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  setModalVisible(false);
-                  navigation.navigate('Outlet Edit Details', {outletData: selectedOutlet});
-                }}>
-                <Text style={styles.buttonText}>Edit Details</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  setSelectedOutlet(null);
-                  navigation.navigate('Outlet Dashboard');
-                }}>
-                <Text style={styles.buttonText}>Dashboard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => setSelectedOutlet(null)}>
-                <Text style={styles.closeText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-      )}
     </View>
+  );
+
+  const ListHeaderComponent = () => (
+    <>
+      <TouchableOpacity
+        style={styles.addOutletButton}
+        onPress={() => navigation.navigate('Add Outlet')}>
+        <Text style={styles.addOutletText}>+ Add New Outlet</Text>
+      </TouchableOpacity>
+      <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
+    </>
   );
 
   return (
     <SafeAreaView style={styles.safeArea}>
-      <ScrollView style={styles.container}>
-        <Modal
-          transparent={true}
-          visible={modalVisible}
-          animationType="slide"
-          onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContainer}>
-              <Text style={styles.title}>Choose an Option</Text>
+      <FlatList
+        data={data}
+        renderItem={renderOutletItem}
+        keyExtractor={item => item.outletId}
+        ListHeaderComponent={ListHeaderComponent}
+        contentContainerStyle={styles.flatListContent}
+      />
 
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  setModalVisible(false);
-                  navigation.navigate('Outlet Edit Details', {outletData: selectedOutlet});
-                }}>
-                <Text style={styles.buttonText}>Edit Details</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity
-                style={styles.button}
-                onPress={() => {
-                  setModalVisible(false);
-                  navigation.navigate('Outlet Dashboard', {
-                    outlet: selectedOutlet,
-                  });
-                }}>
-                <Text style={styles.buttonText}>Dashboard</Text>
-              </TouchableOpacity>
-
-              <TouchableOpacity onPress={() => setModalVisible(false)}>
-                <Text style={styles.closeText}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-        <SafeAreaView style={styles.safeArea}>
-          <ScrollView style={styles.container} keyboardShouldPersistTaps="always">
-            {/* <View style={styles.header}>
-              <TouchableOpacity onPress={() => navigation.goBack()}>
-                <ChevronLeftIcon size={25} color={'black'} strokeWidth={3} />
-              </TouchableOpacity>
-              <Text style={styles.headerTitle}>Outlets</Text>
-            </View> */}
+      <Modal
+        transparent={true}
+        visible={modalVisible}
+        animationType="slide"
+        onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContainer}>
+            <Text style={styles.title}>Choose an Option</Text>
 
             <TouchableOpacity
-              style={styles.addOutletButton}
-              onPress={() => navigation.navigate('Add Outlet')}>
-              <Text style={styles.addOutletText}>+ Add New Outlet</Text>
+              style={styles.button}
+              onPress={() => {
+                setModalVisible(false);
+                navigation.navigate('Outlet Edit Details', {
+                  outletData: selectedOutlet,
+                });
+              }}>
+              <Text style={styles.buttonText}>Edit Details</Text>
             </TouchableOpacity>
 
-            <Text style={styles.otherOutletsTitle}>Other Outlets</Text>
-          </ScrollView>
-        </SafeAreaView>
-        <FlatList
-          data={data}
-          renderItem={renderOutletItem}
-          keyExtractor={item => item.outletId}
-          numColumns={1}
-          contentContainerStyle={styles.flatListContent}
-        />
-      </ScrollView>
+            <TouchableOpacity
+              style={styles.button}
+              onPress={() => {
+                setModalVisible(false);
+                navigation.navigate('Outlet Dashboard', {
+                  outlet: selectedOutlet,
+                });
+              }}>
+              <Text style={styles.buttonText}>Dashboard</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.closeText}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
 
+// Keep all your existing styles exactly the same
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
@@ -239,7 +197,6 @@ const styles = StyleSheet.create({
   addOutletButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    // height: height * 0.06,
     backgroundColor: 'white',
     paddingTop: 15,
     paddingBottom: 15,

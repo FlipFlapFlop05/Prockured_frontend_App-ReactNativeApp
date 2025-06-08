@@ -107,6 +107,7 @@ export default function HomeScreen() {
     const fetchPhoneNumber = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
+
         if (storedPhoneNumber) {
           setClientPhoneNumber(storedPhoneNumber);
         }
@@ -240,13 +241,81 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
+  const [hasSuppliers, setHasSuppliers] = useState(false);
+
+  useEffect(() => {
+    const fetchData = async () => {
+      setIsLoading(true);
+      try {
+        // 1. Fetch phone number first
+        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        setClientPhoneNumber(storedPhoneNumber);
+
+        if (storedPhoneNumber) {
+          // 2. Fetch suppliers data
+          const supplierResponse = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
+          );
+          const supplierData = Object.values(supplierResponse.data);
+          setData(supplierData);
+          setHasSuppliers(supplierData.length > 0);
+
+          // 3. Fetch client data
+          const gstNumber = await AsyncStorage.getItem('clientGST');
+          if (gstNumber) {
+            const clientResponse = await axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
+            );
+            setClientData(clientResponse.data);
+          }
+
+          // 4. Fetch outlets data
+          const outletsResponse = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${storedPhoneNumber}`,
+          );
+
+          let outletsData = [];
+          if (
+            outletsResponse.data &&
+            Object.keys(outletsResponse.data).length > 0
+          ) {
+            outletsData = Object.values(outletsResponse.data);
+          } else {
+            outletsData = DUMMY_OUTLETS;
+          }
+
+          dispatch(setAllOutlets(outletsData));
+          if (outletsData.length > 0) {
+            dispatch(setSelectedOutlet(outletsData[0]));
+          }
+        }
+      } catch (error) {
+        console.error('Fetch error:', error);
+        // Fallback to dummy data if API fails
+        dispatch(setAllOutlets(DUMMY_OUTLETS));
+        if (DUMMY_OUTLETS.length > 0) {
+          dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchData();
+  }, []);
+
+  // Update hasSuppliers whenever data changes
+  useEffect(() => {
+    setHasSuppliers(filteredData.length > 0);
+  }, [filteredData]);
+
   return (
     <SafeAreaView style={styles.safeAreaContainer}>
       {isLoading ? (
         <View style={styles.centeredView}>
           <ActivityIndicator size="large" color="#76B117" />
         </View>
-      ) : clientOutlet.length > 0 ? (
+      ) : hasSuppliers ? (
         <View style={styles.chatScreenHeaderView}>
           <View style={styles.chatScreenHeaderViewIcon}>
             <View style={{flex: 1}}>

@@ -16,7 +16,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
 import {categories} from '../Constant/constant';
-import ValidatedInput from '../components/Inputs/ValidatedInput'; // Make sure this path is correct
+import ValidatedInput from '../components/Inputs/ValidatedInput';
 import Config from 'react-native-config';
 
 const {width: screenWidth, height} = Dimensions.get('window');
@@ -40,7 +40,7 @@ const AddProductManually = () => {
     productName: '',
     productUnit: '',
     productPrice: '',
-    productCategory: selectedCategory.categoryName,
+    productCategory: '',
   });
 
   useEffect(() => {
@@ -64,7 +64,6 @@ const AddProductManually = () => {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -75,11 +74,20 @@ const AddProductManually = () => {
       ),
     });
   }, [navigation]);
+
   useEffect(() => {
     if (clientPhoneNumber) {
       fetchSuppliers();
     }
   }, [clientPhoneNumber]);
+
+  // Add this useEffect to sync formData with selectedCategory
+  useEffect(() => {
+    setFormData(prev => ({
+      ...prev,
+      productCategory: selectedCategory.categoryName,
+    }));
+  }, [selectedCategory]);
 
   const fetchPhoneNumber = async () => {
     try {
@@ -95,7 +103,9 @@ const AddProductManually = () => {
   const fetchSuppliers = async () => {
     if (clientPhoneNumber) {
       axios
-        .get(`https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`)
+        .get(
+          `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
+        )
         .then(response => {
           const dataArray = Object.values(response.data);
           setSuppliers(dataArray);
@@ -133,6 +143,7 @@ const AddProductManually = () => {
       </Text>
     </TouchableOpacity>
   );
+  console.log(formData);
 
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
@@ -151,21 +162,26 @@ const AddProductManually = () => {
     }
 
     const payload = {
-      phone: PhoneNumber,
+      clientGST: PhoneNumber,
       productId: productId,
       prodName: productName,
       prodUnit: productUnit,
-      myPrice : productPrice,
+      myPrice: productPrice,
       CategoryName: productCategory,
       supplierPhone: selectedSupplier.supplierId,
       supplierName: selectedSupplier.supplierName,
-    }
-    Alert.alert('Payload', JSON.stringify(payload, null, 2));
-    try {
-      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/addProductManually',
-        payload);
+    };
+    console.log(payload);
 
-      navigation.navigate('Main', {screen: "Home"});
+    // Alert.alert('Payload', JSON.stringify(payload, null, 2));
+    try {
+      const response = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/addProductManually',
+        payload,
+      );
+      console.log(response);
+
+      navigation.navigate('Main', {screen: 'Home'});
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
       Alert.alert('Error', error);
@@ -177,7 +193,6 @@ const AddProductManually = () => {
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.inputContainerView}>
           <View style={{flexDirection: 'column'}}>
-            {/* <Text style={styles.inputLabel}>Product Name*</Text> */}
             <ValidatedInput
               label={'Product Name'}
               labelStyle={{color: '#76B117'}}
@@ -201,7 +216,6 @@ const AddProductManually = () => {
 
         <View style={styles.row}>
           <View style={styles.inputContainer}>
-            {/* <Text style={styles.inputLabel}>Unit</Text> */}
             <ValidatedInput
               label={'Unit'}
               labelStyle={{color: '#76B117'}}
@@ -217,7 +231,6 @@ const AddProductManually = () => {
           </View>
 
           <View style={styles.inputContainer}>
-            {/* <Text style={styles.inputLabel}>My Price</Text> */}
             <ValidatedInput
               label={'My Price'}
               labelStyle={{color: '#76B117'}}
@@ -492,7 +505,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   categoryModalContent: {
     width: 300,
@@ -500,8 +513,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
-    elevation: 5, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
