@@ -3,7 +3,7 @@ import {View, Text, StyleSheet, Image, TouchableOpacity} from 'react-native';
 import {ChevronLeftIcon, StarIcon} from 'react-native-heroicons/outline';
 import {useNavigation} from '@react-navigation/native';
 
-export default function ApprovalPending() {
+export default function ApprovalPending({orderID}) {
   const navigation = useNavigation();
   let order_id = 1548745;
   useLayoutEffect(() => {
@@ -39,7 +39,7 @@ export default function ApprovalPending() {
       <View style={styles.contentView}>
         <StarIcon size={50} color={'#76B117'} />
         <Text style={styles.contentViewText1}>Approval Pending</Text>
-        <Text style={styles.orderIdText}>Order id: {order_id}</Text>
+        <Text style={styles.orderIdText}>Order id: {orderID}</Text>
         <Text style={styles.contentViewText2}>
           Your order has been placed successfully.
         </Text>

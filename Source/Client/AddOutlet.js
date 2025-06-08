@@ -12,7 +12,6 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import ValidatedInput from '../components/Inputs/ValidatedInput';
-import Config from 'react-native-config';
 
 export default function AddOutlet() {
   const navigation = useNavigation();
@@ -86,7 +85,7 @@ export default function AddOutlet() {
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
         if (storedPhoneNumber) {
           setPhoneNumber(storedPhoneNumber);
         }
@@ -126,14 +125,8 @@ export default function AddOutlet() {
     }
 
     const outletId = Math.floor(Math.random() * 100000);
-    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${encodeURIComponent(
-      phoneNumber,
-    )}/${encodeURIComponent(name)}/${encodeURIComponent(
-      address,
-    )}/${encodeURIComponent(billingAddress)}/${encodeURIComponent(
-      city,
-    )}/${encodeURIComponent(state)}/${encodeURIComponent(country)}`;
-    console.log(url);
+    const url = `https://api-v7quhc5aza-uc.a.run.app/addOutlet/${outletId}/${phoneNumber}/${name}/${address}/${billingAddress}/${city}/${state}/${country}`;
+    Alert.alert(url);
 
     try {
       const response = await axios.get(url, {

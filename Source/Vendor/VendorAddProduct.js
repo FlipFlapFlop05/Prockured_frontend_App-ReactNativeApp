@@ -16,7 +16,7 @@ import { useNavigation, useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import axios from "axios";
 import { ChevronLeftIcon } from 'react-native-heroicons/outline';
-
+import { categories } from '../Constant/constant';
 
 const { width: screenWidth } = Dimensions.get('window');
 
@@ -30,6 +30,12 @@ const VendorAddProduct = () => {
   })
   const [gstNumber, setGSTNumber] = useState(null);
   const [responseMessage, setResponseMessage] = useState('');
+  const [modalVisible, setModalVisible] = useState(false);
+  const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState({
+      categoryImage: '',
+      categoryName: '',
+  });
 
 
   useEffect(() => {
@@ -48,17 +54,46 @@ const VendorAddProduct = () => {
     }
   }
 
+  const handleSelectCategory = category => {
+    setSelectedCategory({
+      categoryImage: category.image,
+      categoryName: category.name,
+    });
+    // Add this line to update formData.productCategory
+    setFormData(prevFormData => ({
+      ...prevFormData,
+      productCategory: category.name,
+    }));
+    setCategoryModalVisible(false);
+  };
+  
+  const renderCategoryItemModal = ({item}) => (
+    <TouchableOpacity
+      style={styles.categoryItemModal}
+      onPress={() => handleSelectCategory(item)}
+    >
+      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      <Text
+        style={styles.categoryText}
+        numberOfLines={2}
+        ellipsizeMode={'tail'}
+    >
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
     const GSTNumber = gstNumber;
-    const { productName, productUnit, productCategory, productPrice } = formData;
+    const { productName, productUnit, productPrice } = formData;
 
     if (!GSTNumber || !productName || !productUnit || !productPrice) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
     const payload = {
-      phone: gstNumber,
+      supplierGST: gstNumber,
       productId: productId,
       prodName: productName,
       prodUnit: productUnit,
@@ -68,25 +103,15 @@ const VendorAddProduct = () => {
     try {
       const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/supplierAddProductManually',
         payload);
-
-      setResponseMessage('Success: ' + response.data.message);
       navigation.navigate('Vendor App', {screen: "Chat"});
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
-      if (error.response) {
-        // Server responded with a status other than 2xx
-        setResponseMessage('Error: ' + error.response.data.message);
-      } else if (error.request) {
-        // Request was made but no response received
-        setResponseMessage('No response from server');
-      } else {
-        // Something else happened
-        setResponseMessage('Request error: ' + error.message);
+        console.error('Error adding product:', error);
       }
     }
-  };
+  
    
-
+  
 
   return (
     <View style={styles.container}>
@@ -141,16 +166,33 @@ const VendorAddProduct = () => {
 
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Category</Text>
-          <TextInput
-            value={formData.productCategory}
-            onChangeText={(text) => setFormData({ ...formData, productCategory: text })}
-            keyboardType={"default"}
-            placeholder={"Enter the Category"}
-            placeholderTextColor={"black"}
-            style={{borderWidth: 1,borderColor: '#ddd',borderRadius: 10,padding: 10, color: "black", width: "99%"}}
-          />
+          <TouchableOpacity
+            style={styles.selectButton}
+            onPress={() => setCategoryModalVisible(true)}
+          >
+              <Text style={styles.selectButtonText}>
+                {selectedCategory.categoryName || 'Select Category'}
+              </Text>
+          </TouchableOpacity>
         </View>
-
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={categoryModalVisible}
+          onRequestClose={() => setCategoryModalVisible(false)}
+        >
+            <View style={styles.categoryModalOverlay}>
+              <View style={styles.categoryModalContent}>
+                <FlatList
+                  data={categories}
+                  numColumns={3}
+                  renderItem={renderCategoryItemModal}
+                  keyExtractor={(item, index) => index.toString()}
+                  contentContainerStyle={styles.flatListContent}
+                />
+              </View>
+            </View>
+        </Modal>
         <TouchableOpacity style={styles.addProductButton} onPress={handleSave}>
           <Text style={styles.addProductButtonText}>Add Product</Text>
         </TouchableOpacity>
@@ -282,6 +324,53 @@ const styles = StyleSheet.create({
   },
   addSupplierButtonText: {
     color: 'white',
+  },categoryItem: {
+    flex: 1,
+    margin: 5,
+    padding: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    height: 100,
+    width: (screenWidth - 40) / 3,
+  },
+  categoryItemModal: {
+    margin: 5,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 5,
+    height: 100,
+    width: (screenWidth - 100) / 3,
+  },
+  categoryImage: {
+    width: 65,
+    height: 65,
+    borderRadius: 10,
+  },
+  categoryText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    flexWrap: 'wrap',
+    width: 80,
+  },
+  categoryModalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  categoryModalContent: {
+    width: 300,
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
   },
 });
 

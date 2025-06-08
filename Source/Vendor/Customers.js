@@ -1,12 +1,36 @@
-import React, {useLayoutEffect, useState} from 'react';
-import {View, Text, FlatList, TouchableOpacity, StyleSheet} from 'react-native';
-import {useNavigation} from '@react-navigation/native';
-import {customers} from '../Constant/constant';
-import {ChevronDownIcon, ChevronLeftIcon} from 'react-native-heroicons/outline';
-import {tagColors} from '../Constant/constant';
+import React, 
+  {
+    useEffect, 
+    useLayoutEffect, 
+    useState
+  } from 'react';
+import {
+  View, 
+  Text, 
+  FlatList, 
+  TouchableOpacity, 
+  StyleSheet, 
+  Alert
+} from 'react-native';
+import {
+  useNavigation
+} from '@react-navigation/native';
+import {
+  customers
+} from '../Constant/constant';
+import {
+  ChevronDownIcon, 
+  ChevronLeftIcon
+} from 'react-native-heroicons/outline';
+import {
+  tagColors
+} from '../Constant/constant';
 import GenericVectorIcon from '../components/GenericVectorIcon';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const Customers = () => {
+  const[gstNumber, setGstNumber] = useState('');
   const navigation = useNavigation();
 
   useLayoutEffect(() => {
@@ -37,15 +61,50 @@ const Customers = () => {
       ),
     });
   }, [navigation]);
+  useEffect(() => {
+    const getAllAsyncStorageItems = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const stores = await AsyncStorage.multiGet(keys);
+        stores.forEach(([key, value]) => {
+          if (key === 'supplierGST') {
+            setGstNumber(value);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching AsyncStorage items:', error);
+      }
+    };
+
+    getAllAsyncStorageItems();
+  })
+  
+
+
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {
+          supplierGST: "Haha"
+        });
+
+        if (response.status === 200) {
+          const data = response.data.data;
+          Alert.alert('Completed Orders', JSON.stringify(data)); // ✅ Fix here
+
+        }
+      } catch (error) {
+        Alert.alert('Error fetching completed orders', error.message); // ✅ No need to pass two args unless using alert title + message
+      }
+    };
+
+    fetchData(); // ✅ Was missing semicolon but not fatal
+
+  }, []);
 
   return (
     <View style={styles.container}>
-      {/* <View style={styles.headerView}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={20} color={'black'} strokeWidth={3} />
-        </TouchableOpacity>
-        <Text style={styles.headersText}>Customers</Text>
-      </View> */}
 
       <View style={styles.filters}>
         <TouchableOpacity

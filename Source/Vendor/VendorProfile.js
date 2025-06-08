@@ -46,12 +46,8 @@ export default function VendorProfile() {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
         const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        const storedShippingAddress = await AsyncStorage.getItem(
-          'shippingAddress',
-        );
-        const storedBillingAddress = await AsyncStorage.getItem(
-          'billingAddress',
-        );
+        const storedShippingAddress = await AsyncStorage.getItem('shippingAddress');
+        const storedBillingAddress = await AsyncStorage.getItem('billingAddress');
         const storedGSTNumber = await AsyncStorage.getItem('gstNumber');
         const supplierGst = await AsyncStorage.getItem('supplierGST');
 

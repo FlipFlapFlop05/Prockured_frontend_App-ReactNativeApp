@@ -68,11 +68,11 @@ export default function Catalogue() {
           const [catalogueResponse, suppliersResponse] = await Promise.all([
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${storedPhoneNumber}`,
-              // `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/04030506`,
+              //https://api-v7quhc5aza-uc.a.run.app/getCatalogue/04030506,
             ),
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
-              // `https://api-v7quhc5aza-uc.a.run.app/getSupplier/04030506`,
+              // https://api-v7quhc5aza-uc.a.run.app/getSupplier/04030506,
             ),
           ]);
 
@@ -172,6 +172,21 @@ export default function Catalogue() {
       </View>
     );
   }
+
+  const mergeSupplierGST = (items, suppliersList) => {
+    return items.map(item => {
+      const matchedSupplier = suppliersList.find(
+        supplier =>
+          supplier.businessName === item.SupplierName &&
+          supplier.supplierPhone === item.SupplierPhone,
+      );
+
+      return {
+        ...item,
+        gstNumber: matchedSupplier ? matchedSupplier.gstNumber : null,
+      };
+    });
+  };
 
   return (
     <View style={styles.outerContainer}>
@@ -350,7 +365,7 @@ export default function Catalogue() {
         <View>
           <TouchableOpacity
             style={styles.floatingButton}
-            onPress={() => navigation.navigate('Add Supplier')}>
+            onPress={() => navigation.navigate('Add Product Manually')}>
             <Text style={styles.floatingButtonText}>+</Text>
           </TouchableOpacity>
         </View>
@@ -359,13 +374,14 @@ export default function Catalogue() {
       {calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
-          onPress={() =>
+          onPress={() => {
+            const enrichedData = mergeSupplierGST(data, suppliers); // enrich manually
             navigation.navigate('View Basket', {
               cart,
-              data,
+              data: enrichedData, // pass enriched data
               updateCart: updateCartFromBasket,
-            })
-          }>
+            });
+          }}>
           <Text style={styles.viewBasketText}>View Basket</Text>
           <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
           <Text style={styles.basketCount}> {calculateTotalItems()}</Text>

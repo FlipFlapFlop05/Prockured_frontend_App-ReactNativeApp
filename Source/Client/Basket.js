@@ -8,6 +8,7 @@ import {
   Image,
   TextInput,
   Linking,
+  Alert, // Make sure Alert is imported
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon} from 'react-native-heroicons/solid';
@@ -34,25 +35,6 @@ export default function Basket() {
     fetchPhoneNumber();
   }, []);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      if (phoneNumber) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${phoneNumber}`,
-          );
-          setData(response.data);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-
-    if (phoneNumber) {
-      fetchData();
-    }
-  }, [phoneNumber]);
-
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -70,7 +52,6 @@ export default function Basket() {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -89,28 +70,29 @@ export default function Basket() {
     Linking.openURL(url)
       .then(supported => {
         if (!supported) {
-          alert('Make sure WhatsApp is installed on your device');
+          Alert.alert('Error', 'Make sure WhatsApp is installed on your device');
         }
       })
       .catch(err => console.error('Error opening WhatsApp:', err));
   };
 
-  const handleRemoveItem = productId => {
-    // ... your removal logic ...
-  };
   const cartItems = Object.keys(cart)
-    .map(productId => {
+    .map(productIdStr => {
+      const productId = parseInt(productIdStr);
       const product = data.find(item => item.productId === productId);
       if (product) {
         return {
           productId: productId,
           prodName: product.prodName,
-          quantity: cart[productId],
-          price: product.myPrice,
+          quantity: cart[productIdStr],
+          price: parseFloat(product.myPrice),
           category: product.CategoryName,
-          image: product.image,
+          image:
+            product.image ||
+            'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
           supplierPhone: product.SupplierPhone,
           supplierName: product.SupplierName,
+          gstNumber: product.gstNumber,
         };
       }
       return null;
@@ -124,49 +106,46 @@ export default function Basket() {
     );
   };
 
-  const handleApproval = async () => {
-    openWhatsApp(
-      '8306148803',
-      `${cartItems
-        .map(item => `${item.prodName} - ${item.quantity} kg`)
-        .join('\n')}\nTotal: ₹${calculateTotal()}`,
-    );
-    navigation.navigate('Approval Pending');
-  };
-
   const placeOrder = async () => {
-    const supplierGST = supplierPhone;
     const clientGST = phoneNumber;
-    const generateOrderId = Math.floor(Math.random() * 1000000).toString();
-    const buildPayload = (generateOrderId, supplierGST, clientGST) => ({
+    const orderId = Math.floor(Math.random() * 1000000).toString();
+
+    // Group cart items by supplierGST
+    const groupedBySupplier = cartItems.reduce((acc, item) => {
+      const supplierGST = item.gstNumber;
+      if (!acc[supplierGST]) {
+        acc[supplierGST] = [];
+      }
+      acc[supplierGST].push({
+        itemId: item.productId,
+        name: item.prodName,
+        quantity: item.quantity,
+        price: item.price,
+      });
+      return acc;
+    }, {});
+
+    const payload = {
       Open_Orders: {
-        [generateOrderId]: {
-          supplierId: cartItems.map(item => ({
-            itemId: item.productId,
-            name: item.prodName,
-            quantity: item.quantity,
-            price: item.price,
-          })),
-        },
+        [orderId]: groupedBySupplier,
       },
       clientGST,
-      supplierGST,
-      Order_ID: generateOrderId,
-    });
-    Alert.alert(
-      'Placing Order',
-      JSON.stringify(buildPayload(orderId, supplierGST, clientGST), null, 2),
-    );
+      supplierGST: Object.keys(groupedBySupplier).toString(),
+      Order_ID: orderId,
+    };
 
-    // try {
-    //   Alert.alert('Placing Order', 'Please wait while we place your order...');
-    //   const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/placeOrder',
-    //     buildPayload(orderId, supplierGST, clientGST));
-    //   navigation.navigate('Main', {screen: "Home"});
-    //   Alert.alert('Success', 'Product added successfully!');
-    // } catch (error) {
-    //   Alert.alert('Error', error);
-    // }
+
+    try {
+      const response = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/placeOrder',
+        payload
+      );
+      Alert.alert('Success', 'Order placed successfully!');
+      navigation.navigate('Approval Pending', {orderID: orderId}); 
+    } catch (error) {
+      console.error('Order placement error:', error);
+      Alert.alert('Error', 'Failed to place order');
+    }
   };
 
   return (
@@ -187,7 +166,7 @@ export default function Basket() {
       </TouchableOpacity>
       <FlatList
         data={cartItems}
-        keyExtractor={item => item.productId}
+        keyExtractor={item => item.productId.toString()} // Ensure keyExtractor returns a string
         renderItem={({item}) => (
           <View style={styles.cartItem}>
             <Image
