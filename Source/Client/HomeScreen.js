@@ -797,7 +797,7 @@ const styles = StyleSheet.create({
   },
   chatButton: {
     position: 'absolute',
-    bottom: height * 0.53, // Adjust as needed
+    bottom: height * 0.173,
     right: 20,
     elevation: 5,
     shadowColor: '#000',

@@ -10,7 +10,7 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
-  Alert
+  Alert,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -39,6 +39,10 @@ const Order = () => {
     confirmed: false,
     past: false,
   });
+  const [supplierMap, setSupplierMap] = useState({});
+
+  console.log(confirmedOrders);
+  console.log(pastOrders);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -64,7 +68,7 @@ const Order = () => {
       ),
     });
   }, [navigation]);
-  
+
   useEffect(() => {
     const getAllAsyncStorageItems = async () => {
       try {
@@ -81,44 +85,68 @@ const Order = () => {
     };
 
     getAllAsyncStorageItems();
-  })
+  });
 
   useEffect(() => {
-    if (selectedStatus === 'Pending') {
-      fetchPendingOrders();
-    } else if (selectedStatus === 'Confirmed') {
-      fetchConfirmedOrders();
-    } else if (selectedStatus === 'Past') {
-      fetchPastOrders();
-    }
+    const fetchAllData = async () => {
+      const supplierMap = await fetchClientData();
+
+      if (selectedStatus === 'Pending') {
+        fetchPendingOrders(supplierMap);
+      } else if (selectedStatus === 'Confirmed') {
+        fetchConfirmedOrders(supplierMap);
+      } else if (selectedStatus === 'Past') {
+        fetchPastOrders(supplierMap);
+      }
+    };
+
+    fetchAllData();
   }, [clientPhoneNumber, selectedStatus]);
 
-  const fetchPendingOrders = async () => {
+  const fetchClientData = async () => {
+    try {
+      const response = await axios.get(
+        `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientPhoneNumber}`,
+      );
+      const supplierMap = response.data?.Supplier || {};
+      setSupplierMap(supplierMap); // optional: keep state if needed elsewhere
+      return supplierMap;
+    } catch (error) {
+      console.error('Failed to fetch client data', error);
+      return {};
+    }
+  };
+
+  const fetchPendingOrders = async supplierMap => {
     try {
       setLoading(prev => ({...prev, pending: true}));
+
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
-        {
-          clientGST: clientPhoneNumber,
-        },
+        {clientGST: clientPhoneNumber},
       );
 
       const orders = Object.values(res?.data?.data || {}).map(order => {
-        const items = Array.isArray(order?.supplierId) ? order.supplierId : [];
+        const supplierGST = order.supplierGST ?? '';
+        const items = Array.isArray(order[supplierGST])
+          ? order[supplierGST]
+          : [];
 
         return {
           orderId: order.Order_ID ?? '',
-          vendor: order.supplierGST ?? '',
+          vendor: supplierGST,
+          vendorName:
+            supplierMap[supplierGST]?.businessName || 'Unknown Supplier',
           status: 'Pending',
           orderValue: items
             .reduce(
-              (sum, { price = 0, quantity = 0 }) =>
+              (sum, {price = 0, quantity = 0}) =>
                 sum + Number(price) * Number(quantity),
-              0
+              0,
             )
             .toFixed(2),
           items,
-          supplierGST: order.supplierGST,
+          supplierGST,
           clientGST: order.clientGST,
           Order_ID: order.Order_ID,
         };
@@ -132,38 +160,40 @@ const Order = () => {
     }
   };
 
-  const fetchConfirmedOrders = async () => {
+  const fetchConfirmedOrders = async supplierMap => {
     try {
       setLoading(prev => ({...prev, confirmed: true}));
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
-        {
-          clientGST: clientPhoneNumber,
-        },
+        {clientGST: clientPhoneNumber},
       );
+
+      console.log(res);
 
       const orders = Object.keys(res?.data || {}).map(orderId => {
         const order = res.data[orderId] ?? {};
+        const supplierGST = order.supplierGST ?? '';
+        const items = Array.isArray(order[supplierGST])
+          ? order[supplierGST]
+          : [];
 
-        // ① Make sure we really have an array
-        const items = Array.isArray(order.supplierId) ? order.supplierId : [];
-
-        // ② Sum safely (defaults to 0 if price/quantity are missing or strings)
         const orderValue = items
           .reduce(
-            (sum, { price = 0, quantity = 0 }) =>
+            (sum, {price = 0, quantity = 0}) =>
               sum + Number(price) * Number(quantity),
-            0
+            0,
           )
           .toFixed(2);
 
         return {
           orderId: order.Order_ID ?? '',
-          vendor: order.supplierGST ?? '',
+          vendor: supplierGST,
+          vendorName:
+            supplierMap[supplierGST]?.businessName || 'Unknown Supplier',
           status: 'Confirmed',
-          orderValue,          // "1234.56"
-          items,               // always an array (possibly empty)
-          supplierGST: order.supplierGST ?? '',
+          orderValue,
+          items,
+          supplierGST,
           clientGST: order.clientGST ?? '',
           Order_ID: order.Order_ID ?? '',
         };
@@ -177,44 +207,46 @@ const Order = () => {
     }
   };
 
-  const fetchPastOrders = async () => {
+  const fetchPastOrders = async supplierMap => {
     try {
       setLoading(prev => ({...prev, past: true}));
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getClientCompletedOrders',
-        {
-          clientGST: clientPhoneNumber,
-        },
+        {clientGST: clientPhoneNumber},
       );
 
+      console.log('PAST', res);
+
       const ordersData = res.data.data || {};
-      const orders = Object.keys(ordersData ?? {}).map(orderId => {
-  const order = ordersData?.[orderId] ?? {};
+      const orders = Object.keys(ordersData).map(orderId => {
+        const order = ordersData[orderId] ?? {};
+        const supplierGST = order.supplierGST ?? '';
+        const items = Array.isArray(order[supplierGST])
+          ? order[supplierGST]
+          : [];
 
-  // ① Always work with an array
-  const items = Array.isArray(order.supplierId) ? order.supplierId : [];
+        const orderValue = items
+          .reduce(
+            (sum, {price = 0, quantity = 0}) =>
+              sum + Number(price) * Number(quantity),
+            0,
+          )
+          .toFixed(2);
 
-  // ② Sum defensively
-  const orderValue = items
-    .reduce(
-      (sum, { price = 0, quantity = 0 }) =>
-        sum + Number(price) * Number(quantity),
-      0
-    )
-    .toFixed(2);           // "0.00" if no items
-
-  return {
-    orderId: order.Order_ID ?? '',
-    vendor: order.supplierGST ?? '',
-    status: 'Delivered',
-    orderValue,            // e.g. "1234.50"
-    items,                 // always an array (possibly empty)
-    deliveryDate: order.deliveryDate ?? 'N/A',
-    supplierGST: order.supplierGST ?? '',
-    clientGST: order.clientGST ?? '',
-    Order_ID: order.Order_ID ?? '',
-  };
-});
+        return {
+          orderId: order.Order_ID ?? '',
+          vendor: supplierGST,
+          vendorName:
+            supplierMap[supplierGST]?.businessName || 'Unknown Supplier',
+          status: 'Delivered',
+          orderValue,
+          items,
+          deliveryDate: order.deliveryDate ?? 'N/A',
+          supplierGST,
+          clientGST: order.clientGST ?? '',
+          Order_ID: order.Order_ID ?? '',
+        };
+      });
 
       setPastOrders(orders);
     } catch (err) {
@@ -242,8 +274,8 @@ const Order = () => {
 
     return ordersToFilter.filter(order => {
       const searchMatch =
-        order.vendor.toLowerCase().includes(searchText.toLowerCase()) ||
-        order.orderId.includes(searchText);
+        order?.vendorName?.toLowerCase()?.includes(searchText?.toLowerCase()) ||
+        order?.orderId?.includes(searchText);
       return searchMatch;
     });
   };
@@ -257,7 +289,7 @@ const Order = () => {
           style={styles.logo}
         />
         <View>
-          <Text style={styles.vendor}>{item.vendor}</Text>
+          <Text style={styles.vendor}>{item.vendorName}</Text>
           <Text
             style={[
               styles.status,

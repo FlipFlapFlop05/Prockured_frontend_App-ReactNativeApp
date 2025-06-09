@@ -9,7 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
-  Alert, // Added Alert import
+  Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -183,7 +183,7 @@ export default function ClientSetting() {
       type: 'hero',
       icon: ChartBarIcon,
       label: 'View Report',
-      screen: 'Client Report',
+      modal: 'viewReport',
     },
     {
       id: 5,
@@ -245,81 +245,85 @@ export default function ClientSetting() {
     </TouchableOpacity>
   );
 
-  const renderVendorItem = () => {
-    switch (selectedModal) {
-      case 'inviteVendor':
-        return (
-          <View>
-            <Modal visible={modalVisible} animationType="slide" transparent>
-              <View style={styles.overlay}>
-                <View style={styles.modalContainer}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      marginBottom: 20,
-                    }}>
-                    <Text style={styles.title}>Share this link</Text>
-                    <View style={{flexDirection: 'row'}}>
-                      <TouchableOpacity
-                        onPress={() => copyToClipboard(inviteLink)}
-                        style={{flexDirection: 'row'}}>
-                        <Icon
-                          name="content-copy"
-                          size={22}
-                          color={'#76B117'}
-                          style={{marginRight: 3}}
-                        />
-                        <Text style={styles.copyText}>Copy Link</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => setModalVisible(false)}
-                        style={styles.closeButton}>
-                        <XMarkIcon size={20} color="black" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={styles.linkBox}>
-                    <Text style={styles.linkText}>{inviteLink}</Text>
-                  </View>
-
-                  {copied && (
-                    <Text style={styles.copiedMessage}>
-                      <View
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                        }}>
-                        <AntIcon
-                          name="checkcircle"
-                          color={'#76B117'}
-                          style={{marginHorizontal: 5}}
-                        />
-                      </View>
-                      Link copied. <Text></Text>
-                      <Text style={{fontWeight: '600'}}>
-                        Anyone with this link can join
-                      </Text>
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </Modal>
-          </View>
-        );
-
-      default:
-        return null;
-    }
-  };
-
   const renderModalContent = () => {
     switch (selectedModal) {
       case 'teamsRoles':
-        return <Text style={styles.categoryText}>Feature Not Available</Text>;
+        return (
+          <View style={styles.modalContent}>
+            <Text style={styles.categoryText}>Feature Not Available</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        );
       case 'viewReport':
-        return <Text style={styles.categoryText}>Feature Not Available</Text>;
+        return (
+          <View style={styles.modalContent}>
+            <Text style={styles.categoryText}>Coming Soon</Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        );
+      case 'inviteVendor':
+        return (
+          <View style={styles.modalContainer}>
+            <View
+              style={{
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+                marginBottom: 20,
+              }}>
+              <Text style={styles.title}>Share this link</Text>
+              <View style={{flexDirection: 'row'}}>
+                <TouchableOpacity
+                  onPress={() => copyToClipboard(inviteLink)}
+                  style={{flexDirection: 'row'}}>
+                  <Icon
+                    name="content-copy"
+                    size={22}
+                    color={'#76B117'}
+                    style={{marginRight: 3}}
+                  />
+                  <Text style={styles.copyText}>Copy Link</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => setModalVisible(false)}
+                  style={styles.closeButton}>
+                  <XMarkIcon size={20} color="black" />
+                </TouchableOpacity>
+              </View>
+            </View>
+            <View style={styles.linkBox}>
+              <Text style={styles.linkText}>{inviteLink}</Text>
+            </View>
+
+            {copied && (
+              <Text style={styles.copiedMessage}>
+                <View
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                  }}>
+                  <AntIcon
+                    name="checkcircle"
+                    color={'#76B117'}
+                    style={{marginHorizontal: 5}}
+                  />
+                </View>
+                Link copied. <Text></Text>
+                <Text style={{fontWeight: '600'}}>
+                  Anyone with this link can join
+                </Text>
+              </Text>
+            )}
+          </View>
+        );
       default:
         return null;
     }
@@ -333,24 +337,7 @@ export default function ClientSetting() {
           transparent={true}
           visible={modalVisible}
           onRequestClose={() => setModalVisible(false)}>
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              {renderModalContent()}
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalCloseButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}>
-          {renderVendorItem()}
+          <View style={styles.modalOverlay}>{renderModalContent()}</View>
         </Modal>
 
         <View style={styles.profileContainer}>

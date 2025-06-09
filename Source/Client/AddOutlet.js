@@ -196,13 +196,15 @@ export default function AddOutlet() {
         errorMessage="Billing address is required"
       />
       <ValidatedInput
-        label="GST"
+        label="GST (e.g. 27ABCDE1234F1Z5)"
         placeholder="Enter GST number"
         keyboardType="numeric"
         value={form.GST}
         onChangeText={value => handleChange('GST', value)}
-        validationFunc={validateRequired}
-        errorMessage="GST number is required"
+        validationFunc={text =>
+          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
+        }
+        errorMessage="Enter a valid GST number"
       />
       <ValidatedInput
         label="State"

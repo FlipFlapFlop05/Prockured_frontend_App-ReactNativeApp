@@ -46,8 +46,12 @@ export default function ClientProfile() {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        const storedShippingAddress = await AsyncStorage.getItem('shippingAddress',);
-        const storedBillingAddress = await AsyncStorage.getItem('billingAddress',);
+        const storedShippingAddress = await AsyncStorage.getItem(
+          'shippingAddress',
+        );
+        const storedBillingAddress = await AsyncStorage.getItem(
+          'billingAddress',
+        );
         const storedGSTNumber = await AsyncStorage.getItem('gstNumber');
 
         if (storedPassword) {
@@ -202,7 +206,7 @@ export default function ClientProfile() {
         <Text style={styles.profileName}>{data?.Name}</Text>
         <Text style={styles.profileType}>Client</Text>
       </View>
-      <View className="mx-0 w-full">
+      {/* <View className="mx-0 w-full">
         <TouchableOpacity
           style={styles.manageButton}
           onPress={() => navigation.navigate('Catalogue')}>
@@ -219,7 +223,7 @@ export default function ClientProfile() {
           onPress={() => navigation.navigate('Add Outlet')}>
           <Text>Set up Outlets</Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       <Text style={styles.sectionTitle}>Personal Details</Text>
       <View style={styles.detailContainer}>

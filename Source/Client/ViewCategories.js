@@ -151,11 +151,11 @@ const ViewCategories = () => {
     }
 
     const filteredItem = displayedItems.filter(item =>
-      item.Name.toLowerCase().includes(query.toLowerCase()),
+      item?.Name?.toLowerCase()?.includes(query?.toLowerCase()),
     );
 
     const filteredSubcategory = categories.filter(category =>
-      category.title.toLowerCase().includes(query.toLowerCase()),
+      category?.title?.toLowerCase()?.includes(query?.toLowerCase()),
     );
 
     setFilteredItems(filteredItem);

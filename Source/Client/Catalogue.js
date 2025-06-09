@@ -42,20 +42,6 @@ export default function Catalogue() {
     useState('My Catalogue');
   const [loading, setLoading] = useState(true);
 
-  const getAllAsyncStorageItems = async () => {
-    try {
-      const keys = await AsyncStorage.getAllKeys();
-      const stores = await AsyncStorage.multiGet(keys);
-      stores.forEach(([key, value]) => {
-        console.log(`Key: ${key}, Value: ${value}`);
-      });
-    } catch (error) {
-      console.error('Error fetching AsyncStorage items:', error);
-    }
-  };
-
-  getAllAsyncStorageItems();
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -108,12 +94,6 @@ export default function Catalogue() {
       );
     }
   });
-
-  console.log('Selected category:', selectedMainCategory);
-  console.log('Selected supplier tab:', selectedSupplierTab);
-  console.log('Filtered data:', filteredData);
-  console.log('data:', data);
-  console.log('suppliers:', suppliers);
 
   // Filter items based on search term
   const searchedItems = filteredData.filter(item =>

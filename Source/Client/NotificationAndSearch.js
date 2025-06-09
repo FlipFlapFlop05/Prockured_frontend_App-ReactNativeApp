@@ -6,7 +6,8 @@ import {
   StyleSheet,
   FlatList,
   Dimensions,
-  Image, Modal,
+  Image,
+  Modal,
 } from 'react-native';
 import {
   ChevronLeftIcon,
@@ -18,13 +19,15 @@ import {
 } from 'react-native-heroicons/outline';
 import {BellIcon} from 'react-native-heroicons/solid';
 import {useNavigation} from '@react-navigation/native';
-import {worksData} from '../Constant/constant';
+import {categories, worksData} from '../Constant/constant';
 
 const {width, height} = Dimensions.get('window');
 
 export default function NotificationAndSearch() {
   const navigation = useNavigation();
   const [isWorkDataVisible, setWorkDataVisible] = useState(false);
+  const [categoryModal, setCategoryModal] = useState(false);
+
   const options = [
     {
       id: 1,
@@ -42,7 +45,7 @@ export default function NotificationAndSearch() {
       id: 3,
       title: 'Find new item',
       icon: MagnifyingGlassIcon,
-      screen: 'Home',
+      modal: 'categoryModal',
     },
     {
       id: 4,
@@ -57,21 +60,56 @@ export default function NotificationAndSearch() {
       screen: 'Client FAQ',
     },
   ];
-  const renderWorkItemModal = ({ item }) => (
-    <View style={{flexDirection: 'column', height: width * 0.45, alignItems: 'center'}}>
-      <Image source={item.image} style={{width: width * 0.4, height: width * 0.3}} />
+
+  const handleOptionPress = item => {
+    if (item.screen) {
+      navigation.navigate(item.screen);
+    } else if (item.modal === 'categoryModal') {
+      setCategoryModal(true);
+    }
+  };
+
+  const renderWorkItemModal = ({item}) => (
+    <View
+      style={{
+        flexDirection: 'column',
+        height: width * 0.45,
+        alignItems: 'center',
+      }}>
+      <Image
+        source={item.image}
+        style={{width: width * 0.4, height: width * 0.3}}
+      />
       <Text style={styles.workTitle}>{item.title}</Text>
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
   );
+
+  const renderCategoryItemModal = ({item}) => (
+    <TouchableOpacity
+      style={styles.categoryItemModal}
+      onPress={() => {
+        setCategoryModal(false);
+        navigation.navigate('View Categories', {...item});
+      }}>
+      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      <Text
+        style={styles.categoryText}
+        numberOfLines={2}
+        ellipsizeMode={'tail'}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
+  );
+
   return (
-    <View style = {styles.container}>
-      <View style = {styles.headerContainer}>
+    <View style={styles.container}>
+      <View style={styles.headerContainer}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <ChevronLeftIcon size={25} color = "black" strokeWidth={3}/>
+          <ChevronLeftIcon size={25} color="black" strokeWidth={3} />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
-          <BellIcon size={25} color = {'black'} strokeWidth={3} />
+          <BellIcon size={25} color={'black'} strokeWidth={3} />
         </TouchableOpacity>
       </View>
 
@@ -79,49 +117,63 @@ export default function NotificationAndSearch() {
         animationType="slide"
         transparent={true}
         visible={isWorkDataVisible}
-        onRequestClose={() => setWorkDataVisible(!isWorkDataVisible)}
-      >
+        onRequestClose={() => setWorkDataVisible(false)}>
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <FlatList
               data={worksData}
               renderItem={renderWorkItemModal}
-              keyExtractor={(item) => item.id.toString()}
+              keyExtractor={item => item.id.toString()}
               contentContainerStyle={styles.flatListContent}
             />
-            <TouchableOpacity style={styles.modalCloseButton} onPress={() => setWorkDataVisible(!isWorkDataVisible)}>
-              <Text style={styles.modalCloseButtonText}>
-                Close
-              </Text>
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setWorkDataVisible(false)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
             </TouchableOpacity>
           </View>
         </View>
       </Modal>
 
-      <View style = {styles.header}>
-        <Text style = {styles.greeting}>
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={categoryModal}
+        onRequestClose={() => setCategoryModal(false)}>
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, {width: '90%'}]}>
+            <FlatList
+              data={categories}
+              numColumns={3}
+              renderItem={renderCategoryItemModal}
+              keyExtractor={(item, index) => index.toString()}
+              contentContainerStyle={styles.flatListContent}
+            />
+            <TouchableOpacity
+              style={styles.modalCloseButton}
+              onPress={() => setCategoryModal(false)}>
+              <Text style={styles.modalCloseButtonText}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      <View style={styles.header}>
+        <Text style={styles.greeting}>
           Hey{'\t'}
-          <Text style = {styles.name}>
-            Crunch!
-          </Text>
+          <Text style={styles.name}>Crunch!</Text>
         </Text>
-        <Text style = {styles.subtitle}>
-          How can we help?
-        </Text>
+        <Text style={styles.subtitle}>How can we help?</Text>
       </View>
       <FlatList
         data={options}
-        keyExtractor= {(item) => item.id.toString()}
-        renderItem={({ item }) => (
-          <TouchableOpacity style = {styles.button} onPress={() => navigation.navigate(item.screen)}>
-            {
-              item.id === '2' ? (
-                <item.icon size={24} color = "#333" />
-              ) : (
-                <item.icon size={24} color={'#333'} />
-              )
-            }
-            <Text style = {styles.buttonText}>{item.title}</Text>
+        keyExtractor={item => item.id.toString()}
+        renderItem={({item}) => (
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => handleOptionPress(item)}>
+            <item.icon size={24} color="#333" />
+            <Text style={styles.buttonText}>{item.title}</Text>
           </TouchableOpacity>
         )}
       />
@@ -197,16 +249,15 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
   },
   modalContent: {
-    width: 300,
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
-    elevation: 5, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
@@ -220,12 +271,28 @@ const styles = StyleSheet.create({
   modalCloseButton: {
     borderRadius: 20,
     padding: 10,
-    backgroundColor: '#76B117', // Example color
-    marginTop: 20, // Add some margin top
+    backgroundColor: '#76B117',
+    marginTop: 20,
   },
   modalCloseButtonText: {
     color: 'white',
     fontWeight: 'bold',
     textAlign: 'center',
+  },
+  categoryItemModal: {
+    width: width * 0.25,
+    alignItems: 'center',
+    margin: 10,
+  },
+  categoryImage: {
+    width: width * 0.15,
+    height: width * 0.15,
+    borderRadius: 10,
+  },
+  categoryText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginTop: 5,
   },
 });

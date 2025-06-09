@@ -102,20 +102,22 @@ export default function AddSupplier() {
       return;
     }
 
-     const payload = {
+    const payload = {
       clientGST: id,
       supplierGST: supplierGstNumber,
       supplierPhone: supplierPhoneNumber,
       businessName: businessName,
-      email : email,
+      email: email,
       pincode: pincode,
       state: state,
       country: country,
-    }
+    };
     try {
-      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/createSupplier',
-        payload);
-      navigation.navigate('Main', {screen: "Home"});
+      const response = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/createSupplier',
+        payload,
+      );
+      navigation.navigate('Main', {screen: 'Home'});
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
       console.error('Axios Error:', error);
