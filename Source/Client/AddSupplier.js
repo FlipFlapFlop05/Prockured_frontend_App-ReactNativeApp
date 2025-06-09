@@ -113,8 +113,6 @@ export default function AddSupplier() {
       country: country,
     }
     try {
-      
-      Alert.alert('Payload', JSON.stringify(payload, null, 2));
       const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/createSupplier',
         payload);
       navigation.navigate('Main', {screen: "Home"});

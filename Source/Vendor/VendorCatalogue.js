@@ -63,7 +63,7 @@ export default function VendorCatalogue() {
   }, [phoneNumber]);
 
   const groupedData = data.reduce((acc, item) => {
-    const category = item.SupplierName;
+    const category = item.CategoryName;
     if (!acc[category]) {
       acc[category] = [];
     }

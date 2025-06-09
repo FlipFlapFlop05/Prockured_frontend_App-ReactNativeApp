@@ -5,6 +5,7 @@ import {ChevronLeftIcon, MagnifyingGlassIcon} from 'react-native-heroicons/outli
 import {tags, tagColors} from '../Constant/constant';
 import axios from 'axios';
 import {CheckBox} from 'react-native-elements';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function NewCampaign() {
   {/*Navigation*/}
@@ -29,12 +30,31 @@ export default function NewCampaign() {
   const [selectedProductData, setSelectedProductData] = useState([]);
   const [audienceData, setAudienceData] = useState({});
   const [selected, setSelected] = useState('AM');
+  const [gstNumber, setGSTNumber] = useState(null);
 
 
   {/*Const*/}
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({...prev, [field]: value}));
   }
+
+ useEffect(() => {
+    const getAllAsyncStorageItems = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const stores = await AsyncStorage.multiGet(keys);
+        stores.forEach(([key, value]) => {
+          if (key === 'supplierGST') {
+            setGSTNumber(value);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching AsyncStorage items:', error);
+      }
+    };
+
+    getAllAsyncStorageItems();
+  }, [gstNumber]);
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
@@ -108,7 +128,7 @@ export default function NewCampaign() {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/1234`);
+        const response = await axios.get(`https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstNumber}`);
         const dataArray = Object.values(response.data);
         setItems(dataArray);
       } catch (error) {
@@ -116,7 +136,7 @@ export default function NewCampaign() {
       }
     };
     fetchData();
-  }, []);
+  }, [gstNumber]);
   useEffect(() => {
     if (searchTerm) {
       const results = items.filter(item =>

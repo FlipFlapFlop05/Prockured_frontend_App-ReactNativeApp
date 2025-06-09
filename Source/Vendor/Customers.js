@@ -86,20 +86,19 @@ const Customers = () => {
     const fetchData = async () => {
       try {
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {
-          supplierGST: "Haha"
+          supplierGST: gstNumber
         });
 
         if (response.status === 200) {
           const data = response.data.data;
-          Alert.alert('Completed Orders', JSON.stringify(data)); // ✅ Fix here
 
         }
       } catch (error) {
-        Alert.alert('Error fetching completed orders', error.message); // ✅ No need to pass two args unless using alert title + message
+        Alert.alert('Error fetching completed orders', error.message); 
       }
     };
 
-    fetchData(); // ✅ Was missing semicolon but not fatal
+    fetchData(); 
 
   }, []);
 

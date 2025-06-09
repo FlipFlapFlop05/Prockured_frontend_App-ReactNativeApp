@@ -10,6 +10,7 @@ import {
   Modal,
   Pressable,
   ActivityIndicator,
+  Alert
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
@@ -19,6 +20,7 @@ import {
 } from 'react-native-heroicons/outline';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const Order = () => {
   const navigation = useNavigation();
@@ -26,7 +28,7 @@ const Order = () => {
   const [selectedDate, setSelectedDate] = useState('24-06-2024');
   const [selectedCategory, setSelectedCategory] = useState('Vegetables');
   const [selectedStatus, setSelectedStatus] = useState('Pending');
-
+  const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [modalType, setModalType] = useState('');
   const [pendingOrders, setPendingOrders] = useState([]);
@@ -62,6 +64,24 @@ const Order = () => {
       ),
     });
   }, [navigation]);
+  
+  useEffect(() => {
+    const getAllAsyncStorageItems = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const stores = await AsyncStorage.multiGet(keys);
+        stores.forEach(([key, value]) => {
+          if (key === 'clientGST') {
+            setClientPhoneNumber(value);
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching AsyncStorage items:', error);
+      }
+    };
+
+    getAllAsyncStorageItems();
+  })
 
   useEffect(() => {
     if (selectedStatus === 'Pending') {
@@ -71,7 +91,7 @@ const Order = () => {
     } else if (selectedStatus === 'Past') {
       fetchPastOrders();
     }
-  }, [selectedStatus]);
+  }, [clientPhoneNumber, selectedStatus]);
 
   const fetchPendingOrders = async () => {
     try {
@@ -79,24 +99,31 @@ const Order = () => {
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
         {
-          clientGST: '04030506',
+          clientGST: clientPhoneNumber,
         },
       );
 
-      const orders = Object.values(res.data.data).map(order => ({
-        orderId: order.Order_ID,
-        vendor: order.supplierGST, // You might want to map this to actual vendor names
-        status: 'Pending',
-        orderValue: order.supplierId
-          .reduce((sum, item) => sum + item.price * item.quantity, 0)
-          .toFixed(2),
-        // Add the additional fields here
-        items: order.supplierId,
-        supplierGST: order.supplierGST,
-        clientGST: order.clientGST,
-        Order_ID: order.Order_ID,
-        // Add other required fields like logo if available
-      }));
+      const orders = Object.values(res?.data?.data || {}).map(order => {
+        const items = Array.isArray(order?.supplierId) ? order.supplierId : [];
+
+        return {
+          orderId: order.Order_ID ?? '',
+          vendor: order.supplierGST ?? '',
+          status: 'Pending',
+          orderValue: items
+            .reduce(
+              (sum, { price = 0, quantity = 0 }) =>
+                sum + Number(price) * Number(quantity),
+              0
+            )
+            .toFixed(2),
+          items,
+          supplierGST: order.supplierGST,
+          clientGST: order.clientGST,
+          Order_ID: order.Order_ID,
+        };
+      });
+
       setPendingOrders(orders);
     } catch (err) {
       console.error('Pending orders fetch failed', err);
@@ -111,26 +138,37 @@ const Order = () => {
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
         {
-          clientGST: '04030506',
+          clientGST: clientPhoneNumber,
         },
       );
 
-      const orders = Object.keys(res.data).map(orderId => {
-        const order = res.data[orderId];
+      const orders = Object.keys(res?.data || {}).map(orderId => {
+        const order = res.data[orderId] ?? {};
+
+        // ① Make sure we really have an array
+        const items = Array.isArray(order.supplierId) ? order.supplierId : [];
+
+        // ② Sum safely (defaults to 0 if price/quantity are missing or strings)
+        const orderValue = items
+          .reduce(
+            (sum, { price = 0, quantity = 0 }) =>
+              sum + Number(price) * Number(quantity),
+            0
+          )
+          .toFixed(2);
+
         return {
-          orderId: order.Order_ID,
-          vendor: order.supplierGST,
+          orderId: order.Order_ID ?? '',
+          vendor: order.supplierGST ?? '',
           status: 'Confirmed',
-          orderValue: order.supplierId
-            .reduce((sum, item) => sum + item.price * item.quantity, 0)
-            .toFixed(2),
-          items: order.supplierId,
-          // Additional fields
-          supplierGST: order.supplierGST,
-          clientGST: order.clientGST,
-          Order_ID: order.Order_ID,
+          orderValue,          // "1234.56"
+          items,               // always an array (possibly empty)
+          supplierGST: order.supplierGST ?? '',
+          clientGST: order.clientGST ?? '',
+          Order_ID: order.Order_ID ?? '',
         };
       });
+
       setConfirmedOrders(orders);
     } catch (err) {
       console.error('Confirmed orders fetch failed', err);
@@ -145,28 +183,39 @@ const Order = () => {
       const res = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/getClientCompletedOrders',
         {
-          clientGST: '04030506',
+          clientGST: clientPhoneNumber,
         },
       );
 
       const ordersData = res.data.data || {};
-      const orders = Object.keys(ordersData).map(orderId => {
-        const order = ordersData[orderId];
-        return {
-          orderId: order.Order_ID,
-          vendor: order.supplierGST,
-          status: 'Delivered',
-          orderValue: order.supplierId
-            .reduce((sum, item) => sum + item.price * item.quantity, 0)
-            .toFixed(2),
-          items: order.supplierId,
-          deliveryDate: order.deliveryDate || 'N/A',
-          // Additional fields
-          supplierGST: order.supplierGST,
-          clientGST: order.clientGST,
-          Order_ID: order.Order_ID,
-        };
-      });
+      const orders = Object.keys(ordersData ?? {}).map(orderId => {
+  const order = ordersData?.[orderId] ?? {};
+
+  // ① Always work with an array
+  const items = Array.isArray(order.supplierId) ? order.supplierId : [];
+
+  // ② Sum defensively
+  const orderValue = items
+    .reduce(
+      (sum, { price = 0, quantity = 0 }) =>
+        sum + Number(price) * Number(quantity),
+      0
+    )
+    .toFixed(2);           // "0.00" if no items
+
+  return {
+    orderId: order.Order_ID ?? '',
+    vendor: order.supplierGST ?? '',
+    status: 'Delivered',
+    orderValue,            // e.g. "1234.50"
+    items,                 // always an array (possibly empty)
+    deliveryDate: order.deliveryDate ?? 'N/A',
+    supplierGST: order.supplierGST ?? '',
+    clientGST: order.clientGST ?? '',
+    Order_ID: order.Order_ID ?? '',
+  };
+});
+
       setPastOrders(orders);
     } catch (err) {
       console.error('Past orders fetch failed', err);

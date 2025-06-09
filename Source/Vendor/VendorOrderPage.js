@@ -18,7 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const BASE_URL = 'https://api-v7quhc5aza-uc.a.run.app';
-const SUPPLIER_GST = 'Haha'; // TODO ➜ replace with real GST or read from secure storage
+ // TODO ➜ replace with real GST or read from secure storage
 
 const endpoints = {
   pending: '/getPendingOrders',
@@ -60,13 +60,13 @@ export default function VendorOrderPage() {
   useEffect(() => {
     fetchSupplierGST();
   })
-
+  const SUPPLIER_GST = supplierGST;
   const showToast = useCallback((msg) => {
     setToast(msg);
     setTimeout(() => setToast(''), 3000);
   }, []);
 
-
+  
   const genericFetch = async (path, payload) => {
     try {
       const { data } = await axios.post(BASE_URL + path, payload);
@@ -171,11 +171,12 @@ export default function VendorOrderPage() {
     setRefreshing(true);
     await fetchOrdersGroup();
     setRefreshing(false);
+    Alert.alert("Data", data);
   };
 
   useEffect(() => {
     fetchOrdersGroup();
-  }, [fetchOrdersGroup]);
+  }, [supplierGST, fetchOrdersGroup]);
 
 
   const acceptOrder = async (order) => {
@@ -185,7 +186,7 @@ export default function VendorOrderPage() {
         orderId: order.orderId || order.id,
         clientGST: order.clientGST,
       });
-      showToast(O`rder from ${order.businessName || order.clientGST} is confirmed`);
+      showToast(`Order from ${order.businessName || order.clientGST} is confirmed`);
       await fetchOrdersGroup();
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || err.message);

@@ -13,6 +13,7 @@ import {
 } from "react-native-heroicons/outline";
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function VendorExistingPresets(){
   const navigation = useNavigation();
@@ -29,17 +30,21 @@ export default function VendorExistingPresets(){
   };
 
   useEffect(() => {
-    const fetchGSTNumber = async () => {
+    const getAllAsyncStorageItems = async () => {
       try {
-        const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
-        if (storedGSTNumber) {
-          setGSTNumber(storedGSTNumber);
-        }
+        const keys = await AsyncStorage.getAllKeys();
+        const stores = await AsyncStorage.multiGet(keys);
+        stores.forEach(([key, value]) => {
+          if (key === 'supplierGST') {
+            setGSTNumber(value);
+          }
+        });
       } catch (error) {
-        console.log('Error Fetching GST ID: ', error);
+        console.error('Error fetching AsyncStorage items:', error);
       }
     };
-    fetchGSTNumber();
+
+    getAllAsyncStorageItems();
   }, [gstNumber]);
 
   useLayoutEffect(() => {
@@ -74,10 +79,9 @@ export default function VendorExistingPresets(){
   }, [navigation]);
   useEffect(() => {
     const getData = async() => {
-      Alert.alert('GST', gstNumber);
       try{
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCampaign', {
-          "gstNumber": "Haha",
+          "gstNumber": gstNumber,
         });
 
         const campaigns = Object.values(response.data.data || {});
@@ -94,8 +98,10 @@ export default function VendorExistingPresets(){
         Alert.alert('Error', 'Failed to fetch data. Please try again later.');
       }
     };
-    getData();
-  }, []);
+    if(gstNumber){
+      getData();
+    }
+  }, [gstNumber]);
   
   const vendorExistingPresets = [
   {

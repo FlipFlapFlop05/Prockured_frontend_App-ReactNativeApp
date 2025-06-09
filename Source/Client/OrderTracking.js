@@ -7,12 +7,7 @@ const { width: screenWidth } = Dimensions.get('window');
 
 const OrderTracking = () => {
   const navigation = useNavigation();
-  const orderItems = [
-    { name: 'Potatoes', quantity: '50 Pounds' },
-    { name: 'Carrots', quantity: '30 Pounds' },
-    { name: 'Onions', quantity: '20 Pounds' },
-    { name: 'Tomatoes', quantity: '15 Pounds' },
-  ];
+  const orderItems = [];
 
   return (
     <View style={styles.container}>

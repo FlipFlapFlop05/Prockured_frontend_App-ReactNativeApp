@@ -45,7 +45,7 @@ const VendorAddProduct = () => {
 
   const fetchSupplierId = async () => {
     try {
-      const storedGSTNumber = await AsyncStorage.getItem('phoneNumber');
+      const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
       if (storedGSTNumber) {
         setGSTNumber(storedGSTNumber);
       }
@@ -86,14 +86,14 @@ const VendorAddProduct = () => {
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
     const GSTNumber = gstNumber;
-    const { productName, productUnit, productPrice } = formData;
+    const { productName, productUnit, productPrice, productCategory } = formData;
 
     if (!GSTNumber || !productName || !productUnit || !productPrice) {
       Alert.alert('Error', 'All fields are required!');
       return;
     }
     const payload = {
-      supplierGST: gstNumber,
+      gstNumber: GSTNumber,
       productId: productId,
       prodName: productName,
       prodUnit: productUnit,

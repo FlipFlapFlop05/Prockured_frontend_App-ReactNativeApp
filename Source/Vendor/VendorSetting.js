@@ -9,6 +9,7 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
+  Alert
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -122,6 +123,38 @@ export default function VendorSetting() {
       fetchData();
     }
   }, [gstNumber]);
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
+              });
+            } catch (e) {
+              console.error('Error during logout: ', e);
+              Alert.alert(
+                'Error',
+                'Failed to logout properly. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
 
   const menuItems = [
     {
@@ -292,35 +325,6 @@ export default function VendorSetting() {
       default:
         return null;
     }
-  };
-
-  const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
-        },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              navigation.reset({
-                index: 0,
-                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
-              });
-            } catch (e) {
-              console.error('Error during logout: ', e);
-            }
-          },
-        },
-      ],
-      {cancelable: true},
-    );
   };
 
   return (
