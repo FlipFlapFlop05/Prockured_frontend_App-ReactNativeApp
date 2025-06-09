@@ -1,4 +1,5 @@
 import React, {useEffect, useState} from 'react';
+import {useFocusEffect} from '@react-navigation/native'; // Import useFocusEffect
 import {
   View,
   Text,
@@ -25,30 +26,12 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import GenericVectorIcon from '../components/GenericVectorIcon';
-import Config from 'react-native-config';
 import {useDispatch, useSelector} from 'react-redux';
 import {setSelectedOutlet, setAllOutlets} from '../../store/slice/OutletSlice';
 
 const {width, height} = Dimensions.get('window');
 
-// Dummy outlet data
-const dummyOutlets = [
-  // {
-  //   id: 1,
-  //   name: 'Main Outlet',
-  //   address: '123 Main St, City',
-  // },
-  // {
-  //   id: 2,
-  //   name: 'Downtown Outlet',
-  //   address: '456 Downtown Ave, City',
-  // },
-  // {
-  //   id: 3,
-  //   name: 'Mall Branch',
-  //   address: '789 Mall Road, City',
-  // },
-];
+const dummyOutlets = [];
 
 export default function HomeScreen() {
   const [isChatModalVisible, setChatModalVisible] = useState(false);
@@ -62,120 +45,98 @@ export default function HomeScreen() {
   const [searchText, setSearchText] = useState('');
   const [showCategories, setShowCategories] = useState(true);
   const [showHowItWorks, setShowHowItWorks] = useState(true);
-  // const [selectedOutlet, setSelectedOutlet] = useState(dummyOutlets[0]);
   const [isOutletDropdownVisible, setIsOutletDropdownVisible] = useState(false);
 
   const dispatch = useDispatch();
-  const {selectedOutlet, allOutlets} = useSelector(state => state.outlet);
+  const {selectedOutlet} = useSelector(state => state.outlet);
 
   const filteredData = data.filter(item =>
     item?.businessName?.toLowerCase().includes(searchText.toLowerCase()),
   );
 
-  // const DUMMY_OUTLETS = [
-  //   {
-  //     id: 'outlet1',
-  //     name: 'Main Restaurant',
-  //     address: '123 Main Street, New York, NY 10001',
-  //     phone: '+1 212-555-1234',
-  //     gstNumber: '22AAAAA0000A1Z5',
-  //   },
-  //   {
-  //     id: 'outlet2',
-  //     name: 'Downtown Cafe',
-  //     address: '456 Broadway, New York, NY 10003',
-  //     phone: '+1 212-555-5678',
-  //     gstNumber: '22BBBBB0000B1Z5',
-  //   },
-  //   {
-  //     id: 'outlet3',
-  //     name: 'Uptown Bistro',
-  //     address: '789 5th Avenue, New York, NY 10022',
-  //     phone: '+1 212-555-9012',
-  //     gstNumber: '22CCCCC0000C1Z5',
-  //   },
-  //   {
-  //     id: 'outlet4',
-  //     name: 'Harbor View Diner',
-  //     address: '101 Water Street, Brooklyn, NY 11201',
-  //     phone: '+1 718-555-3456',
-  //     gstNumber: '22DDDDD0000D1Z5',
-  //   },
-  // ];
-
-  useEffect(() => {
-    const fetchPhoneNumber = async () => {
-      try {
-        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-
-        if (storedPhoneNumber) {
+  useFocusEffect(
+    React.useCallback(() => {
+      const fetchData = async () => {
+        setIsLoading(true);
+        try {
+          const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
           setClientPhoneNumber(storedPhoneNumber);
-        }
-      } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
-      }
-    };
 
-    const fetchData = async () => {
-      const gst = await AsyncStorage.getItem('phoneNumber');
-      if (gst) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientPhoneNumber}`,
-          );
-          const dataArray = Object.values(response.data);
-          setData(dataArray);
+          if (storedPhoneNumber) {
+            const supplierResponse = await axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
+            );
+            const supplierData = Object.values(supplierResponse.data);
+            setData(supplierData);
+
+            const gstNumber = await AsyncStorage.getItem('clientGST');
+            if (gstNumber) {
+              const clientResponse = await axios.get(
+                `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
+              );
+              setClientData(clientResponse.data);
+            }
+
+            // Fetch outlets data
+            await fetchClientOutletData(storedPhoneNumber);
+          }
         } catch (error) {
-          console.log(error);
+          console.error('Fetch error:', error);
+          // Fallback to dummy data if API fails
+          dispatch(setAllOutlets(dummyOutlets));
+          if (dummyOutlets.length > 0) {
+            dispatch(setSelectedOutlet(dummyOutlets[0]));
+          }
         } finally {
           setIsLoading(false);
         }
-      }
-    };
+      };
 
-    const fetchClientData = async () => {
-      const gstNumber = await AsyncStorage.getItem('clientGST');
-      if (gstNumber) {
+      const fetchClientOutletData = async phoneNumber => {
         try {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${phoneNumber}`,
           );
-          setClientData(response);
+
+          if (response.data && Object.keys(response.data).length > 0) {
+            // Convert the response object to an array
+            const dataArray = Object.values(response.data).map(item => ({
+              ...item,
+              id: item.outletId, // ensure id is present for FlatList
+            }));
+
+            // Update both Redux and local state
+            dispatch(setAllOutlets(dataArray));
+            dispatch(setSelectedOutlet(dataArray[0]));
+            setClientOutlet(dataArray);
+          } else {
+            // Handle the case where no outlets are found
+            const dummyWithIds = dummyOutlets.map(item => ({
+              ...item,
+              id: item.outletId || item.id || Math.random().toString(), // ensure id fallback
+            }));
+
+            dispatch(setAllOutlets(dummyWithIds));
+            dispatch(setSelectedOutlet(dummyWithIds[0]));
+            setClientOutlet(dummyWithIds);
+          }
         } catch (error) {
-          console.log(error);
-        } finally {
-          setIsLoading(false);
+          console.error('Error fetching outlets:', error);
+          // Fallback to dummy data if API fails
+          const dummyWithIds = dummyOutlets.map(item => ({
+            ...item,
+            id: item.outletId || item.id || Math.random().toString(),
+          }));
+
+          dispatch(setAllOutlets(dummyWithIds));
+          dispatch(setSelectedOutlet(dummyWithIds[0]));
+          setClientOutlet(dummyWithIds);
         }
-      }
-    };
+      };
 
-    const fetchClientOutletData = async () => {
-      try {
-        const response = await axios.get(
-          `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${clientPhoneNumber}`,
-        );
-
-        if (response.data && Object.keys(response.data).length > 0) {
-          const dataArray = Object.values(response.data);
-          dispatch(setAllOutlets(dataArray));
-          dispatch(setSelectedOutlet(dataArray[0]));
-        } else {
-          dispatch(setAllOutlets(DUMMY_OUTLETS));
-          dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
-        }
-      } catch (error) {
-        dispatch(setAllOutlets(DUMMY_OUTLETS));
-        dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchPhoneNumber();
-    fetchData();
-    fetchClientData();
-    fetchClientOutletData();
-  }, [clientPhoneNumber]);
+      fetchData();
+    }, []),
+  );
 
   const renderCategoryItem = ({item}) => (
     <TouchableOpacity
@@ -236,75 +197,13 @@ export default function HomeScreen() {
         dispatch(setSelectedOutlet(item));
         setIsOutletDropdownVisible(false);
       }}>
-      <Text style={styles.outletName}>{item.name}</Text>
-      <Text style={styles.outletAddress}>{item.address}</Text>
+      <Text style={styles.outletName}>{item.OutletName}</Text>
+      <Text style={styles.outletAddress}>{item.Address}</Text>
     </TouchableOpacity>
   );
 
   const [hasSuppliers, setHasSuppliers] = useState(false);
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setIsLoading(true);
-      try {
-        // 1. Fetch phone number first
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
-        setClientPhoneNumber(storedPhoneNumber);
-
-        if (storedPhoneNumber) {
-          // 2. Fetch suppliers data
-          const supplierResponse = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
-          );
-          const supplierData = Object.values(supplierResponse.data);
-          setData(supplierData);
-          setHasSuppliers(supplierData.length > 0);
-
-          // 3. Fetch client data
-          const gstNumber = await AsyncStorage.getItem('clientGST');
-          if (gstNumber) {
-            const clientResponse = await axios.get(
-              `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
-            );
-            setClientData(clientResponse.data);
-          }
-
-          // 4. Fetch outlets data
-          const outletsResponse = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getOutlets/${storedPhoneNumber}`,
-          );
-
-          let outletsData = [];
-          if (
-            outletsResponse.data &&
-            Object.keys(outletsResponse.data).length > 0
-          ) {
-            outletsData = Object.values(outletsResponse.data);
-          } else {
-            outletsData = DUMMY_OUTLETS;
-          }
-
-          dispatch(setAllOutlets(outletsData));
-          if (outletsData.length > 0) {
-            dispatch(setSelectedOutlet(outletsData[0]));
-          }
-        }
-      } catch (error) {
-        console.error('Fetch error:', error);
-        // Fallback to dummy data if API fails
-        dispatch(setAllOutlets(DUMMY_OUTLETS));
-        if (DUMMY_OUTLETS.length > 0) {
-          dispatch(setSelectedOutlet(DUMMY_OUTLETS[0]));
-        }
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    fetchData();
-  }, []);
-
-  // Update hasSuppliers whenever data changes
   useEffect(() => {
     setHasSuppliers(filteredData.length > 0);
   }, [filteredData]);
@@ -329,7 +228,7 @@ export default function HomeScreen() {
                 </Text>
                 <View style={styles.selectedOutletContainer}>
                   <Text style={styles.selectedOutletName} numberOfLines={1}>
-                    {selectedOutlet?.name || 'Select Outlet'}
+                    {selectedOutlet?.OutletName || 'Select Outlet'}
                   </Text>
                   <ChevronDownIcon
                     size={20}
@@ -342,7 +241,7 @@ export default function HomeScreen() {
                   />
                 </View>
                 <Text style={styles.selectedOutletAddress} numberOfLines={1}>
-                  {selectedOutlet?.address || 'No address selected'}
+                  {selectedOutlet?.Address || 'No address selected'}
                 </Text>
               </TouchableOpacity>
 

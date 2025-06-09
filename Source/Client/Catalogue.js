@@ -458,7 +458,7 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     position: 'absolute',
-    bottom: 20,
+    bottom: '2%',
     left: 20,
     right: 20,
   },
@@ -518,7 +518,8 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 30,
     position: 'absolute',
-    bottom: '5%',
+    bottom: '80',
+
     right: 20,
     justifyContent: 'center',
     alignItems: 'center',
