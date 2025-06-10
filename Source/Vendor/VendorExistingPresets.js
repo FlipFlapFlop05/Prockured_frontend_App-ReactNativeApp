@@ -77,13 +77,15 @@ export default function VendorExistingPresets(){
       ),
     });
   }, [navigation]);
+
+
   useEffect(() => {
+    Alert.alert("GST", gstNumber);
     const getData = async() => {
       try{
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCampaign', {
           "gstNumber": gstNumber,
         });
-
         const campaigns = Object.values(response.data.data || {});
         const liveCampaigns  = campaigns.filter(
           c => c.live === true || c.live === 'true'

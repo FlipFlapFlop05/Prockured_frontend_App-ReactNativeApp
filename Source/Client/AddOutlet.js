@@ -150,6 +150,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="Name"
         placeholder="Enter name"
+        placeholderTextColor="black"
         value={form.name}
         onChangeText={value => handleChange('name', value)}
         validationFunc={validateRequired}
@@ -158,6 +159,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="Address"
         placeholder="Enter address"
+        placeholderTextColor="black"
         value={form.address}
         onChangeText={value => handleChange('address', value)}
         validationFunc={validateRequired}
@@ -166,6 +168,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="City"
         placeholder="Enter city"
+        placeholderTextColor="black"
         value={form.city}
         onChangeText={value => handleChange('city', value)}
         validationFunc={validateRequired}
@@ -190,6 +193,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="Billing Address"
         placeholder="Enter billing address"
+        placeholderTextColor="black"
         value={form.billingAddress}
         onChangeText={value => handleChange('billingAddress', value)}
         validationFunc={validateRequired}
@@ -198,6 +202,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="GST (e.g. 27ABCDE1234F1Z5)"
         placeholder="Enter GST number"
+        placeholderTextColor="black"
         value={form.GST}
         onChangeText={value => handleChange('GST', value?.toUpperCase())}
         validationFunc={text =>
@@ -209,6 +214,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="State"
         placeholder="Enter state"
+        placeholderTextColor="black"
         value={form.state}
         onChangeText={value => handleChange('state', value)}
         validationFunc={validateRequired}
@@ -217,6 +223,7 @@ export default function AddOutlet() {
       <ValidatedInput
         label="Country"
         placeholder="Enter country"
+        placeholderTextColor="black"
         value={form.country}
         onChangeText={value => handleChange('country', value)}
         validationFunc={validateRequired}

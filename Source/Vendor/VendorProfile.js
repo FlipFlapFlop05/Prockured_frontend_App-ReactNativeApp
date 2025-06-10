@@ -143,38 +143,6 @@ export default function VendorProfile() {
     }
   };
 
-  // const handleSave = async () => {
-  //   try {
-  //     const payload = {
-  //       name: name.trim(),
-  //       businessName: businessName.trim(),
-  //       email: email.trim(),
-  //       pincode: pincode.trim(),
-  //       state: state.trim(),
-  //       country: country.trim(),
-  //       gst: gstNumber.trim(),
-  //       phone: clientPhoneNumber.trim(),
-  //       billingAddress: billingAddress.trim(),
-  //       shippingAddress: shippingAddress.trim(),
-  //     };
-
-  //     await axios.post(
-  //       'https://api-v7quhc5aza-uc.a.run.app/createClient',
-  //       payload,
-  //       {
-  //         headers: {
-  //           'Content-Type': 'application/json',
-  //         },
-  //       },
-  //     );
-
-  //     Alert.alert('Success', 'Profile updated successfully!');
-  //     navigation.goBack();
-  //   } catch (error) {
-  //     console.error('Error updating profile:', error);
-  //     Alert.alert('Error', 'Failed to update profile.');
-  //   }
-  // };
   console.log(Config.API_BASE_URL);
 
   return (
@@ -203,13 +171,7 @@ export default function VendorProfile() {
         <Text style={styles.profileName}>{data?.Name}</Text>
         <Text style={styles.profileType}>Vendor</Text>
       </View>
-      <View className="mx-0 w-full">
-        <TouchableOpacity
-          style={styles.manageButton}
-          onPress={() => navigation.navigate('Catalogue')}>
-          <Text className="w-full">Manage Your Catalogs</Text>
-        </TouchableOpacity>
-      </View>
+      
 
       <Text style={styles.sectionTitle}>Personal Details</Text>
       <View style={styles.detailContainer}>

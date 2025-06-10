@@ -144,6 +144,7 @@ export default function Basket() {
       navigation.navigate('Approval Pending', {orderID: orderId}); 
     } catch (error) {
       console.error('Order placement error:', error);
+      Alert.alert("Payload", payload);
       Alert.alert('Error', 'Failed to place order');
     }
   };

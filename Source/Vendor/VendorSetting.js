@@ -1,3 +1,4 @@
+// (Keep all previous imports – no changes needed in import section)
 import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
@@ -9,82 +10,53 @@ import {
   SafeAreaView,
   Dimensions,
   Modal,
-  Alert
+  Alert,
+  TextInput,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {
-  UserIcon,
-  DocumentChartBarIcon,
-  UserCircleIcon,
-  UserPlusIcon,
-  BookOpenIcon,
-  ArrowRightStartOnRectangleIcon,
-  MapIcon,
-  ChartBarIcon,
   ChevronLeftIcon,
+  PencilIcon,
+  XMarkIcon,
 } from 'react-native-heroicons/outline';
-import {XMarkIcon, ClipboardDocumentIcon} from 'react-native-heroicons/outline';
 import {CheckCircleIcon} from 'react-native-heroicons/solid';
-import {Clipboard} from 'react-native'; // if not using Expo
-
-// import Icon from 'react-native-vector-icons/FontAwesome';
-
-import Icons from 'react-native-vector-icons/MaterialCommunityIcons';
-import GenericVectorIcon from '../components/GenericVectorIcon';
-import {PencilIcon} from 'react-native-heroicons/solid';
-import Config from 'react-native-config';
+import {Clipboard} from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import AntIcon from 'react-native-vector-icons/AntDesign';
+import GenericVectorIcon from '../components/GenericVectorIcon';
 
 const {width} = Dimensions.get('window');
 
 export default function VendorSetting() {
   const [modalVisible, setModalVisible] = useState(false);
+  const [customerModalVisible, setCustomerModalVisible] = useState(false);
   const [selectedModal, setSelectedModal] = useState(null);
-  const navigation = useNavigation();
-  const [data, setData] = useState([]);
+  const [minOrderValue, setMinOrderValue] = useState('');
+  const [inputValue, setInputValue] = useState('');
   const [gstNumber, setGSTNumber] = useState(null);
-  const [inviteVendor, setInviteVendor] = useState(false);
+  const [data, setData] = useState([]);
   const [copied, setCopied] = useState(false);
 
+  const navigation = useNavigation();
   const clientId = 'V-4561';
   const inviteLink = `https://client.invite/${clientId}`;
 
   const copyToClipboard = text => {
     Clipboard.setString(text);
     setCopied(true);
-
-    // Hide the message after 2 seconds
-    setTimeout(() => {
-      setCopied(false);
-    }, 2000);
+    setTimeout(() => setCopied(false), 2000);
   };
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
       headerTitle: 'Setting',
-      headerStyle: {
-        backgroundColor: '#f8f8f8',
-        elevation: 0,
-        shadowOpacity: 0,
-        borderBottomWidth: 0,
-        justifyContent: 'center',
-        alignItems: 'center',
-      },
-      headerTitleStyle: {
-        fontWeight: '700',
-        fontSize: 20,
-        fontFamily: 'Montserrat',
-        justifyContent: 'center',
-        // color: 'white',
-      },
+      headerStyle: {backgroundColor: '#f8f8f8', elevation: 0},
+      headerTitleStyle: {fontWeight: '700', fontSize: 20},
       headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 15}}>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{paddingHorizontal: 15}}>
           <ChevronLeftIcon size={22} color="#333" strokeWidth={2} />
         </TouchableOpacity>
       ),
@@ -92,68 +64,56 @@ export default function VendorSetting() {
   }, [navigation]);
 
   useEffect(() => {
-    const fetchGSTNumber = async () => {
-      try {
-        const storedGSTNumber = await AsyncStorage.getItem('supplierGST');
-        if (storedGSTNumber) {
-          setGSTNumber(storedGSTNumber);
-        }
-      } catch (error) {
-        console.log('Error Fetching GST ID: ', error);
-      }
+    const fetchGST = async () => {
+      const gst = await AsyncStorage.getItem('supplierGST');
+      if (gst) setGSTNumber(gst);
     };
-    fetchGSTNumber();
+    fetchGST();
   }, []);
 
   useEffect(() => {
-    const fetchData = async () => {
-      if (gstNumber) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${gstNumber}` // Use the correct endpoint,
-          );
-          setData(response.data);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-
     if (gstNumber) {
-      fetchData();
+      axios.get(`https://api-v7quhc5aza-uc.a.run.app/getSupplierDetails/${gstNumber}`)
+        .then(res => setData(res.data))
+        .catch(err => console.log(err));
     }
   }, [gstNumber]);
+
+  useEffect(() => {
+    loadMinOrderValue();
+  }, []);
+
+  const loadMinOrderValue = async () => {
+    try {
+      const value = await AsyncStorage.getItem('minOrderValue');
+      if (value) setMinOrderValue(value);
+    } catch (e) {
+      console.log('Error loading minOrderValue:', e);
+    }
+  };
+
+  const saveMinOrderValue = async () => {
+    try {
+      await AsyncStorage.setItem('minOrderValue', inputValue);
+      setMinOrderValue(inputValue);
+      setModalVisible(false);
+    } catch (e) {
+      console.log('Error saving minOrderValue:', e);
+    }
+  };
+
   const handleLogout = () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel',
+    Alert.alert('Logout', 'Are you sure you want to logout?', [
+      {text: 'Cancel', style: 'cancel'},
+      {
+        text: 'Logout',
+        style: 'destructive',
+        onPress: async () => {
+          await AsyncStorage.clear();
+          navigation.reset({index: 0, routes: [{name: 'Authentication', params: {screen: 'LogIn'}}]});
         },
-        {
-          text: 'Logout',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await AsyncStorage.clear();
-              navigation.reset({
-                index: 0,
-                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
-              });
-            } catch (e) {
-              console.error('Error during logout: ', e);
-              Alert.alert(
-                'Error',
-                'Failed to logout properly. Please try again.',
-              );
-            }
-          },
-        },
-      ],
-      {cancelable: true},
-    );
+      },
+    ]);
   };
 
   const menuItems = [
@@ -170,10 +130,11 @@ export default function VendorSetting() {
       type: 'vector',
       iconType: 'Ionicons',
       icon: 'receipt-outline',
-      label: 'Minimum Order Value',
+      label: `Minimum Order Value${minOrderValue ? `: ₹${minOrderValue}` : ''}`,
+      modal: 'minOrderValue',
     },
     {
-      id: 2,
+      id: 3,
       type: 'vector',
       iconType: 'Feather',
       icon: 'user-check',
@@ -181,7 +142,7 @@ export default function VendorSetting() {
       screen: 'Customers',
     },
     {
-      id: 3,
+      id: 4,
       type: 'vector',
       icon: 'account-group-outline',
       iconType: 'MaterialCommunityIcons',
@@ -189,7 +150,7 @@ export default function VendorSetting() {
       modal: 'teamsRoles',
     },
     {
-      id: 4,
+      id: 5,
       type: 'vector',
       iconType: 'AntDesign',
       icon: 'adduser',
@@ -197,7 +158,7 @@ export default function VendorSetting() {
       modal: 'inviteVendor',
     },
     {
-      id: 5,
+      id: 6,
       type: 'vector',
       iconType: 'Feather',
       icon: 'book',
@@ -205,7 +166,7 @@ export default function VendorSetting() {
       screen: 'Catalogue',
     },
     {
-      id: 6,
+      id: 7,
       type: 'vector',
       icon: 'logout',
       iconType: 'AntDesign',
@@ -215,160 +176,105 @@ export default function VendorSetting() {
   ];
 
   const handlePress = item => {
-    if (item.screen) {
-      navigation.navigate(item.screen);
-    } else if (item.modal) {
+    if (item.screen) navigation.navigate(item.screen);
+    else if (item.modal) {
       setSelectedModal(item.modal);
       setModalVisible(true);
-    } else if (item.action) {
-      item.action();
+    } else if (item.action) item.action();
+  };
+
+  const renderVendorItem = () => {
+    if (selectedModal === 'inviteVendor') {
+      return (
+        <View style={styles.modalContainer}>
+          <View style={{flexDirection: 'row', justifyContent: 'space-between'}}>
+            <Text style={styles.title}>Share this link</Text>
+            <View style = {{flexDirection: 'row'}}>
+              <TouchableOpacity onPress={() => copyToClipboard(inviteLink)} style={{flexDirection: 'row'}}>
+                <Icon name="content-copy" size={22} color="#76B117" />
+                <Text style={styles.copyText}> Copy Link</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => setModalVisible(false)}>
+                <XMarkIcon size={20} color="black" />
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          <View style={styles.linkBox}>
+            <Text style={styles.linkText}>{inviteLink}</Text>
+          </View>
+          {copied && (
+            <Text style={styles.copiedMessage}>
+              <AntIcon name="checkcircle" color="#76B117" /> Link copied. <Text style={{fontWeight: '600'}}>Anyone with this link can join</Text>
+            </Text>
+          )}
+        </View>
+      );
+    } else if (selectedModal === 'minOrderValue') {
+      return (
+        <View style={styles.modalContainer}>
+          <Text style={styles.title}>Set Minimum Order Value</Text>
+          <TextInput
+            style={{
+              borderWidth: 1,
+              borderColor: '#ccc',
+              borderRadius: 10,
+              padding: 10,
+              marginTop: 10,
+            }}
+            keyboardType="numeric"
+            value={inputValue}
+            onChangeText={setInputValue}
+            placeholder="Enter value in ₹"
+          />
+          <TouchableOpacity
+            style={[styles.modalCloseButton, {marginTop: 20, alignItems: 'center'}]}
+            onPress={saveMinOrderValue}
+          >
+            <Text style={styles.modalCloseButtonText}>Save</Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
+    return null;
   };
 
   const renderMenuItem = ({item}) => (
     <TouchableOpacity style={styles.menuItem} onPress={() => handlePress(item)}>
-      {item.type === 'vector' ? (
-        <GenericVectorIcon
-          type={item.iconType}
-          name={item.icon}
-          size={item.iconType === 'FontAwesome' ? 24 : 28}
-          color={item.label === 'Log out' ? '#900' : '#333'}
-          style={styles.menuItemIcon}
-        />
-      ) : (
-        <item.icon size={28} color="#333" style={styles.menuItemIcon} />
-      )}
-      {item.label === 'Log out' ? (
-        <Text style={{color: '#900', fontSize: 16}}>{item.label}</Text>
-      ) : (
-        <Text style={styles.menuItemText}>{item.label}</Text>
-      )}
+      <GenericVectorIcon
+        type={item.iconType}
+        name={item.icon}
+        size={28}
+        color={item.label === 'Log out' ? '#900' : '#333'}
+        style={styles.menuItemIcon}
+      />
+      <Text style={[styles.menuItemText, item.label === 'Log out' && {color: '#900'}]}>
+        {item.label}
+      </Text>
     </TouchableOpacity>
   );
 
-  const renderVendorItem = () => {
-    switch (selectedModal) {
-      case 'inviteVendor':
-        return (
-          <View>
-            <Modal visible={modalVisible} animationType="slide" transparent>
-              <View style={styles.overlay}>
-                <View style={styles.modalContainer}>
-                  <View
-                    style={{
-                      flexDirection: 'row',
-                      justifyContent: 'space-between',
-                      marginBottom: 20,
-                    }}>
-                    <Text style={styles.title}>Share this link</Text>
-                    <View style={{flexDirection: 'row'}}>
-                      <TouchableOpacity
-                        onPress={() => copyToClipboard(inviteLink)}
-                        style={{flexDirection: 'row'}}>
-                        {/* <ClipboardDocumentIcon size={22} color="#76B117" /> */}
-                        <Icon
-                          name="content-copy"
-                          size={22}
-                          color={'#76B117'}
-                          style={{marginRight: 3}}
-                        />
-                        <Text style={styles.copyText}>Copy Link</Text>
-                      </TouchableOpacity>
-                      <TouchableOpacity
-                        onPress={() => setModalVisible(false)}
-                        style={styles.closeButton}>
-                        <XMarkIcon size={20} color="black" />
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                  <View style={styles.linkBox}>
-                    <Text style={styles.linkText}>{inviteLink}</Text>
-                  </View>
-
-                  {copied && (
-                    <Text style={styles.copiedMessage}>
-                      <View
-                        style={{
-                          display: 'flex',
-                          flexDirection: 'row',
-                          alignItems: 'center',
-                        }}>
-                        <AntIcon
-                          name="checkcircle"
-                          color={'#76B117'}
-                          style={{marginHorizontal: 5}}
-                        />
-                      </View>
-                      Link copied. <Text></Text>
-                      <Text style={{fontWeight: '600'}}>
-                        Anyone with this link can join
-                      </Text>
-                    </Text>
-                  )}
-                </View>
-              </View>
-            </Modal>
-          </View>
-        );
-
-      default:
-        return null;
-    }
-  };
-
-  const renderModalContent = () => {
-    switch (selectedModal) {
-      case 'teamsRoles':
-        return <Text style={styles.categoryText}>Feature Not Available</Text>;
-      case 'viewReport':
-        return <Text style={styles.categoryText}>Feature Not Available</Text>;
-      default:
-        return null;
-    }
-  };
-
   return (
     <SafeAreaView style={styles.safeArea} className="bg-white">
-      <View style={styles.container} className="bg-white">
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}>
+      <View style={styles.container}>
+        <Modal animationType="slide" transparent={true} visible={modalVisible} onRequestClose={() => setModalVisible(false)}>
           <View style={styles.modalOverlay}>
             <View style={styles.modalContent}>
-              {renderModalContent()}
-              <TouchableOpacity
-                style={styles.modalCloseButton}
-                onPress={() => setModalVisible(false)}>
-                <Text style={styles.modalCloseButtonText}>Close</Text>
-              </TouchableOpacity>
+              {renderVendorItem()}
             </View>
           </View>
         </Modal>
 
-        <Modal
-          animationType="slide"
-          transparent={true}
-          visible={modalVisible}
-          onRequestClose={() => setModalVisible(false)}>
-          {renderVendorItem()}
-        </Modal>
-
         <View style={styles.profileContainer}>
           <Image
-            source={{
-              uri: 'https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg',
-            }}
+            source={{uri: 'https://www.themealdb.com/images/media/meals/ustsqw1468250014.jpg'}}
             style={styles.profileImage}
           />
-
           <View style={styles.iconWrapper}>
             <TouchableOpacity style={styles.editIconButton}>
               <PencilIcon size={16} color="#fff" />
             </TouchableOpacity>
           </View>
-
           <Text style={styles.profileName}>Hey {data?.Name}!</Text>
           <Text style={styles.profileType}>Vendor</Text>
         </View>
@@ -378,20 +284,11 @@ export default function VendorSetting() {
           renderItem={renderMenuItem}
           keyExtractor={item => item.id.toString()}
         />
-
-        {/* <TouchableOpacity style={styles.logoutButton}>
-          <ArrowRightStartOnRectangleIcon
-            size={20}
-            color="red"
-            style={styles.logoutIcon}
-          />
-          <Text style={styles.logoutButtonText}>Log Out</Text>
-        </TouchableOpacity> */}
-        {/* hhh */}
       </View>
     </SafeAreaView>
   );
 }
+
 
 const styles = StyleSheet.create({
   safeArea: {
@@ -486,7 +383,6 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
   },
   modalContent: {
     backgroundColor: 'white',
@@ -521,7 +417,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalContainer: {
-    width: '90%',
+    width: '130%',
     backgroundColor: 'white',
     borderRadius: 20,
     padding: 20,

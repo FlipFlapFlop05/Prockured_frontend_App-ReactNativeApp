@@ -195,6 +195,7 @@ const AddProductManually = () => {
           <View style={{flexDirection: 'column'}}>
             <ValidatedInput
               label={'Product Name'}
+              placeholderTextColor="black"
               labelStyle={{color: '#76B117'}}
               value={formData.productName}
               onChangeText={text =>
@@ -219,6 +220,7 @@ const AddProductManually = () => {
             <ValidatedInput
               label={'Unit'}
               labelStyle={{color: '#76B117'}}
+              placeholderTextColor="black"
               value={formData.productUnit}
               onChangeText={text =>
                 setFormData({...formData, productUnit: text})
@@ -234,6 +236,7 @@ const AddProductManually = () => {
             <ValidatedInput
               label={'My Price'}
               labelStyle={{color: '#76B117'}}
+              placeholderTextColor="black"
               value={formData.productPrice}
               onChangeText={text =>
                 setFormData({...formData, productPrice: text})

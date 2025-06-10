@@ -125,6 +125,7 @@ const Order = () => {
         'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
         {clientGST: clientPhoneNumber},
       );
+      Alert.alert("res", JSON.stringify(res.data.data));
 
       const orders = Object.values(res?.data?.data || {}).map(order => {
         const supplierGST = order.supplierGST ?? '';
@@ -168,7 +169,7 @@ const Order = () => {
         {clientGST: clientPhoneNumber},
       );
 
-      console.log(res);
+      Alert.alert('res', JSON.stringify(res.data));
 
       const orders = Object.keys(res?.data || {}).map(orderId => {
         const order = res.data[orderId] ?? {};
@@ -215,7 +216,7 @@ const Order = () => {
         {clientGST: clientPhoneNumber},
       );
 
-      console.log('PAST', res);
+      Alert.alert('PAST', JSON.stringify(res.data.data));
 
       const ordersData = res.data.data || {};
       const orders = Object.keys(ordersData).map(orderId => {

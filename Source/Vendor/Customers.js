@@ -86,21 +86,26 @@ const Customers = () => {
     const fetchData = async () => {
       try {
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {
-          supplierGST: gstNumber
+          "supplierGST": gstNumber
         });
 
         if (response.status === 200) {
           const data = response.data.data;
-
+          Alert.alert("data", JSON.stringify(data));
+        }
+        else{
+          Alert.alert('Error', 'No orders found for this supplier')
+          Alert.alert("response", response)
         }
       } catch (error) {
         Alert.alert('Error fetching completed orders', error.message); 
       }
     };
+    if(gstNumber){
+      fetchData();
+    }
 
-    fetchData(); 
-
-  }, []);
+  }, [gstNumber]);
 
   return (
     <View style={styles.container}>

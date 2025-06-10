@@ -148,6 +148,7 @@ export default function AddSupplier() {
         label="Business Name"
         placeholder="Enter Business Name"
         value={form.businessName}
+        placeholderTextColor="black"
         onChangeText={value => handleChange('businessName', value)}
         validationFunc={text => text.trim().length > 0}
         errorMessage="Business Name is required"
@@ -156,6 +157,7 @@ export default function AddSupplier() {
       <ValidatedInput
         label="Email"
         placeholder="Enter Email"
+        placeholderTextColor="black"
         value={form.email}
         keyboardType="email-address"
         onChangeText={value => handleChange('email', value)}
@@ -167,6 +169,7 @@ export default function AddSupplier() {
         label="Pincode"
         placeholder="Enter Pincode"
         value={form.pincode}
+        placeholderTextColor="black"
         keyboardType="numeric"
         onChangeText={value => handleChange('pincode', value)}
         validationFunc={text => /^\d{6}$/.test(text)}
@@ -176,6 +179,7 @@ export default function AddSupplier() {
       <ValidatedInput
         label="State"
         placeholder="Enter State"
+        placeholderTextColor="black"
         value={form.state}
         onChangeText={value => handleChange('state', value)}
         validationFunc={text => text.trim().length > 0}
@@ -185,6 +189,7 @@ export default function AddSupplier() {
       <ValidatedInput
         label="Country"
         placeholder="Enter Country"
+        placeholderTextColor="black"
         value={form.country}
         onChangeText={value => handleChange('country', value)}
         validationFunc={text => text.trim().length > 0}
@@ -194,6 +199,7 @@ export default function AddSupplier() {
       <ValidatedInput
         label="Supplier Phone Number"
         placeholder="Enter Supplier Phone Number"
+        placeholderTextColor="black"
         value={form.supplierPhoneNumber}
         keyboardType="phone-pad"
         onChangeText={value => handleChange('supplierPhoneNumber', value)}
@@ -203,6 +209,7 @@ export default function AddSupplier() {
       <ValidatedInput
         label="Supplier GST Number (e.g. 27ABCDE1234F1Z5)"
         placeholder="Enter Supplier GST Number"
+        placeholderTextColor="black"
         value={form.supplierGstNumber}
         // keyboardType=""
         onChangeText={value => handleChange('supplierGstNumber', value)}

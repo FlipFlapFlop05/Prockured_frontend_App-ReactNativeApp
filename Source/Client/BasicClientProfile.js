@@ -124,6 +124,7 @@ export default function BasicClientProfile() {
         value={form.name}
         onChangeText={v => handleChange('name', v)}
         placeholder="Enter name"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Name is required"
       />
@@ -132,6 +133,7 @@ export default function BasicClientProfile() {
         value={form.businessName}
         onChangeText={v => handleChange('businessName', v)}
         placeholder="Enter business name"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Business name is required"
       />
@@ -140,6 +142,7 @@ export default function BasicClientProfile() {
         value={form.email}
         onChangeText={v => handleChange('email', v)}
         placeholder="Enter email"
+        placeholderTextColor="black"
         validationFunc={isValidEmail}
         errorMessage="Invalid email address"
       />
@@ -148,6 +151,7 @@ export default function BasicClientProfile() {
         value={form.city}
         onChangeText={v => handleChange('city', v)}
         placeholder="Enter city"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="City is required"
       />
@@ -156,6 +160,7 @@ export default function BasicClientProfile() {
         value={form.pincode}
         onChangeText={v => handleChange('pincode', v)}
         placeholder="Enter pincode"
+        placeholderTextColor="black"
         keyboardType="numeric"
         validationFunc={isValidPincode}
         errorMessage="Pincode must be 6 digits"
@@ -166,6 +171,7 @@ export default function BasicClientProfile() {
         onChangeText={v => handleChange('state', v)}
         placeholder="Enter state"
         validationFunc={isFilled}
+        placeholderTextColor="black"
         errorMessage="State is required"
       />
       <ValidatedInput
@@ -173,6 +179,7 @@ export default function BasicClientProfile() {
         value={form.country}
         onChangeText={v => handleChange('country', v)}
         placeholder="Enter country"
+        placeholderTextColor="black"
         validationFunc={isFilled}
         errorMessage="Country is required"
       />
@@ -180,6 +187,7 @@ export default function BasicClientProfile() {
         label="GST Number (e.g. 27ABCDE1234F1Z5)"
         value={form.gstNumber}
         onChangeText={v => handleChange('gstNumber', v)}
+        placeholderTextColor="black"
         placeholder="Enter GST number"
         validationFunc={text =>
           /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
@@ -190,6 +198,7 @@ export default function BasicClientProfile() {
         label="Billing Address"
         value={form.billingAddress}
         onChangeText={v => handleChange('billingAddress', v)}
+        placeholderTextColor="black"
         placeholder="Enter billing address"
         validationFunc={isFilled}
         errorMessage="Billing address is required"
@@ -198,6 +207,7 @@ export default function BasicClientProfile() {
         label="Shipping Address"
         value={form.shippingAddress}
         onChangeText={v => handleChange('shippingAddress', v)}
+        placeholderTextColor="black"
         placeholder="Enter shipping address"
         validationFunc={isFilled}
         errorMessage="Shipping address is required"
