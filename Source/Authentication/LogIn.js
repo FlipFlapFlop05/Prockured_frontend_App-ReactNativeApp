@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { PhoneIcon, LockClosedIcon, EyeIcon, EyeSlashIcon } from 'react-native-heroicons/outline';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const LogIn = () => {
   const navigation = useNavigation();
@@ -11,9 +13,59 @@ const LogIn = () => {
     setFormData({ ...formData, [name]: value });
   };
 
+  const handleSubmit = async() => {
+    const {phoneNumber, password} = formData;
+    try {
+      const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getUserProfile', {
+        "number": phoneNumber
+      });
+      if (response.status === 200 && response.data.data) {
+        console.log('API Response Data:', response.data);
+        Alert.alert('Success', `API Response: ${JSON.stringify(response.data)}`);
 
+        if (response.data.type) {
+          if (response.data.type === "client") {
+            if (response.data.gst) { 
+              await AsyncStorage.setItem('clientGST', response.data.gst);
+              Alert.alert("Client GST Saved", `GST: ${response.data.gst}`);
+            }
+            navigation.navigate("ClientHome"); 
+          } else if (response.data.type === "supplier") {
+            if (response.data.gst) { 
+              await AsyncStorage.setItem('supplierGST', response.data.gst);
+              Alert.alert("Supplier GST Saved", `GST: ${response.data.gst}`);
+            }
+            navigation.navigate("SupplierHome"); 
+          } else {
+            Alert.alert("Unknown Type", "User profile returned an unrecognized type.");
+            navigation.navigate("Authentication", { screen: "CreateAnAccount" });
+          }
+        } else {
+          Alert.alert("User Not Found", "The provided number does not exist or has an incomplete profile. Please create an account.");
+          navigation.navigate("Authentication", { screen: "CreateAnAccount" });
+        }
+      } else {
+        console.log('API Response Status:', response.status);
+        console.log('API Response Data:', response.data);
+        Alert.alert("API Status Issue", `Received status: ${response.status}. Data: ${JSON.stringify(response.data)}`);
+        navigation.navigate("Authentication", { screen: "CreateAnAccount" });
+      }
+    } catch (error) {
+      console.error("API Call Error:", error); // Log the full error object for detailed info
 
-  const validateInputs = () => {
+      let errorMessage = "An unknown error occurred. Please try again.";
+
+      if (error.response) {
+        errorMessage = `Server Error: ${error.response.status}. ${JSON.stringify(error.response.data)}`;
+      } else if (error.request) {
+        errorMessage = "Network Error: No response received from server. Check your internet connection or server status.";
+      } else {
+        errorMessage = `Request Setup Error: ${error.message}`;
+      }
+
+      Alert.alert("Error", errorMessage);
+      // navigation.navigate("Authentication", { screen: "CreateAnAccount" });
+    }
     const phoneRegex = /^[0-9]{10}$/;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{6,}$/;
 
@@ -28,6 +80,12 @@ const LogIn = () => {
       return;
     }
     Alert.alert('Success', 'Login details are valid!');
+    
+  }
+
+
+  const validateInputs = () => {
+    
   };
 
   return (
@@ -65,7 +123,7 @@ const LogIn = () => {
         <Text style={styles.forgotPassword}>Forgot Password?</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.button} onPress={validateInputs}>
+      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Log In</Text>
       </TouchableOpacity>
 
