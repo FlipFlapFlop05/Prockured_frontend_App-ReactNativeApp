@@ -47,7 +47,7 @@ export default function MultipleOutletDashboard() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.navigate('Setting')}
+          onPress={() => navigation.navigate("Main", {screen: "Setting"})}
           style={{paddingHorizontal: 13, marginLeft: -20}}>
           <ChevronLeftIcon size={23} strokeWidth={3} />
         </TouchableOpacity>

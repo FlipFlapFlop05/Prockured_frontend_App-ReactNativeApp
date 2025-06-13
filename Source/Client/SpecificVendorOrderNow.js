@@ -1,11 +1,38 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, FlatList, Image, Dimensions } from 'react-native';
-import { ChevronLeftIcon, ShoppingCartIcon, PlusIcon, MinusIcon } from 'react-native-heroicons/outline';
-import {useNavigation} from '@react-navigation/native';
+import React, 
+    { 
+      useEffect, 
+      useState 
+    } 
+from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  FlatList, 
+  Image, 
+  Dimensions, 
+  Alert 
+} from 'react-native';
+import { 
+  ChevronLeftIcon, 
+  ShoppingCartIcon, 
+  PlusIcon, 
+  MinusIcon 
+} from 'react-native-heroicons/outline';
+import {
+  useNavigation
+} from '@react-navigation/native';
 
 const screenWidth = Dimensions.get('window').width;
 
-const myCatalogue = [
+
+
+const SpecificVendorOrderNow = ({route}) => {
+  const { details } = route.params;
+  const [selectedTab, setSelectedTab] = useState('supplier');
+  const [selectedUnit, setSelectedUnit] = useState('carton');
+  const myCatalogue = [
   {
     id: '1',
     name: 'Zucchini',
@@ -25,8 +52,7 @@ const myCatalogue = [
     discount: 20,
   },
 ];
-
-const supplierCatalogue = [
+  const supplierCatalogue = [
   {
     id: '3',
     name: 'Red Cabbage',
@@ -46,10 +72,6 @@ const supplierCatalogue = [
     discount: 50,
   },
 ];
-
-const SpecificVendorOrderNow = () => {
-  const [selectedTab, setSelectedTab] = useState('supplier');
-  const [selectedUnit, setSelectedUnit] = useState('carton');
   const [products, setProducts] = useState({
     my: myCatalogue.map(p => ({ ...p, count: 0 })),
     supplier: supplierCatalogue.map(p => ({ ...p, count: 0 })),
@@ -89,6 +111,9 @@ const SpecificVendorOrderNow = () => {
       </View>
     </View>
   );
+  useEffect(() => {
+    Alert.alert("Route", JSON.stringify(details));
+  })
 
   return (
     <View style={styles.container}>
@@ -103,7 +128,7 @@ const SpecificVendorOrderNow = () => {
       {/* Vendor Info */}
       <View style={styles.vendorBox}>
         <Image source={require('../Images/VendorProfileImage.png')} style={styles.vendorLogo} />
-        <Text style={styles.vendorName}>DM Agro Care</Text>
+        <Text style={styles.vendorName}>{details.businessName}</Text>
         <Text style={styles.vendorLabel}>Vendor</Text>
         <TouchableOpacity style={styles.addProductBtn}>
           <Text style={styles.addProductText}>+ Add Products</Text>

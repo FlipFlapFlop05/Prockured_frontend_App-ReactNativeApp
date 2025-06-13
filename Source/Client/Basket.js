@@ -55,7 +55,7 @@ export default function Basket() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.navigate("Main", {screen: "Catalogue"})}
           style={{paddingHorizontal: 13}}>
           <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>

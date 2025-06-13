@@ -254,6 +254,22 @@ export default function VendorSetting() {
           </TouchableOpacity>
         </View>
       );
+    } else if (selectedModal === 'teamsRoles'){
+      return (
+        <View style={styles.modalContent}>
+          <Text style={styles.categoryText}>
+            Feature Not Available
+          </Text>
+          <TouchableOpacity
+            style={styles.modalCloseButton}
+            onPress={() => setModalVisible(false)}
+          >
+            <Text style={styles.modalCloseButtonText}>
+              Close
+            </Text>
+          </TouchableOpacity>
+        </View>
+      );
     }
     return null;
   };

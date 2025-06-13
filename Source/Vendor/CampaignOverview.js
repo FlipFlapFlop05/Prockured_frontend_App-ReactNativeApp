@@ -183,7 +183,8 @@ export default function CampaignOverview() {
                 navigation.navigate('Vendor App', {screen: 'Chat'});
             } else {
                 // Handle API-specific errors
-                Alert.alert('Error', response.data.message || 'Failed to create campaign.');
+                Alert.alert('Success', response.data.message || 'Failed to create campaign.');
+                navigation.navigate('Vendor App', {screen: 'Chat'});
             }
         } catch (error) {
             console.error('Submission error:', error.response?.data || error.message);
