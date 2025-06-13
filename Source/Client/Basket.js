@@ -140,11 +140,11 @@ export default function Basket() {
         'https://api-v7quhc5aza-uc.a.run.app/placeOrder',
         payload
       );
+      Alert.alert('Paylaod', JSON.stringify(payload));
       Alert.alert('Success', 'Order placed successfully!');
       navigation.navigate('Approval Pending', {orderID: orderId}); 
     } catch (error) {
-      console.error('Order placement error:', error);
-      Alert.alert("Payload", payload);
+      Alert.alert('Paylaod', JSON.stringify(payload));
       Alert.alert('Error', 'Failed to place order');
     }
   };

@@ -232,12 +232,13 @@ export default function VendorCatalogue() {
                 )}
               />
             ))}
-
             <TouchableOpacity
               style={styles.floatingButton}
-              onPress={() => navigation.navigate('Vendor Add Product')}>
-              <Text style={styles.floatingButtonText}>+</Text>
+              onPress={() => navigation.navigate('Vendor Add Product')}
+            >
+                <Text style={styles.floatingButtonText}>+</Text>
             </TouchableOpacity>
+            
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -419,15 +420,17 @@ const styles = StyleSheet.create({
     padding: 10,
     color: 'black',
     width: '90%',
+    borderColor: 'gray',
+    borderWidth: 1
   },
   floatingButton: {
     backgroundColor: '#76B117',
-    width: 60,
-    height: 60,
+    width: 50,
+    height: 50,
     borderRadius: 30,
     position: 'absolute',
-    bottom: 80,
-    right: 20,
+    bottom: - width * 1.2,
+    right: -width * 0.01,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
@@ -438,7 +441,7 @@ const styles = StyleSheet.create({
   },
   floatingButtonText: {
     color: 'white',
-    fontSize: 24,
+    fontSize: 30,
     fontWeight: 'bold',
   },
 });

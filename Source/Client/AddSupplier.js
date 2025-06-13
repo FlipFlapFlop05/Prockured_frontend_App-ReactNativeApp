@@ -118,7 +118,7 @@ export default function AddSupplier() {
         payload,
       );
       navigation.navigate('Main', {screen: 'Home'});
-      Alert.alert('Success', 'Product added successfully!');
+      Alert.alert('Success', 'Supplier added successfully!');
     } catch (error) {
       console.error('Axios Error:', error);
       if (error.response) {

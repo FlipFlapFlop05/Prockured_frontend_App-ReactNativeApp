@@ -519,7 +519,6 @@ const styles = StyleSheet.create({
     borderRadius: 30,
     position: 'absolute',
     bottom: '80',
-
     right: 20,
     justifyContent: 'center',
     alignItems: 'center',

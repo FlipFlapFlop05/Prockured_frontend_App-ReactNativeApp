@@ -142,8 +142,38 @@ export default function VendorProfile() {
       Alert.alert('Error', 'Failed to update profile.');
     }
   };
-
-  console.log(Config.API_BASE_URL);
+  const handleLogout = () => {
+    Alert.alert(
+      'Logout',
+      'Are you sure you want to logout?',
+      [
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+        {
+          text: 'Logout',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await AsyncStorage.clear();
+              navigation.reset({
+                index: 0,
+                routes: [{name: 'Authentication', params: {screen: 'LogIn'}}],
+              });
+            } catch (e) {
+              console.error('Error during logout: ', e);
+              Alert.alert(
+                'Error',
+                'Failed to logout properly. Please try again.',
+              );
+            }
+          },
+        },
+      ],
+      {cancelable: true},
+    );
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -313,7 +343,7 @@ export default function VendorProfile() {
         <Text style={styles.saveButtonText}>Save</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.logoutButton}>
+      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
         <Text style={styles.logoutButtonText}>Log Out</Text>
       </TouchableOpacity>
     </ScrollView>

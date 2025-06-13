@@ -145,14 +145,14 @@ export default function PresetEdits() {
             style={styles.searchBarInput}
           />
         </View>
-        <View style = {{flexDirection: "row", justifyContent: 'space-between'}}>
-          <Text>
+        <View style = {styles.supplierDataView}>
+          <Text style = {styles.productNameStyle}>
             {data.product.name}
           </Text>
-          <Text>
+          <Text style = {styles.productPriceStyle}>
             {data.product.price}
           </Text>
-          <Text>
+          <Text style = {styles.productCategoryStyle}>
             {data.product.category}
           </Text>
         </View>
@@ -513,4 +513,34 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: 'green'
   },
+  supplierDataView: {
+        flex: 1,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+    },
+    productNameStyle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        flexShrink: 1,
+        marginRight: 5,
+    },
+    productCategoryStyle: {
+        fontSize: 14,
+        color: 'gray',
+        flexShrink: 1,
+        marginRight: 5,
+    },
+    productPriceStyle: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+        marginRight: 5,
+    },
+    productDiscountStyle: {
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: 'green',
+    },
 });

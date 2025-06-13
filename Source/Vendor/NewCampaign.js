@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import {ChevronLeftIcon, MagnifyingGlassIcon} from 'react-native-heroicons/outline';
-import {tags, tagColors} from '../Constant/constant';
+import {tags as availableTags, tagColors} from '../Constant/constant'; // Renamed for clarity
 import axios from 'axios';
 import {CheckBox} from 'react-native-elements';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -27,7 +27,7 @@ export default function NewCampaign() {
     const [items, setItems] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [filteredData, setFilteredData] = useState([]);
-    const [selectedItems, setSelectedItems] = useState({});
+    const [selectedItems, setSelectedItems] = useState({}); // Stores product selections
     const [formData, setFormData] = useState({
         date: '',
         month: '',
@@ -37,10 +37,11 @@ export default function NewCampaign() {
         taglineText: ''
     });
     const [selectedProductData, setSelectedProductData] = useState([]);
-    const [selected, setSelected] = useState('AM');
+    const [selected, setSelected] = useState('AM'); // For AM/PM
     const [gstNumber, setGSTNumber] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [gstLoading, setGstLoading] = useState(true);
+    const [loading, setLoading] = useState(false); // For product loading
+    const [gstLoading, setGstLoading] = useState(true); // For GST loading
+    const [selectedTags, setSelectedTags] = useState([]); // New state for dynamic tags
 
     // Handle input changes for form fields
     const handleInputChange = (field, value) => {
@@ -120,6 +121,12 @@ export default function NewCampaign() {
             return;
         }
 
+        // Validate selected tags
+        if (selectedTags.length === 0) {
+            Alert.alert("Selection Required", "Please select at least one audience tag for your campaign.");
+            return;
+        }
+
         const campaignData = {
             date,
             month,
@@ -129,12 +136,13 @@ export default function NewCampaign() {
             period: selected,
             taglineText,
             selectedProducts: selectedProductData,
+            selectedAudienceTags: selectedTags, // Include selected tags here
         };
 
         console.log('Campaign Data prepared:', JSON.stringify(campaignData, null, 2));
 
         navigation.navigate("Campaign Overview", {campaignData});
-        Alert.alert('Campaign Created', `Campaign scheduled for ${date}/${month}/${year} at ${timeHour}:${timeMinute} ${selected} with ${selectedProductData.length} products.`);
+        Alert.alert('Campaign Created', `Campaign scheduled for ${date}/${month}/${year} at ${timeHour}:${timeMinute} ${selected} with ${selectedProductData.length} products and ${selectedTags.length} audience tags.`);
     };
 
     // Toggles the selection state of a product and updates selectedProductData
@@ -165,6 +173,17 @@ export default function NewCampaign() {
             return newState;
         });
     }, [items]); // Depend on `items` because we filter it here
+
+    // Toggles the selection state of a tag
+    const toggleTagSelection = useCallback((tag) => {
+        setSelectedTags((prevTags) => {
+            if (prevTags.includes(tag)) {
+                return prevTags.filter((t) => t !== tag);
+            } else {
+                return [...prevTags, tag];
+            }
+        });
+    }, []);
 
     // Effect to fetch product catalogue when gstNumber is available
     useEffect(() => {
@@ -231,8 +250,6 @@ export default function NewCampaign() {
 
     // Render individual product item in FlatList
     const renderProductItem = ({item}) => {
-        // Log the item structure here for deep inspection
-        // console.log("Rendering item:", item);
         if (!item || item.productId === undefined || item.productId === null) {
             console.warn("❌ Cannot render product item: Invalid item or missing productId.", item);
             return null; // Don't render invalid items
@@ -357,14 +374,24 @@ export default function NewCampaign() {
                 </View>
             </View>
 
-            {/* Choose Audience - Currently hardcoded with tags */}
+            {/* Choose Audience - Dynamic Tags */}
             <View style={styles.chooseAudienceView}>
                 <Text style={styles.chooseAudienceText}>Choose Audience</Text>
                 <View style={styles.tagsContainer}>
-                    {tags.map((tag, index) => (
-                        <Text key={index} style={[styles.tag, {backgroundColor: tagColors[tag] || "#ccc"}]}>
-                            {tag} x
-                        </Text>
+                    {availableTags.map((tag, index) => (
+                        <TouchableOpacity
+                            key={index}
+                            style={[
+                                styles.tag,
+                                {backgroundColor: tagColors[tag] || "#ccc"},
+                                selectedTags.includes(tag) && styles.selectedTag // Apply a style if selected
+                            ]}
+                            onPress={() => toggleTagSelection(tag)}
+                        >
+                            <Text style={[styles.tagText, selectedTags.includes(tag) && styles.selectedTagText]}>
+                                {tag} {selectedTags.includes(tag) ? '✓' : ''}
+                            </Text>
+                        </TouchableOpacity>
                     ))}
                 </View>
             </View>

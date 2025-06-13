@@ -80,7 +80,6 @@ export default function VendorExistingPresets(){
 
 
   useEffect(() => {
-    Alert.alert("GST", gstNumber);
     const getData = async() => {
       try{
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCampaign', {
