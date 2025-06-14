@@ -27,32 +27,24 @@ export default function AddOutlet() {
   });
   const [sameAsShipping, setSameAsShipping] = useState(false);
 
-  useLayoutEffect(() => {
-    navigation.setOptions({
-      headerShown: true,
-      headerTitle: 'Outlets',
-      headerStyle: {
-        backgroundColor: '#f8f9fe',
-        elevation: 0,
-        shadowColor: 'transparent',
-        shadowOffset: {height: 0},
-        shadowRadius: 0,
-        borderBottomWidth: 0,
-      },
-      headerTitleStyle: {
-        fontWeight: 'bold',
-        fontSize: 20,
-        fontFamily: 'Montserrat',
-      },
-      headerLeft: () => (
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 13}}>
-          <ChevronLeftIcon size={23} strokeWidth={2} />
-        </TouchableOpacity>
-      ),
-    });
-  }, [navigation]);
+  // ✅ Validation functions
+  const validateRequired = value => value?.trim()?.length > 0;
+  const validateGST = text =>
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text);
+
+  useEffect(() => {
+    const fetchPhoneNumber = async () => {
+      try {
+        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
+        if (storedPhoneNumber) {
+          setPhoneNumber(storedPhoneNumber);
+        }
+      } catch (error) {
+        console.log('Error Fetching Client ID: ', error);
+      }
+    };
+    fetchPhoneNumber();
+  }, []);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -71,7 +63,6 @@ export default function AddOutlet() {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -82,19 +73,6 @@ export default function AddOutlet() {
       ),
     });
   }, [navigation]);
-  useEffect(() => {
-    const fetchPhoneNumber = async () => {
-      try {
-        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        if (storedPhoneNumber) {
-          setPhoneNumber(storedPhoneNumber);
-        }
-      } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
-      }
-    };
-    fetchPhoneNumber();
-  }, []);
 
   const handleChange = (field, value) => {
     setForm(prev => {
@@ -106,21 +84,35 @@ export default function AddOutlet() {
     });
   };
 
-  const validateRequired = value => value && value.trim().length > 0;
-
   const handleSave = async () => {
     const {name, address, city, billingAddress, GST, state, country} = form;
 
-    if (
-      !validateRequired(name) ||
-      !validateRequired(address) ||
-      !validateRequired(city) ||
-      !validateRequired(billingAddress) ||
-      !validateRequired(GST) ||
-      !validateRequired(state) ||
-      !validateRequired(country)
-    ) {
-      Alert.alert('Error', 'All fields are required!');
+    if (!validateRequired(name)) {
+      Alert.alert('Error', 'Name is required');
+      return;
+    }
+    if (!validateRequired(address)) {
+      Alert.alert('Error', 'Address is required');
+      return;
+    }
+    if (!validateRequired(city)) {
+      Alert.alert('Error', 'City is required');
+      return;
+    }
+    if (!validateRequired(billingAddress)) {
+      Alert.alert('Error', 'Billing address is required');
+      return;
+    }
+    if (!validateGST(GST)) {
+      Alert.alert('Error', 'Enter a valid GST number');
+      return;
+    }
+    if (!validateRequired(state)) {
+      Alert.alert('Error', 'State is required');
+      return;
+    }
+    if (!validateRequired(country)) {
+      Alert.alert('Error', 'Country is required');
       return;
     }
 
@@ -174,6 +166,7 @@ export default function AddOutlet() {
         validationFunc={validateRequired}
         errorMessage="City is required"
       />
+
       <View style={styles.checkboxContainer}>
         <TouchableOpacity
           onPress={() => {
@@ -190,6 +183,7 @@ export default function AddOutlet() {
           Billing address same as shipping address
         </Text>
       </View>
+
       <ValidatedInput
         label="Billing Address"
         placeholder="Enter billing address"
@@ -205,12 +199,9 @@ export default function AddOutlet() {
         placeholderTextColor="black"
         value={form.GST}
         onChangeText={value => handleChange('GST', value?.toUpperCase())}
-        validationFunc={text =>
-          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
-        }
+        validationFunc={validateGST}
         errorMessage="Enter a valid GST number"
       />
-
       <ValidatedInput
         label="State"
         placeholder="Enter state"

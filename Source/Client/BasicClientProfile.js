@@ -46,12 +46,18 @@ export default function BasicClientProfile() {
   }, []);
 
   const handleChange = (field, value) => {
-    setForm(prev => ({...prev, [field]: value}));
+    setForm(prev => ({
+      ...prev,
+      [field]: field === 'gstNumber' ? value.toUpperCase() : value,
+    }));
   };
 
-  const isFilled = text => text.trim().length > 0;
-  const isValidEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
-  const isValidPincode = text => /^\d{6}$/.test(text);
+  // Validation functions
+  const isFilled = value => value && value.trim().length > 0;
+  const isValidEmail = value => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const isValidPincode = value => /^\d{6}$/.test(value);
+  const isValidGST = value =>
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(value);
 
   const handleSave = async () => {
     const {
@@ -75,7 +81,7 @@ export default function BasicClientProfile() {
       !isValidPincode(pincode) ||
       !isFilled(state) ||
       !isFilled(country) ||
-      !isFilled(gstNumber) ||
+      !isValidGST(gstNumber) ||
       !isFilled(billingAddress) ||
       !isFilled(shippingAddress)
     ) {
@@ -189,10 +195,8 @@ export default function BasicClientProfile() {
         onChangeText={v => handleChange('gstNumber', v)}
         placeholderTextColor="black"
         placeholder="Enter GST number"
-        validationFunc={text =>
-          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
-        }
-        errorMessage="GST number is required"
+        validationFunc={isValidGST}
+        errorMessage="Enter a valid GST number"
       />
       <ValidatedInput
         label="Billing Address"

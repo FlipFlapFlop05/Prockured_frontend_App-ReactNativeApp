@@ -31,6 +31,12 @@ export default function AddSupplier() {
     supplierGstNumber: '',
   });
 
+  const validateEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+  const validatePincode = text => /^\d{6}$/.test(text);
+  const validatePhone = text => /^\d{10}$/.test(text);
+  const validateGST = text =>
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text);
+
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
@@ -90,15 +96,35 @@ export default function AddSupplier() {
 
     if (
       !id ||
-      !businessName ||
-      !email ||
-      !pincode ||
-      !state ||
-      !country ||
-      !supplierPhoneNumber ||
-      !supplierGstNumber
+      !businessName.trim() ||
+      !email.trim() ||
+      !pincode.trim() ||
+      !state.trim() ||
+      !country.trim() ||
+      !supplierPhoneNumber.trim() ||
+      !supplierGstNumber.trim()
     ) {
       Alert.alert('Error', 'All fields are required!');
+      return;
+    }
+
+    if (!validateEmail(email)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address.');
+      return;
+    }
+
+    if (!validatePincode(pincode)) {
+      Alert.alert('Invalid Pincode', 'Pincode must be a 6-digit number.');
+      return;
+    }
+
+    if (!validatePhone(supplierPhoneNumber)) {
+      Alert.alert('Invalid Phone', 'Phone number must be 10 digits.');
+      return;
+    }
+
+    if (!validateGST(supplierGstNumber)) {
+      Alert.alert('Invalid GST', 'Please enter a valid GST number.');
       return;
     }
 
@@ -106,12 +132,13 @@ export default function AddSupplier() {
       clientGST: id,
       supplierGST: supplierGstNumber,
       supplierPhone: supplierPhoneNumber,
-      businessName: businessName,
-      email: email,
-      pincode: pincode,
-      state: state,
-      country: country,
+      businessName,
+      email,
+      pincode,
+      state,
+      country,
     };
+
     try {
       const response = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/createSupplier',
@@ -122,8 +149,12 @@ export default function AddSupplier() {
     } catch (error) {
       console.error('Axios Error:', error);
       if (error.response) {
-        // Server responded with a status other than 2xx
-        Alert.alert('Error', error.response.data.message);
+        Alert.alert(
+          'Error',
+          error.response.data.message || 'Something went wrong',
+        );
+      } else {
+        Alert.alert('Error', 'Failed to add supplier. Please try again.');
       }
     }
   };
@@ -211,11 +242,8 @@ export default function AddSupplier() {
         placeholder="Enter Supplier GST Number"
         placeholderTextColor="black"
         value={form.supplierGstNumber}
-        // keyboardType=""
         onChangeText={value => handleChange('supplierGstNumber', value)}
-        validationFunc={text =>
-          /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text)
-        }
+        validationFunc={validateGST}
         errorMessage="Enter a valid GST number"
       />
 

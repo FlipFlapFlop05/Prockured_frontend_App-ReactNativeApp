@@ -1,119 +1,145 @@
-import React, 
-    { 
-      useEffect, 
-      useState 
-    } 
-from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  TouchableOpacity, 
-  FlatList, 
-  Image, 
-  Dimensions, 
-  Alert 
-} from 'react-native';
-import { 
-  ChevronLeftIcon, 
-  ShoppingCartIcon, 
-  PlusIcon, 
-  MinusIcon 
-} from 'react-native-heroicons/outline';
+import React, {useEffect, useState} from 'react';
 import {
-  useNavigation
-} from '@react-navigation/native';
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  FlatList,
+  Image,
+  Dimensions,
+  Alert,
+} from 'react-native';
+import {
+  ChevronLeftIcon,
+  ShoppingCartIcon,
+  PlusIcon,
+  MinusIcon,
+} from 'react-native-heroicons/outline';
+import {useNavigation} from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
 
 const screenWidth = Dimensions.get('window').width;
 
-
-
 const SpecificVendorOrderNow = ({route}) => {
-  const { details } = route.params;
+  const {details} = route.params;
+
   const [selectedTab, setSelectedTab] = useState('supplier');
   const [selectedUnit, setSelectedUnit] = useState('carton');
-  const myCatalogue = [
-  {
-    id: '1',
-    name: 'Zucchini',
-    brand: 'Veggievital',
-    weight: '10kg',
-    price: 3000,
-    image: require('../Images/VendorProfileImage.png'),
-    discount: 200,
-  },
-  {
-    id: '2',
-    name: 'Red Capsicum',
-    brand: 'Veggievital',
-    weight: '10kg',
-    price: 700,
-    image: require('../Images/VendorProfileImage.png'),
-    discount: 20,
-  },
-];
-  const supplierCatalogue = [
-  {
-    id: '3',
-    name: 'Red Cabbage',
-    brand: 'Veggievital',
-    weight: '10kg',
-    price: 1000,
-    image: require('../Images/VendorProfileImage.png'),
-    discount: 200,
-  },
-  {
-    id: '4',
-    name: 'Broccoli',
-    brand: 'Veggievital',
-    weight: '5kg',
-    price: 500,
-    image: require('../Images/VendorProfileImage.png'),
-    discount: 50,
-  },
-];
-  const [products, setProducts] = useState({
-    my: myCatalogue.map(p => ({ ...p, count: 0 })),
-    supplier: supplierCatalogue.map(p => ({ ...p, count: 0 })),
-  });
+  const [clientGST, setClientGST] = useState('');
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   const navigation = useNavigation();
-  const updateCount = (catalogue, id, delta) => {
-    setProducts(prev => ({
-      ...prev,
-      [catalogue]: prev[catalogue].map(product =>
-        product.id === id
-          ? { ...product, count: Math.max(0, product.count + delta) }
-          : product
-      )
-    }));
+
+  const [products, setProducts] = useState({
+    my: [],
+    supplier: [],
+  });
+
+  const updateCount = (tab, productId, delta) => {
+    setProducts(prev => {
+      const updated = {...prev};
+      updated[tab] = updated[tab].map(product =>
+        product.productId === productId
+          ? {...product, count: Math.max(0, product.count + delta)}
+          : product,
+      );
+      return updated;
+    });
   };
 
-  const renderProduct = ({ item }) => (
+  const renderProduct = ({item}) => (
     <View style={styles.productCard}>
-      <Image source={item.image} style={styles.productImage} />
+      <Image
+        source={
+          typeof item.image === 'number'
+            ? item.image
+            : require('../Images/VendorProfileImage.png')
+        }
+        style={styles.productImage}
+      />
       <View style={styles.productInfo}>
-        <Text style={styles.productName}>{item.name}</Text>
-        <Text style={styles.productBrand}>{item.brand}</Text>
-        <Text style={styles.productWeight}>{item.weight}</Text>
+        <Text style={styles.productName}>{item.prodName}</Text>
+        <Text style={styles.productBrand}>{item.SupplierName}</Text>
+        <Text style={styles.productWeight}>Unit: {item.prodUnit}</Text>
       </View>
       <View style={styles.productPricing}>
-        <Text style={styles.productPrice}>₹ {item.price}</Text>
-        <Text style={styles.productDiscount}>Save ₹ {item.discount}</Text>
+        <Text style={styles.productPrice}>₹ {item.myPrice}</Text>
       </View>
       <View style={styles.counter}>
-        <TouchableOpacity onPress={() => updateCount(selectedTab, item.id, -1)} style={styles.counterBtn}>
+        <TouchableOpacity
+          onPress={() => updateCount(selectedTab, item.productId, -1)}
+          style={styles.counterBtn}>
           <MinusIcon size={15} color="white" />
         </TouchableOpacity>
+
         <Text style={styles.counterText}>{item.count}</Text>
-        <TouchableOpacity onPress={() => updateCount(selectedTab, item.id, 1)} style={styles.counterBtn}>
+
+        <TouchableOpacity
+          onPress={() => updateCount(selectedTab, item.productId, 1)}
+          style={styles.counterBtn}>
           <PlusIcon size={15} color="white" />
         </TouchableOpacity>
       </View>
     </View>
   );
+
+  // Fetch GST from AsyncStorage on mount
   useEffect(() => {
-    Alert.alert("Route", JSON.stringify(details));
-  })
+    const fetchClientGST = async () => {
+      try {
+        const gst = await AsyncStorage.getItem('clientGST');
+        if (gst) setClientGST(gst);
+      } catch (error) {
+        console.log('Error reading client GST:', error);
+      }
+    };
+    fetchClientGST();
+  }, []);
+
+  // Fetch catalogue whenever tab or GST changes
+  useEffect(() => {
+    const fetchCatalogue = async () => {
+      setLoading(true);
+      const gstToUse = selectedTab === 'my' ? clientGST : details?.gstNumber;
+
+      if (!gstToUse) {
+        Alert.alert('Missing GST', 'Could not find a valid GST number.');
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const res = await axios.get(
+          `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToUse}`,
+        );
+        const fetched = Object.values(res.data || []).map(p => ({
+          ...p,
+          count: 0,
+          image: require('../Images/VendorProfileImage.png'), // fallback image
+        }));
+        setProducts(prev => ({
+          ...prev,
+          [selectedTab]: fetched,
+        }));
+      } catch (err) {
+        console.log('Catalogue fetch failed:', err);
+        Alert.alert('Error', 'Failed to load catalogue.');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (
+      (selectedTab === 'my' && clientGST) ||
+      (selectedTab === 'supplier' && details?.gstNumber)
+    ) {
+      fetchCatalogue();
+    }
+  }, [selectedTab, clientGST, details]);
+
+  console.log(products);
 
   return (
     <View style={styles.container}>
@@ -127,7 +153,10 @@ const SpecificVendorOrderNow = ({route}) => {
 
       {/* Vendor Info */}
       <View style={styles.vendorBox}>
-        <Image source={require('../Images/VendorProfileImage.png')} style={styles.vendorLogo} />
+        <Image
+          source={require('../Images/VendorProfileImage.png')}
+          style={styles.vendorLogo}
+        />
         <Text style={styles.vendorName}>{details.businessName}</Text>
         <Text style={styles.vendorLabel}>Vendor</Text>
         <TouchableOpacity style={styles.addProductBtn}>
@@ -143,7 +172,11 @@ const SpecificVendorOrderNow = ({route}) => {
           </Text>
         </TouchableOpacity>
         <TouchableOpacity onPress={() => setSelectedTab('supplier')}>
-          <Text style={[styles.tab, selectedTab === 'supplier' && styles.activeTab]}>
+          <Text
+            style={[
+              styles.tab,
+              selectedTab === 'supplier' && styles.activeTab,
+            ]}>
             Supplier’s Catalogue
           </Text>
         </TouchableOpacity>
@@ -151,11 +184,31 @@ const SpecificVendorOrderNow = ({route}) => {
 
       {/* Unit Switch */}
       <View style={styles.unitSwitch}>
-        <TouchableOpacity onPress={() => setSelectedUnit('kg')} style={selectedUnit === 'kg' ? styles.unitBtnGreen : styles.unitBtnGray}>
-          <Text style={selectedUnit === 'kg' ? styles.unitTextGreen : styles.unitTextGray}>Per Kg</Text>
+        <TouchableOpacity
+          onPress={() => setSelectedUnit('kg')}
+          style={
+            selectedUnit === 'kg' ? styles.unitBtnGreen : styles.unitBtnGray
+          }>
+          <Text
+            style={
+              selectedUnit === 'kg' ? styles.unitTextGreen : styles.unitTextGray
+            }>
+            Per Kg
+          </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedUnit('carton')} style={selectedUnit === 'carton' ? styles.unitBtnGreen : styles.unitBtnGray}>
-          <Text style={selectedUnit === 'carton' ? styles.unitTextGreen : styles.unitTextGray}>Per 10 kg Carton</Text>
+        <TouchableOpacity
+          onPress={() => setSelectedUnit('carton')}
+          style={
+            selectedUnit === 'carton' ? styles.unitBtnGreen : styles.unitBtnGray
+          }>
+          <Text
+            style={
+              selectedUnit === 'carton'
+                ? styles.unitTextGreen
+                : styles.unitTextGray
+            }>
+            Per 10 kg Carton
+          </Text>
         </TouchableOpacity>
       </View>
 
@@ -163,8 +216,8 @@ const SpecificVendorOrderNow = ({route}) => {
       <FlatList
         data={products[selectedTab]}
         renderItem={renderProduct}
-        keyExtractor={(item) => item.id}
-        contentContainerStyle={{ paddingBottom: 100 }}
+        keyExtractor={item => item?.productId?.toString()}
+        contentContainerStyle={{paddingBottom: 100}}
       />
 
       {/* Basket Button */}
@@ -203,7 +256,7 @@ const styles = StyleSheet.create({
     height: 90,
     resizeMode: 'contain',
     marginBottom: 10,
-    borderRadius: 30
+    borderRadius: 30,
   },
   vendorName: {
     fontSize: 24,
@@ -220,12 +273,12 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 25,
     width: '60%',
-    alignItems: 'center'
+    alignItems: 'center',
   },
   addProductText: {
     color: 'white',
     fontWeight: '600',
-    fontSize: 17
+    fontSize: 17,
   },
   tabWrapper: {
     flexDirection: 'row',

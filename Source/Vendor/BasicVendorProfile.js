@@ -35,74 +35,62 @@ export default function BasicVendorProfile() {
     shippingAddress: '',
   });
 
-  const [touchedFields, setTouchedFields] = useState({});
-
   useEffect(() => {
-    const fetchClientId = async () => {
+    const fetchSupplierId = async () => {
       try {
         const storedId = await AsyncStorage.getItem('SupplierUserId');
         if (storedId) setSupplierId(storedId);
       } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
+        console.log('Error Fetching Supplier ID: ', error);
       }
     };
-    fetchClientId();
+    fetchSupplierId();
   }, []);
 
   const handleChange = (field, value) => {
     setForm(prev => ({...prev, [field]: value}));
   };
 
-  const validateRequired = value => {
-    if (!value || value.trim() === '') return 'This field is required';
-    return null;
-  };
-
-  const validateEmail = value => {
-    if (!value) return 'This field is required';
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(value) ? null : 'Invalid email address';
-  };
-
-  const validatePincode = value => {
-    if (!value) return 'This field is required';
-    if (!/^\d{6}$/.test(value)) return 'Pincode must be 6 digits';
-    return null;
-  };
+  const isFilled = text => text.trim().length > 0;
+  const isValidEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
+  const isValidPincode = text => /^\d{6}$/.test(text);
+  const isValidGST = text =>
+    /^[0-9]{2}[A-Z]{5}[0-9]{4}[A-Z]{1}[1-9A-Z]{1}Z[0-9A-Z]{1}$/.test(text);
 
   const handleSave = async () => {
-    const allFields = Object.keys(form);
-    const errors = allFields.map(field => {
-      const validator =
-        field === 'email'
-          ? validateEmail
-          : field === 'pincode'
-          ? validatePincode
-          : validateRequired;
-      return validator(form[field]);
-    });
-
-    const hasErrors = errors.some(err => err !== null);
-    if (hasErrors) {
-      Alert.alert('Error', 'Please correct the errors before submitting');
-      return;
-    }
-
-    const phone = await AsyncStorage.getItem('phoneNumber');
     const {
       name,
       businessName,
       email,
+      city,
       pincode,
       state,
       country,
-      city,
       gstNumber,
       billingAddress,
       shippingAddress,
     } = form;
-    const url = `https://api-v7quhc5aza-uc.a.run.app/supplierSignUp/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
+
+    if (
+      !isFilled(name) ||
+      !isFilled(businessName) ||
+      !isValidEmail(email) ||
+      !isFilled(city) ||
+      !isValidPincode(pincode) ||
+      !isFilled(state) ||
+      !isFilled(country) ||
+      !isValidGST(gstNumber) ||
+      !isFilled(billingAddress) ||
+      !isFilled(shippingAddress)
+    ) {
+      Alert.alert('Error', 'Please correct the errors before submitting');
+      return;
+    }
+
     try {
+      const phone = await AsyncStorage.getItem('phoneNumber');
+      const url = `https://api-v7quhc5aza-uc.a.run.app/supplierSignUp/${name}/${businessName}/${email}/${pincode}/${state}/${country}/${gstNumber}/${phone}/${billingAddress}/${shippingAddress}`;
+
       const response = await axios.get(url, {
         headers: {'Content-Type': 'application/json'},
       });
@@ -112,7 +100,6 @@ export default function BasicVendorProfile() {
         await AsyncStorage.setItem('supplierPhoneNumber', phone);
         await AsyncStorage.setItem('supplierGST', gstNumber);
         navigation.navigate('Vendor App', {screen: 'Chat'});
-        Alert.alert('Success', 'Profile saved successfully!');
       } else {
         Alert.alert('Error', response.data.message || 'Failed to save profile');
       }
@@ -121,10 +108,6 @@ export default function BasicVendorProfile() {
       console.error('Axios error:', error);
     }
   };
-
-  const isFilled = text => text.trim().length > 0;
-  const isValidEmail = text => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(text);
-  const isValidPincode = text => /^\d{6}$/.test(text);
 
   return (
     <ScrollView style={styles.container}>
@@ -140,7 +123,6 @@ export default function BasicVendorProfile() {
             }}
             style={styles.profileImage}
           />
-
           <View style={styles.iconWrapper}>
             <TouchableOpacity style={styles.editIconButton}>
               <PencilIcon fill={'#fff'} size={16} color="#fff" />
@@ -221,13 +203,13 @@ export default function BasicVendorProfile() {
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
-        label="GST Number"
+        label="GST Number (e.g. 27ABCDE1234F1Z5)"
         value={form.gstNumber}
         onChangeText={v => handleChange('gstNumber', v)}
         placeholder="Enter GST number"
         placeholderTextColor="black"
-        validationFunc={isFilled}
-        errorMessage="GST number is required"
+        validationFunc={isValidGST}
+        errorMessage="GST number is invalid"
         labelStyle={{fontFamily: 'Montserrat', color: '#76B117'}}
       />
       <ValidatedInput
