@@ -1,22 +1,29 @@
-import React, {useLayoutEffect} from 'react';
+import React, {useState, useEffect, useLayoutEffect} from 'react';
 import {
   View,
   Text,
-  StyleSheet,
-  FlatList,
   TouchableOpacity,
+  FlatList,
   Image,
   TextInput,
-  Linking,
+  Modal,
+  ScrollView,
+  StyleSheet,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import Linking from 'react-native/Libraries/Linking/Linking';
 
 export default function CategoriesBasket() {
   const navigation = useNavigation();
   const route = useRoute();
   const {cart, data} = route.params;
-  console.log(cart, data);
+  const [clientGST, setClientGST] = useState(null);
+  const [suppliers, setSuppliers] = useState([]);
+  const [selectedSupplier, setSelectedSupplier] = useState(null);
+  const [showModal, setShowModal] = useState(false);
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -35,7 +42,6 @@ export default function CategoriesBasket() {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
@@ -46,17 +52,42 @@ export default function CategoriesBasket() {
       ),
     });
   }, [navigation]);
+
+  useEffect(() => {
+    const getGST = async () => {
+      try {
+        const storedGST = await AsyncStorage.getItem('clientGST');
+        if (storedGST) setClientGST(storedGST);
+      } catch (err) {
+        console.log('Error retrieving clientGST:', err);
+      }
+    };
+    getGST();
+  }, []);
+
+  useEffect(() => {
+    const fetchSuppliers = async () => {
+      try {
+        const res = await axios.get(
+          `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${clientGST}`,
+        );
+        const supplierArray = Object.values(res.data);
+        setSuppliers(supplierArray);
+      } catch (error) {
+        console.log('Error fetching suppliers:', error);
+      }
+    };
+
+    if (clientGST) fetchSuppliers();
+  }, [clientGST]);
+
   const openWhatsApp = (phoneNumber, message) => {
     const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
       message,
     )}`;
-    Linking.openURL(url)
-      .then(supported => {
-        if (!supported) {
-          alert('Make sure WhatsApp is installed on your device');
-        }
-      })
-      .catch(err => console.error('Error opening WhatsApp:', err));
+    Linking.openURL(url).catch(err =>
+      console.error('Error opening WhatsApp:', err),
+    );
   };
 
   const cartItems = Object.keys(cart)
@@ -79,10 +110,8 @@ export default function CategoriesBasket() {
     })
     .filter(item => item !== null);
 
-  // Sort by category but keep everything in one list
   cartItems.sort((a, b) => a.category.localeCompare(b.category));
 
-  // Group by category
   const groupedItems = {};
   cartItems.forEach(item => {
     if (!groupedItems[item.category]) {
@@ -96,8 +125,6 @@ export default function CategoriesBasket() {
     finalCartItems.push({type: 'category', categoryName: category});
     finalCartItems.push(...items);
   });
-
-  console.log('Final Cart Items:', finalCartItems);
 
   const calculateTotal = () => {
     return cartItems.reduce(
@@ -127,11 +154,83 @@ export default function CategoriesBasket() {
         }}>
         <Text style={styles.orderTotal}>Order Total ₹ {calculateTotal()}</Text>
       </View>
+
+      {/* Select Supplier Button */}
+      <TouchableOpacity
+        style={{
+          padding: 15,
+          backgroundColor: '#d1fae5',
+          borderRadius: 10,
+          marginBottom: 10,
+        }}
+        onPress={() => setShowModal(true)}>
+        <Text style={{color: '#065f46', fontWeight: 'bold'}}>
+          {selectedSupplier
+            ? `Selected: ${selectedSupplier.businessName}`
+            : 'Select Supplier'}
+        </Text>
+      </TouchableOpacity>
+
+      {/* Supplier Modal */}
+      <Modal visible={showModal} transparent animationType="slide">
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(0,0,0,0.3)',
+            justifyContent: 'center',
+            padding: 20,
+          }}>
+          <View
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 10,
+              padding: 20,
+              maxHeight: '70%',
+            }}>
+            <Text
+              style={{
+                fontSize: 18,
+                fontWeight: 'bold',
+                marginBottom: 10,
+              }}>
+              Select a Supplier
+            </Text>
+            <ScrollView>
+              {suppliers.map((supplier, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={{
+                    paddingVertical: 10,
+                    borderBottomColor: '#eee',
+                    borderBottomWidth: 1,
+                  }}
+                  onPress={() => {
+                    setSelectedSupplier(supplier);
+                    setShowModal(false);
+                  }}>
+                  <Text style={{fontWeight: '600'}}>
+                    {supplier.businessName}
+                  </Text>
+                  <Text style={{color: '#555'}}>{supplier.phone}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+
+            <TouchableOpacity
+              style={{marginTop: 15, alignSelf: 'flex-end'}}
+              onPress={() => setShowModal(false)}>
+              <Text style={{color: 'red'}}>Close</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       <TouchableOpacity
         style={styles.editOrderContainer}
         onPress={() => navigation.goBack()}>
         <Text style={styles.editOrder}>Edit Order</Text>
       </TouchableOpacity>
+
       <FlatList
         data={finalCartItems}
         keyExtractor={(item, index) =>
@@ -141,7 +240,7 @@ export default function CategoriesBasket() {
           if (item.type === 'category') {
             return (
               <View style={styles.categoryHeader}>
-                <Text style={styles.categoryText}>{item.CategoryName}</Text>
+                <Text style={styles.categoryText}>{item.categoryName}</Text>
               </View>
             );
           }

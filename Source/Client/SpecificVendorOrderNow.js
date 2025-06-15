@@ -8,6 +8,7 @@ import {
   Image,
   Dimensions,
   Alert,
+  ActivityIndicator,
 } from 'react-native';
 import {
   ChevronLeftIcon,
@@ -27,15 +28,11 @@ const SpecificVendorOrderNow = ({route}) => {
   const [selectedTab, setSelectedTab] = useState('supplier');
   const [selectedUnit, setSelectedUnit] = useState('carton');
   const [clientGST, setClientGST] = useState('');
-  const [data, setData] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState({my: [], supplier: []});
+  const [loading, setLoading] = useState(true); // initial screen loader
+  const [tabLoading, setTabLoading] = useState(false); // loader during tab switch
 
   const navigation = useNavigation();
-
-  const [products, setProducts] = useState({
-    my: [],
-    supplier: [],
-  });
 
   const updateCount = (tab, productId, delta) => {
     setProducts(prev => {
@@ -85,7 +82,7 @@ const SpecificVendorOrderNow = ({route}) => {
     </View>
   );
 
-  // Fetch GST from AsyncStorage on mount
+  // Get client GST once on mount
   useEffect(() => {
     const fetchClientGST = async () => {
       try {
@@ -98,48 +95,73 @@ const SpecificVendorOrderNow = ({route}) => {
     fetchClientGST();
   }, []);
 
-  // Fetch catalogue whenever tab or GST changes
-  useEffect(() => {
-    const fetchCatalogue = async () => {
-      setLoading(true);
-      const gstToUse = selectedTab === 'my' ? clientGST : details?.gstNumber;
-
-      if (!gstToUse) {
-        Alert.alert('Missing GST', 'Could not find a valid GST number.');
-        setLoading(false);
-        return;
-      }
-
-      try {
-        const res = await axios.get(
-          `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToUse}`,
-        );
-        const fetched = Object.values(res.data || []).map(p => ({
-          ...p,
-          count: 0,
-          image: require('../Images/VendorProfileImage.png'), // fallback image
-        }));
-        setProducts(prev => ({
-          ...prev,
-          [selectedTab]: fetched,
-        }));
-      } catch (err) {
-        console.log('Catalogue fetch failed:', err);
-        Alert.alert('Error', 'Failed to load catalogue.');
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  // Fetch catalogue
+  const fetchCatalogue = async selected => {
     if (
-      (selectedTab === 'my' && clientGST) ||
-      (selectedTab === 'supplier' && details?.gstNumber)
+      (selected === 'my' && !clientGST) ||
+      (selected === 'supplier' && !details?.gstNumber)
     ) {
-      fetchCatalogue();
+      Alert.alert('Missing GST', 'Could not find a valid GST number.');
+      return;
     }
-  }, [selectedTab, clientGST, details]);
 
-  console.log(products);
+    console.log(details);
+
+    const gstToUse = selected === 'my' ? clientGST : details?.gstNumber;
+
+    try {
+      if (products[selected].length === 0) setTabLoading(true); // show only if data isn't cached
+      const res = await axios.get(
+        `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToUse}`,
+      );
+      const fetched = Object.values(res.data || []).map(p => ({
+        ...p,
+        count: 0,
+        image: require('../Images/VendorProfileImage.png'),
+      }));
+
+      setProducts(prev => ({
+        ...prev,
+        [selected]: fetched,
+      }));
+    } catch (err) {
+      console.log('Catalogue fetch failed:', err);
+      Alert.alert('Error', 'Failed to load catalogue.');
+    } finally {
+      setLoading(false);
+      setTabLoading(false);
+    }
+  };
+
+  // Initial fetch for default tab
+  useEffect(() => {
+    fetchCatalogue(selectedTab);
+  }, [clientGST]);
+
+  // Refetch when tab changes
+  const handleTabChange = tab => {
+    setSelectedTab(tab);
+    fetchCatalogue(tab);
+  };
+
+  const goToBasket = () => {
+    const selectedProducts = products[selectedTab].filter(p => p.count > 0);
+
+    if (selectedProducts.length === 0) {
+      Alert.alert('No items', 'Please add at least one item to proceed.');
+      return;
+    }
+
+    const cart = {};
+    selectedProducts.forEach(product => {
+      cart[product.productId] = product.count;
+    });
+
+    navigation.navigate('View Basket', {
+      cart,
+      data: selectedProducts,
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -166,12 +188,12 @@ const SpecificVendorOrderNow = ({route}) => {
 
       {/* Tab Options */}
       <View style={styles.tabWrapper}>
-        <TouchableOpacity onPress={() => setSelectedTab('my')}>
+        <TouchableOpacity onPress={() => handleTabChange('my')}>
           <Text style={[styles.tab, selectedTab === 'my' && styles.activeTab]}>
             My Catalogue
           </Text>
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => setSelectedTab('supplier')}>
+        <TouchableOpacity onPress={() => handleTabChange('supplier')}>
           <Text
             style={[
               styles.tab,
@@ -212,16 +234,30 @@ const SpecificVendorOrderNow = ({route}) => {
         </TouchableOpacity>
       </View>
 
-      {/* Product List */}
-      <FlatList
-        data={products[selectedTab]}
-        renderItem={renderProduct}
-        keyExtractor={item => item?.productId?.toString()}
-        contentContainerStyle={{paddingBottom: 100}}
-      />
+      {/* Loader or Product List */}
+      {loading ? (
+        <ActivityIndicator
+          size="large"
+          color="#76B117"
+          style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}
+        />
+      ) : tabLoading ? (
+        <ActivityIndicator
+          size="large"
+          color="#76B117"
+          style={{marginTop: 50}}
+        />
+      ) : (
+        <FlatList
+          data={products[selectedTab]}
+          renderItem={renderProduct}
+          keyExtractor={item => item?.productId?.toString()}
+          contentContainerStyle={{paddingBottom: 100}}
+        />
+      )}
 
       {/* Basket Button */}
-      <TouchableOpacity style={styles.basketBtn}>
+      <TouchableOpacity style={styles.basketBtn} onPress={goToBasket}>
         <Text style={styles.basketText}>View Basket</Text>
         <ShoppingCartIcon size={20} color="white" />
       </TouchableOpacity>
