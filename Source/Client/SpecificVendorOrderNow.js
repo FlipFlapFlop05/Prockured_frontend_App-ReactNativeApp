@@ -126,7 +126,7 @@ const SpecificVendorOrderNow = ({route}) => {
       }));
     } catch (err) {
       console.log('Catalogue fetch failed:', err);
-      Alert.alert('Error', 'Failed to load catalogue.');
+      // Alert.alert('Error', 'Failed to load catalogue.');
     } finally {
       setLoading(false);
       setTabLoading(false);
@@ -181,7 +181,9 @@ const SpecificVendorOrderNow = ({route}) => {
         />
         <Text style={styles.vendorName}>{details.businessName}</Text>
         <Text style={styles.vendorLabel}>Vendor</Text>
-        <TouchableOpacity style={styles.addProductBtn}>
+        <TouchableOpacity
+          style={styles.addProductBtn}
+          onPress={() => navigation.navigate('Add Product Manually')}>
           <Text style={styles.addProductText}>+ Add Products</Text>
         </TouchableOpacity>
       </View>
@@ -205,7 +207,7 @@ const SpecificVendorOrderNow = ({route}) => {
       </View>
 
       {/* Unit Switch */}
-      <View style={styles.unitSwitch}>
+      {/* <View style={styles.unitSwitch}>
         <TouchableOpacity
           onPress={() => setSelectedUnit('kg')}
           style={
@@ -232,27 +234,25 @@ const SpecificVendorOrderNow = ({route}) => {
             Per 10 kg Carton
           </Text>
         </TouchableOpacity>
-      </View>
+      </View> */}
 
       {/* Loader or Product List */}
-      {loading ? (
+      {loading || tabLoading ? (
         <ActivityIndicator
           size="large"
           color="#76B117"
           style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}
         />
-      ) : tabLoading ? (
-        <ActivityIndicator
-          size="large"
-          color="#76B117"
-          style={{marginTop: 50}}
-        />
+      ) : products[selectedTab].length === 0 ? (
+        <View style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+          <Text style={{fontSize: 16, color: '#888'}}>No products found</Text>
+        </View>
       ) : (
         <FlatList
           data={products[selectedTab]}
           renderItem={renderProduct}
           keyExtractor={item => item?.productId?.toString()}
-          contentContainerStyle={{paddingBottom: 100}}
+          contentContainerStyle={{paddingBottom: 100, paddingTop: '3%'}}
         />
       )}
 
