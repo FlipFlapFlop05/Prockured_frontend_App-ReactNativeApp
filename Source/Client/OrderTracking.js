@@ -1,13 +1,36 @@
-import React from 'react';
-import {View, Text, StyleSheet, Dimensions, Image, ScrollView, TouchableOpacity} from 'react-native';
+import React, { useEffect, useReducer, useState } from 'react';
+import {View, Text, StyleSheet, Dimensions, Image, ScrollView, TouchableOpacity, Alert} from 'react-native';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
-import {useNavigation} from '@react-navigation/native';
-
+import {useNavigation, useRoute} from '@react-navigation/native';
+import axios from 'axios';
 const { width: screenWidth } = Dimensions.get('window');
 
 const OrderTracking = () => {
   const navigation = useNavigation();
+  const route = useRoute();
+  const {data} = route.params;
+  const {getData, setGetData} = useState({});
   const orderItems = [];
+
+  useEffect(() => {
+    const orderStatus = async() => {
+      try{
+        const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/orderTracking', {
+          "clientGST": data.clientGST,
+          "orderId": data.orderId
+        });
+
+        if(response){
+          Alert.alert("s", JSON.stringify(response.data));
+        }
+      }
+      catch(error){
+        Alert.alert("Error", error.message);
+      }
+    }
+
+    orderStatus();
+  }, []);
 
   return (
     <View style={styles.container}>
@@ -31,7 +54,7 @@ const OrderTracking = () => {
             <Text style={styles.itemHeaderText}>Item</Text>
             <Text style={styles.itemHeaderText}>Quantity</Text>
           </View>
-          {orderItems.map((item, index) => (
+          {data.items.map((item, index) => (
             <View key={index} style={styles.itemRow}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemQuantity}>{item.quantity}</Text>
@@ -40,26 +63,7 @@ const OrderTracking = () => {
         </View>
 
         <View style={styles.orderIdContainer}>
-          <Text style={styles.orderIdText}>Order ID - #1548745</Text>
-        </View>
-
-        <View style={styles.timeline}>
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineDot}></View>
-            <Text style={styles.timelineText}>Order Placed</Text>
-          </View>
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineDot}></View>
-            <Text style={styles.timelineText}>Order Accepted</Text>
-          </View>
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineEmptyDot}></View>
-            <Text style={styles.timelineText}>Out for delivery</Text>
-          </View>
-          <View style={styles.timelineItem}>
-            <View style={styles.timelineEmptyDot}></View>
-            <Text style={styles.timelineText}>Order delivered</Text>
-          </View>
+          <Text style={styles.orderIdText}>Order ID - {data.orderId}</Text>
         </View>
 
       </ScrollView>
@@ -158,6 +162,35 @@ const styles = StyleSheet.create({
   },
   timelineText: {
     fontSize: 16,
+  },
+  timelineItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  timelineDot: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    marginRight: 10,
+  },
+  dotGreen: {
+    backgroundColor: 'green',
+  },
+  dotGrey: {
+    backgroundColor: 'gray',
+    borderWidth: 2, // Add border for "empty" look with gray
+    borderColor: 'gray',
+  },
+  timelineText: {
+    fontSize: 16,
+  },
+  textGreen: {
+    color: 'green',
+    fontWeight: 'bold', // Optional: make current status text bold
+  },
+  textGrey: {
+    color: 'gray',
   },
 });
 

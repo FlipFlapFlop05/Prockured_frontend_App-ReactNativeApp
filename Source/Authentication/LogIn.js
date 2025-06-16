@@ -14,28 +14,33 @@ const LogIn = () => {
   };
 
   const handleSubmit = async() => {
-    const {phoneNumber, password} = formData;
+    const {phoneNumber, password} = formData; // Assuming formData contains phoneNumber
     try {
       const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getUserProfile', {
         "number": phoneNumber
       });
-      if (response.status === 200 && response.data.data) {
+
+      if (response.status === 200 && response.data.success && response.data.data) {
         console.log('API Response Data:', response.data);
         Alert.alert('Success', `API Response: ${JSON.stringify(response.data)}`);
 
-        if (response.data.type) {
-          if (response.data.type === "client") {
-            if (response.data.gst) { 
-              await AsyncStorage.setItem('clientGST', response.data.gst);
-              Alert.alert("Client GST Saved", `GST: ${response.data.gst}`);
+        // Corrected access to type and pgst (GST)
+        const userType = response.data.data.type;
+        const userGST = response.data.data.pgst; // Assuming 'pgst' is your GST field
+
+        if (userType) {
+          if (userType === "client") {
+            if (userGST) {
+              await AsyncStorage.setItem('clientGST', userGST);
+              Alert.alert("Client GST Saved", `GST: ${userGST}`);
             }
-            navigation.navigate("ClientHome"); 
-          } else if (response.data.type === "supplier") {
-            if (response.data.gst) { 
-              await AsyncStorage.setItem('supplierGST', response.data.gst);
-              Alert.alert("Supplier GST Saved", `GST: ${response.data.gst}`);
+            navigation.navigate("Main", {screen: "Home"});
+          } else if (userType === "supplier") {
+            if (userGST) {
+              await AsyncStorage.setItem('supplierGST', userGST);
+              Alert.alert("Supplier GST Saved", `GST: ${userGST}`);
             }
-            navigation.navigate("SupplierHome"); 
+            navigation.navigate("Vendor App", {screen: "Chat"});
           } else {
             Alert.alert("Unknown Type", "User profile returned an unrecognized type.");
             navigation.navigate("Authentication", { screen: "CreateAnAccount" });
@@ -51,7 +56,7 @@ const LogIn = () => {
         navigation.navigate("Authentication", { screen: "CreateAnAccount" });
       }
     } catch (error) {
-      console.error("API Call Error:", error); // Log the full error object for detailed info
+      console.error("API Call Error:", error);
 
       let errorMessage = "An unknown error occurred. Please try again.";
 
@@ -64,6 +69,7 @@ const LogIn = () => {
       }
 
       Alert.alert("Error", errorMessage);
+      // You might want to remove or conditionally keep the navigation here based on your app flow.
       // navigation.navigate("Authentication", { screen: "CreateAnAccount" });
     }
     const phoneRegex = /^[0-9]{10}$/;
