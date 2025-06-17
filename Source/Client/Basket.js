@@ -1,4 +1,4 @@
-import React, {useEffect, useLayoutEffect} from 'react';
+import React, {useEffect, useLayoutEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -18,22 +18,46 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 export default function Basket() {
   const navigation = useNavigation();
   const route = useRoute();
-  const {cart, data} = route.params;
+  // Destructure clearCart from route.params
+  const {cart, data, clearCart} = route.params;
+  const [Data, setData] = useState([]);
   const [phoneNumber, setPhoneNumber] = React.useState(null);
+  const [gstNumber, setGSTNumber] = React.useState(null);
 
   useEffect(() => {
     const fetchPhoneNumber = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        if (storedPhoneNumber) {
+        const storedGST = await AsyncStorage.getItem('clientPhoneNumber');
+        if (storedPhoneNumber && storedGST) { // Use && for both to be true
           setPhoneNumber(storedPhoneNumber);
+          setGSTNumber(storedGST);
         }
       } catch (error) {
         console.log('Error Fetching Client ID: ', error);
       }
     };
+
+    const fetchData = async () => {
+      if (phoneNumber) {
+        try {
+          const response = await axios.get(
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${phoneNumber}`,
+          );
+          setData(response.data);
+        } catch (error) {
+          console.log(error);
+        }
+      }
+    };
+
+    // Call fetchPhoneNumber immediately
     fetchPhoneNumber();
-  }, []);
+    // Only call fetchData if phoneNumber is available after fetchPhoneNumber
+    if (phoneNumber) {
+      fetchData();
+    }
+  }, [phoneNumber]); // Depend on phoneNumber so fetchData runs when it's set
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -55,7 +79,7 @@ export default function Basket() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.navigate("Main", {screen: "Catalogue"})}
+          onPress={() => navigation.navigate('Main', {screen: 'Catalogue'})}
           style={{paddingHorizontal: 13}}>
           <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>
@@ -63,8 +87,8 @@ export default function Basket() {
     });
   }, [navigation]);
 
-  const openWhatsApp = (phoneNumber, message) => {
-    const url = `https://wa.me/${phoneNumber}?text=${encodeURIComponent(
+  const openWhatsApp = (number, message) => { // Renamed phoneNumber to number to avoid confusion with state
+    const url = `https://wa.me/${number}?text=${encodeURIComponent(
       message,
     )}`;
     Linking.openURL(url)
@@ -107,21 +131,40 @@ export default function Basket() {
   };
 
   const placeOrder = async () => {
-    const clientGST = phoneNumber;
+    Alert.alert("Placing Order", "Initiating order placement...");
+
+    const clientGSTValue = phoneNumber; // Assuming phoneNumber holds client GST
+    const clientPhoneNumber = gstNumber; // Assuming gstNumber holds client Phone
+
     const orderId = Math.floor(Math.random() * 1000000).toString();
 
-    // Group cart items by supplierGST
     const groupedBySupplier = cartItems.reduce((acc, item) => {
       const supplierGST = item.gstNumber;
       if (!acc[supplierGST]) {
-        acc[supplierGST] = [];
+        const orderDateToday = new Date();
+        const deliveryDateCalculated = new Date(orderDateToday);
+        deliveryDateCalculated.setDate(orderDateToday.getDate() + 2);
+
+        acc[supplierGST] = {
+          items: [],
+          supplierName: item.supplierName,
+          supplierPhone: item.supplierPhone,
+          clientName: Data.businessName,
+          clientPhone: clientPhoneNumber,
+          totalAmount: 0,
+          OrderDate: orderDateToday.toISOString().split('T')[0],
+          DeliveryDate: deliveryDateCalculated.toISOString().split('T')[0],
+        };
       }
-      acc[supplierGST].push({
+
+      acc[supplierGST].items.push({
         itemId: item.productId,
         name: item.prodName,
         quantity: item.quantity,
         price: item.price,
       });
+
+      acc[supplierGST].totalAmount += item.quantity * item.price;
       return acc;
     }, {});
 
@@ -129,24 +172,72 @@ export default function Basket() {
       Open_Orders: {
         [orderId]: groupedBySupplier,
       },
-      clientGST,
-      supplierGST: Object.keys(groupedBySupplier).toString(),
+      clientGST: clientGSTValue,
+      supplierGST: Object.keys(groupedBySupplier).join(','),
       Order_ID: orderId,
     };
 
+    console.log("Payload:", JSON.stringify(payload, null, 2));
 
     try {
+      Alert.alert(
+        'Placing Order',
+        'Please wait while we place your order...',
+        [
+          { text: "OK", onPress: () => console.log("User acknowledged placing order") }
+        ]
+      );
+
       const response = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/placeOrder',
         payload
       );
-      Alert.alert('Paylaod', JSON.stringify(payload));
+      console.log("Response from API:", response.data);
       Alert.alert('Success', 'Order placed successfully!');
-      navigation.navigate('Approval Pending', {orderID: orderId}); 
+      // Clear the cart after successful order placement
+      if (clearCart) {
+        clearCart();
+      }
+      navigation.navigate('Approval Pending', { orderID: orderId });
     } catch (error) {
-      Alert.alert('Paylaod', JSON.stringify(payload));
-      Alert.alert('Error', 'Failed to place order');
+      console.error("Error placing order:", error);
+      if (error.response) {
+        console.error("Error response data:", error.response.data);
+        console.error("Error response status:", error.response.status);
+        Alert.alert(
+          'Error',
+          `Failed to place order: ${error.response.data?.message || 'Server error'}`
+        );
+      } else if (error.request) {
+        console.error("Error request:", error.request);
+        Alert.alert('Error', 'Failed to place order: No response from server.');
+      } else {
+        console.error("Error message:", error.message);
+        Alert.alert('Error', `Failed to place order: ${error.message}`);
+      }
     }
+  };
+
+  const handleCancelOrder = () => {
+    Alert.alert(
+      "Cancel Order",
+      "Are you sure you want to cancel this order and clear your basket?",
+      [
+        {
+          text: "No",
+          style: "cancel"
+        },
+        {
+          text: "Yes",
+          onPress: () => {
+            if (clearCart) {
+              clearCart(); // Call the function passed from Catalogue to clear the cart
+            }
+            navigation.goBack(); // Go back to the previous screen (Catalogue)
+          }
+        }
+      ]
+    );
   };
 
   return (
@@ -167,7 +258,7 @@ export default function Basket() {
       </TouchableOpacity>
       <FlatList
         data={cartItems}
-        keyExtractor={item => item.productId.toString()} // Ensure keyExtractor returns a string
+        keyExtractor={item => item.productId.toString()}
         renderItem={({item}) => (
           <View style={styles.cartItem}>
             <Image
@@ -199,7 +290,7 @@ export default function Basket() {
           <Text style={styles.deliveryLabel}>Delivery by:</Text>
           <Text style={styles.deliveryDate}>25 July 2024</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Catalogue')}>
+        <TouchableOpacity onPress={handleCancelOrder}> {/* Call new handler */}
           <Text style={styles.cancelOrder}>Cancel order</Text>
         </TouchableOpacity>
       </View>

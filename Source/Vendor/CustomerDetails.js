@@ -5,7 +5,7 @@ import {
   StyleSheet,
   Dimensions,
   ScrollView,
-  TextInput,
+  TextInput, 
   TouchableOpacity,
 } from 'react-native';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
@@ -17,11 +17,18 @@ const CustomerDetails = () => {
   const navigation = useNavigation();
   const route = useRoute();
   const {customer} = route.params;
+  if (!customer) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.errorText}>Customer details not found.</Text>
+      </View>
+    );
+  }
 
   useLayoutEffect(() => {
     navigation.setOptions({
       headerShown: true,
-      headerTitle: `${customer.name}`,
+      headerTitle: `${customer.name || 'Customer Details'}`, 
       headerStyle: {
         backgroundColor: '#fff',
         elevation: 0,
@@ -46,130 +53,82 @@ const CustomerDetails = () => {
         </TouchableOpacity>
       ),
     });
-  }, [navigation]);
-
+  }, [navigation, customer.name]); 
   function formatDate(dateStr) {
-    const [day, month, year] = dateStr.split('-');
-
-    const date = new Date(`${year}-${month}-${day}`);
-
+    if (!dateStr || dateStr === 'N/A') {
+        return 'N/A';
+    }
+    const [year, month, day] = dateStr.split('-');
+    const date = new Date(year, month - 1, day); 
     const options = {day: '2-digit', month: 'long', year: 'numeric'};
-
     return date.toLocaleDateString('en-GB', options);
   }
 
   return (
     <View style={styles.container}>
       <View
-        style={{
-          flexDirection: 'row',
-          justifyContent: 'space-between',
-          padding: 20,
-        }}>
-        <View style={{flexDirection: 'column'}}>
-          <Text
-            style={{
-              color: '#76B117',
-              fontStyle: 'normal',
-              fontWeight: 600,
-              fontSize: 16,
-            }}>
-            {customer.customerName}
+        style={styles.customerDetailsContainer}>
+        <View style={styles.customerDetailsView}>
+          <Text style={styles.nameText}>
+            {customer.name || 'N/A'} 
           </Text>
-          <Text
-            style={{
-              fontStyle: 'normal',
-              fontWeight: 400,
-              fontSize: 14,
-              color: '#2C3E50',
-            }}>
-            {customer.customerNumber}
+          <Text style={styles.phoneText}>
+            {customer.phone || 'N/A'} 
           </Text>
         </View>
-        <View style={{flexDirection: 'column'}}>
-          <Text
-            style={{
-              color: '#76B117',
-              fontStyle: 'normal',
-              fontWeight: 600,
-              fontSize: 16,
-            }}>
-            {customer.customerLocation}
+        <View style={styles.customerDetailsView}>
+          <Text style={styles.stateText}>
+            {customer.state || 'N/A'} 
           </Text>
-          <Text
-            style={{
-              fontStyle: 'normal',
-              fontWeight: 400,
-              fontSize: 14,
-              color: '#2C3E50',
-            }}>
-            {formatDate(customer.orderDate)}
+          <Text style={styles.orderDateText}>
+            {formatDate(customer.lastOrderDate)} 
           </Text>
         </View>
       </View>
 
-      <View style={{padding: 20}}>
+      <View style={styles.dueAmountView}>
         <Text
-          style={{
-            color: '#76B117',
-            fontStyle: 'normal',
-            fontWeight: 700,
-            fontSize: 17,
-            fontFamily: 'Montserrat',
-          }}>
+          style={styles.dueAmountText}>
           Due Amount*
         </Text>
-        <View
-          style={{
-            display: 'flex',
-            justifyContent: 'flex-start',
-            flexDirection: 'row',
-            alignItems: 'center',
-          }}>
+        <View style={styles.totalAmountView}>
           <Text
-            style={{
-              color: '#76B117',
-              fontStyle: 'normal',
-              fontWeight: 600,
-              fontSize: 24,
-              fontFamily: 'Montserrat',
-            }}>
+            style={styles.totalText}>
             Total
           </Text>
           <Text
-            style={{
-              color: '#76B117',
-              fontStyle: 'normal',
-              fontWeight: 'bold',
-              fontSize: 28,
-              marginLeft: '3%',
-              fontFamily: 'Montserrat',
-            }}>
-            {customer.orderTotal}
+            style={styles.amountText}>
+            {customer.lastOrderTotal || '₹0.00'}
           </Text>
         </View>
       </View>
 
       <ScrollView contentContainerStyle={styles.content}>
         <View style={styles.tableHeader}>
-          <Text style={styles.tableHeaderText}>Past Order {'\n'} Date</Text>
-          <Text style={styles.tableHeaderText}>Most {'\n'} Ordered</Text>
-          <Text style={styles.tableHeaderText}>Number of {'\n'} Items</Text>
-          <Text style={styles.tableHeaderText}>Total {'\n'} Value</Text>
+          <Text style={styles.tableHeaderText}>Order Date</Text> 
+          <Text style={styles.tableHeaderText}>Item Name</Text> 
+          <Text style={styles.tableHeaderText}>Quantity</Text> 
+          <Text style={styles.tableHeaderText}>Price</Text> 
         </View>
 
-        {customer.pastOrders.map((item, index) => (
-          <View key={index} style={styles.tableRow}>
-            <Text style={styles.tableCell}>{item.PastOrderDate}</Text>
-            <Text style={styles.tableCell}>{item.MostOrdered}</Text>
-            <Text style={styles.tableCell}>{item.NumberOfItems}</Text>
-            <Text style={styles.tableCell}>₹{item.TotalValue}</Text>
+        {/* Iterate over lastOrderItems */}
+        {customer.lastOrderItems && customer.lastOrderItems.length > 0 ? (
+          customer.lastOrderItems.map((item, index) => (
+            <View key={item.itemId || index} style={styles.tableRow}>
+              <Text style={styles.tableCell}>{formatDate(customer.lastOrderDate)}</Text>
+              <Text style={styles.tableCell}>{item.name || 'N/A'}</Text>
+              <Text style={styles.tableCell}>{item.quantity || 0}</Text>
+              <Text style={styles.tableCell}>₹{item.price !== undefined ? Number(item.price).toFixed(2) : '0.00'}</Text>
+            </View>
+          ))
+        ) : (
+          <View style={styles.noItemsContainer}>
+            <Text style={styles.noItemsText}>No items found for the last order.</Text>
           </View>
-        ))}
+        )}
       </ScrollView>
 
       <View style={styles.bottomBar}>
-        {/* You can add pagination or other controls here */}
       </View>
     </View>
   );
@@ -178,7 +137,7 @@ const CustomerDetails = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // Light background
+    backgroundColor: '#fff',
   },
   header: {
     backgroundColor: 'white',
@@ -203,7 +162,7 @@ const styles = StyleSheet.create({
     borderColor: '#ddd',
     borderRadius: 5,
     padding: 8,
-    paddingLeft: 15, // Add padding for search icon (if needed)
+    paddingLeft: 15,
   },
   filterBar: {
     flexDirection: 'row',
@@ -219,24 +178,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   content: {
-    // padding: 10,
     paddingHorizontal: '6%',
     width: '100%',
   },
   tableHeader: {
     flexDirection: 'row',
-    justifyContent: 'space-evenly',
+    justifyContent: 'space-around', // Changed to space-around for even distribution
     borderBottomWidth: 1,
     borderBottomColor: '#ddd',
     paddingBottom: 5,
     marginBottom: '3%',
-    // marginLeft: 10,
     backgroundColor: '#F2F2F2',
     borderRadius: 10,
     paddingVertical: '3%',
   },
   tableHeaderText: {
-    fontWeight: 700,
+    fontWeight: '700', // Changed to string
     fontSize: 13,
     alignSelf: 'center',
     alignItems: 'center',
@@ -244,14 +201,15 @@ const styles = StyleSheet.create({
     color: '#76B117',
     textAlign: 'center',
     fontFamily: 'Montserrat',
+    flex: 1, // Added flex to distribute space
   },
   tableRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around', // Changed to space-around
     marginVertical: '4%',
     paddingVertical: '2%',
-    borderBottomWidth: 1, // Add border to rows
-    borderBottomColor: '#eee', // Light border color
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
     width: '97%',
     marginHorizontal: '1%',
     paddingHorizontal: '3%',
@@ -260,14 +218,92 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#2C3E50',
     fontFamily: 'Montserrat',
+    textAlign: 'center', // Centered text for table cells
+    flex: 1, // Added flex to distribute space
   },
   bottomBar: {
     backgroundColor: 'white',
-    // padding: 15,
     borderTopWidth: 1,
     borderTopColor: '#E0E0E0',
-    // Add pagination or other controls here
   },
+  errorText: {
+    fontSize: 18,
+    textAlign: 'center',
+    marginTop: 50,
+    color: 'red',
+  },
+  noItemsContainer: {
+    padding: 20,
+    alignItems: 'center',
+  },
+  noItemsText: {
+    fontSize: 16,
+    color: '#888',
+    fontStyle: 'italic',
+  },
+  customerDetailsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    padding: 20
+  },
+  customerDetailsView: {
+    flexDirection: 'column'
+  },
+  nameText: {
+    color: '#76B117',
+    fontStyle: 'normal',
+    fontWeight: '600', 
+    fontSize: 16
+  },
+  stateText: {
+    color: '#76B117',
+    fontStyle: 'normal',
+    fontWeight: '600', 
+    fontSize: 16
+  },
+  phoneText: {
+    fontStyle: 'normal',
+    fontWeight: '400',
+    fontSize: 14,
+    color: '#2C3E50'
+  },
+  orderDateText: {
+    fontStyle: 'normal',
+    fontWeight: '400', 
+    fontSize: 14,
+    color: '#2C3E50'
+  },
+  dueAmountView: {
+    padding: 20
+  },
+  dueAmountText: {
+    color: '#76B117',
+    fontStyle: 'normal',
+    fontWeight: '700',
+    fontSize: 17,
+    fontFamily: 'Montserrat',
+  },
+  totalAmountView: {
+    display: 'flex',
+    justifyContent: 'flex-start',
+    flexDirection: 'row',
+    alignItems: 'center'
+  },
+  totalText: {
+    color: '#76B117',
+    fontStyle: 'normal',
+    fontWeight: '600',
+    fontSize: 24,
+    fontFamily: 'Montserrat'
+  },
+  amountText: {
+    color: '#76B117',
+    fontStyle: 'normal',
+    fontWeight: 'bold',
+    fontSize: 28,
+    marginLeft: '3%',
+    fontFamily: 'Montserrat'
+  }
 });
 
 export default CustomerDetails;

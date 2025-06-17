@@ -1,36 +1,23 @@
-import React, 
-  {
-    useEffect, 
-    useLayoutEffect, 
-    useState
-  } from 'react';
+import React, { useEffect, useLayoutEffect, useState } from 'react';
 import {
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  StyleSheet, 
-  Alert
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  StyleSheet,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
-import {
-  useNavigation
-} from '@react-navigation/native';
-import {
-  customers
-} from '../Constant/constant';
-import {
-  ChevronDownIcon, 
-  ChevronLeftIcon
-} from 'react-native-heroicons/outline';
-import {
-  tagColors
-} from '../Constant/constant';
+import { useNavigation } from '@react-navigation/native';
+import { ChevronDownIcon, ChevronLeftIcon } from 'react-native-heroicons/outline';
 import GenericVectorIcon from '../components/GenericVectorIcon';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const Customers = () => {
-  const[gstNumber, setGstNumber] = useState('');
+  const [gstNumber, setGstNumber] = useState('');
+  const [customerList, setCustomerList] = useState([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
   useLayoutEffect(() => {
@@ -50,71 +37,166 @@ const Customers = () => {
         fontSize: 20,
         fontFamily: 'Montserrat',
         justifyContent: 'center',
-        // color: 'white',
       },
       headerLeft: () => (
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{paddingHorizontal: 15}}>
+          style={{ paddingHorizontal: 15 }}>
           <ChevronLeftIcon size={22} color="#333" strokeWidth={2} />
         </TouchableOpacity>
       ),
     });
   }, [navigation]);
+
   useEffect(() => {
-    const getAllAsyncStorageItems = async () => {
+    const getSupplierGst = async () => {
       try {
-        const keys = await AsyncStorage.getAllKeys();
-        const stores = await AsyncStorage.multiGet(keys);
-        stores.forEach(([key, value]) => {
-          if (key === 'supplierGST') {
-            setGstNumber(value);
-          }
-        });
+        const storedGst = await AsyncStorage.getItem('supplierGST');
+        if (storedGst) {
+          setGstNumber(storedGst);
+        } else {
+          console.warn('supplierGST not found in AsyncStorage');
+        }
       } catch (error) {
-        console.error('Error fetching AsyncStorage items:', error);
+        console.error('Error fetching supplierGST from AsyncStorage:', error);
       }
     };
+    getSupplierGst();
+  }, []);
+  function formatDate(dateStr) {
+    if (!dateStr || dateStr === 'N/A') {
+        return 'N/A';
+    }
+    const [year, month, day] = dateStr.split('-');
+    const date = new Date(year, month - 1, day); 
+    const options = {day: '2-digit', month: 'long', year: 'numeric'};
+    return date.toLocaleDateString('en-GB', options);
+  }
 
-    getAllAsyncStorageItems();
-  })
-  
-
-
-  
   useEffect(() => {
     const fetchData = async () => {
-      try {
-        const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/getCompletedOrders', {
-          "supplierGST": gstNumber
-        });
+      if (!gstNumber) {
+        setLoading(false);
+        return;
+      }
 
-        if (response.status === 200) {
-          const data = response.data.data;
-          Alert.alert("data", JSON.stringify(data));
-        }
-        else{
-          Alert.alert('Error', 'No orders found for this supplier')
-          Alert.alert("response", response)
+      setLoading(true);
+      try {
+        const response = await axios.post(
+          'https://api-v7quhc5aza-uc.a.run.app/getCustomersList',
+          { supplierGST: gstNumber }
+        );
+
+        if (response.status === 200 && response.data && response.data.clients) {
+          const clientsData = response.data.clients;
+
+          const transformedClients = Object.keys(clientsData).map(clientGstKey => {
+            const client = clientsData[clientGstKey];
+            // Use the actual Order_ID from Open_Orders, if Last_Order_ID doesn't match
+            const lastOrderIdFromOpenOrders = Object.keys(client.Open_Orders || {})[0]; 
+            const openOrders = client.Open_Orders || {};
+
+            let lastOrderDetails = {
+              totalAmount: 'N/A',
+              orderDate: 'N/A',
+              items: [],
+              deliveryDate: 'N/A',
+            };
+
+            // Check if there's an open order and get its details
+            if (lastOrderIdFromOpenOrders && openOrders[lastOrderIdFromOpenOrders]) {
+              const orderSpecificData = openOrders[lastOrderIdFromOpenOrders];
+              const supplierGSTForLastOrder = orderSpecificData.supplierGST;
+
+              if (supplierGSTForLastOrder && orderSpecificData[supplierGSTForLastOrder]) {
+                const supplierOrderDetails = orderSpecificData[supplierGSTForLastOrder];
+
+                lastOrderDetails = {
+                  totalAmount: supplierOrderDetails.totalAmount !== undefined
+                    ? `₹ ${Number(supplierOrderDetails.totalAmount).toFixed(2)}`
+                    : 'N/A',
+                  orderDate: supplierOrderDetails.OrderDate || 'N/A',
+                  items: Array.isArray(supplierOrderDetails.items)
+                    ? supplierOrderDetails.items
+                    : [],
+                  deliveryDate: supplierOrderDetails.DeliveryDate || 'N/A',
+                };
+              }
+            }
+
+            return {
+              id: clientGstKey,
+              gst: client.gst,
+              name: client.Name,
+              businessName: client.BusinessName,
+              phone: client.phone,
+              email: client.email,
+              country: client.country,
+              state: client.state,
+              pincode: client.pincode,
+              shippingAddress: client.shippingAddress,
+              billingAddress: client.billingAddress,
+              lastOrderId: lastOrderIdFromOpenOrders, // Use the correct order ID
+              openOrders: client.Open_Orders,
+              supplierData: client.Supplier,
+              updatedAt: client.Updated_At,
+              lastOrderTotal: lastOrderDetails.totalAmount,
+              lastOrderDate: lastOrderDetails.orderDate,
+              lastOrderItems: lastOrderDetails.items,
+              lastOrderDeliveryDate: lastOrderDetails.deliveryDate,
+            };
+          });
+
+          setCustomerList(transformedClients);
+        } else {
+          Alert.alert('Error', 'No clients found for this supplier or unexpected response structure.');
+          console.log("API Response:", JSON.stringify(response.data, null, 2));
+          setCustomerList([]);
         }
       } catch (error) {
-        Alert.alert('Error fetching completed orders', error.message); 
+        console.error('Error fetching customers list:', error);
+        Alert.alert('Error', `Failed to fetch customers: ${error.message}`);
+        setCustomerList([]);
+      } finally {
+        setLoading(false);
       }
     };
-    if(gstNumber){
-      fetchData();
-    }
 
+    fetchData();
   }, [gstNumber]);
+
+  const renderCustomerItem = ({ item }) => (
+    <View style={styles.itemCardContainer}>
+      <View style={styles.itemCard}>
+        <View style={styles.nameAndTag}>
+          <Text style={styles.name}>{item.name}</Text>
+          <Text style={styles.businessNameText}>{item.businessName}</Text>
+          <View style={styles.tagsContainer}>
+            {/* Any non-status related customer tags can go here if you have them */}
+          </View>
+        </View>
+        <View style={styles.detailsContainer}>
+          <Text style={styles.orderTotalText}>{item.lastOrderTotal}</Text>
+          {item.lastOrderDeliveryDate !== 'N/A' && (
+            <Text style={styles.orderDateText}>{formatDate(item.lastOrderDeliveryDate)}</Text>
+          )}
+
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('Customer Details', { customer: item })
+            }
+            style={styles.viewSummaryTouchableOpacity}>
+            <Text style={styles.viewSummaryText}>View Details</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
   return (
     <View style={styles.container}>
-
       <View style={styles.filters}>
-        <TouchableOpacity
-          style={styles.filterBox}
-          // onPress={() => openModal('sort')}
-        >
+        <TouchableOpacity style={styles.filterBox}>
           <Text style={styles.filterText}>Sort by</Text>
           <ChevronDownIcon size={14} color="#76B117" strokeWidth={2} />
         </TouchableOpacity>
@@ -138,7 +220,7 @@ const Customers = () => {
             style={{
               color: '#2C3E50',
               fontSize: 16,
-              fontWeight: 700,
+              fontWeight: '700',
               fontFamily: 'Open Sans',
             }}>
             Name
@@ -149,7 +231,7 @@ const Customers = () => {
             style={{
               color: '#2C3E50',
               fontSize: 16,
-              fontWeight: 700,
+              fontWeight: '700',
               fontFamily: 'Open Sans',
             }}>
             Order Details
@@ -157,48 +239,23 @@ const Customers = () => {
         </View>
       </View>
 
-      <FlatList
-        data={customers}
-        keyExtractor={item => item.id.toString()}
-        renderItem={({item}) => (
-          <View style={styles.itemCardContainer}>
-            <View style={styles.itemCard}>
-              <View style={styles.nameAndTag}>
-                <Text style={styles.name}>{item.name}</Text>
-                <View style={styles.tagsContainer}>
-                  {item.tags.map((tag, index) => (
-                    <Text
-                      key={index}
-                      style={[
-                        styles.tag,
-                        {backgroundColor: tagColors[tag] || '#ccc'},
-                      ]}>
-                      {tag}
-                      <GenericVectorIcon
-                        name={'cross'}
-                        type={'Entypo'}
-                        size={16}
-                        color="#323232"
-                      />
-                    </Text>
-                  ))}
-                </View>
-              </View>
-              <View style={styles.detailsContainer}>
-                <Text style={styles.orderTotalText}>{item.orderTotal}</Text>
-                <Text style={styles.orderDateText}>{item.orderDate}</Text>
-                <TouchableOpacity
-                  onPress={() =>
-                    navigation.navigate('Customer Details', {customer: item})
-                  }
-                  style={styles.viewSummaryTouchableOpacity}>
-                  <Text style={styles.viewSummaryText}>View Summary</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          </View>
-        )}
-      />
+      {loading ? (
+        <View style={styles.centeredView}>
+          <ActivityIndicator size="large" color="#76B117" />
+          <Text style={styles.loadingText}>Fetching customers...</Text>
+        </View>
+      ) : customerList.length === 0 ? (
+        <View style={styles.centeredView}>
+          <Text style={styles.emptyText}>No customers found for this supplier.</Text>
+        </View>
+      ) : (
+        <FlatList
+          data={customerList}
+          keyExtractor={item => item.id}
+          renderItem={renderCustomerItem}
+          contentContainerStyle={{ paddingBottom: 80 }}
+        />
+      )}
     </View>
   );
 };
@@ -234,6 +291,7 @@ const styles = StyleSheet.create({
   },
   nameAndTag: {
     flexDirection: 'column',
+    flex: 1,
   },
   name: {
     fontSize: 17,
@@ -241,8 +299,15 @@ const styles = StyleSheet.create({
     color: '#76B117',
     fontFamily: 'Montserrat',
   },
+  businessNameText: {
+    fontSize: 15,
+    color: '#333',
+    fontFamily: 'Montserrat',
+    marginTop: 2,
+  },
   detailsContainer: {
     flexDirection: 'column',
+    alignItems: 'flex-end',
   },
   orderTotalText: {
     color: '#2C3E50',
@@ -277,13 +342,13 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     alignContent: 'center',
     justifyContent: 'center',
-    fontWeight: 400,
+    fontWeight: '400',
     fontFamily: 'Open Sans',
   },
   tagsContainer: {
-    flexDirection: 'column',
+    flexDirection: 'row',
     marginTop: 10,
-    borderRadius: 25,
+    flexWrap: 'wrap',
   },
   tag: {
     color: '#323232',
@@ -292,9 +357,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 8,
     borderRadius: 20,
     marginBottom: 5,
+    marginRight: 5,
     alignSelf: 'flex-start',
   },
-
   filters: {
     flexDirection: 'row',
     justifyContent: 'flex-end',
@@ -313,6 +378,20 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontFamily: 'Open Sans',
     color: '#2C3E50',
+  },
+  centeredView: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 16,
+    color: '#555',
+  },
+  emptyText: {
+    fontSize: 16,
+    color: '#888',
   },
 });
 

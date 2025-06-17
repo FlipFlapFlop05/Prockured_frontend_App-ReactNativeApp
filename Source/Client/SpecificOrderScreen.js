@@ -91,18 +91,18 @@ const SpecificOrderScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeftIcon size={22} color={'black'} strokeWidth={3} />
         </TouchableOpacity>
-        <Text style={styles.vendorName}>{orderData.vendor}</Text>
+        <Text style={styles.vendorName}>{order.vendorName}</Text>
       </View>
 
       {/* Customer Info */}
       <View style={styles.vendorData}>
         <View style={styles.dataFlexDirection}>
-          <Text style={styles.customerName}>{orderData.customerName}</Text>
-          <Text style={styles.customerPhone}>{orderData.customerPhone}</Text>
+          <Text style={styles.customerName}>{order.vendorName}</Text>
+          <Text style={styles.customerPhone}>{order.supplierPhone}</Text>
         </View>
         <View style={styles.dataFlexDirection}>
           <Text style={styles.deliveryDateText}>Delivery Date</Text>
-          <Text style={styles.deliveryDateEntry}>{orderData.deliveryDate}</Text>
+          <Text style={styles.deliveryDateEntry}>{order.DeliveryDate}</Text>
         </View>
       </View>
 
@@ -159,7 +159,7 @@ const SpecificOrderScreen = () => {
           <Text style={styles.summaryLabel}>Supplier GST</Text>
           <Text style={styles.summaryValue}>{orderData.supplierGST}</Text>
         </View>
-        <TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.navigate('Order Tracking', {order})}>
           <Text style={styles.viewDetails}>VIEW DETAILS</Text>
         </TouchableOpacity>
       </View>

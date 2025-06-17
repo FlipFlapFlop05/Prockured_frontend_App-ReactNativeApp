@@ -11,6 +11,7 @@ import {
   TextInput,
   Animated,
   ActivityIndicator,
+  Alert, // Import Alert for user feedback
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
@@ -27,7 +28,7 @@ const {width} = Dimensions.get('window');
 
 export default function Catalogue() {
   const navigation = useNavigation();
-  const [phoneNumer, setPhoneNumber] = useState(null);
+  const [phoneNumber, setPhoneNumber] = useState(null); // Corrected variable name
   const [data, setData] = useState([]);
   const [cart, setCart] = useState({});
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -46,7 +47,7 @@ export default function Catalogue() {
     const fetchData = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        console.log(storedPhoneNumber);
+        console.log("Stored Client GST:", storedPhoneNumber); // Log for debugging
 
         if (storedPhoneNumber) setPhoneNumber(storedPhoneNumber);
 
@@ -54,11 +55,9 @@ export default function Catalogue() {
           const [catalogueResponse, suppliersResponse] = await Promise.all([
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${storedPhoneNumber}`,
-              //https://api-v7quhc5aza-uc.a.run.app/getCatalogue/04030506,
             ),
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
-              // https://api-v7quhc5aza-uc.a.run.app/getSupplier/04030506,
             ),
           ]);
 
@@ -70,6 +69,7 @@ export default function Catalogue() {
         }
       } catch (error) {
         console.log('Error fetching data:', error);
+        Alert.alert("Error", "Failed to load catalogue. Please try again later.");
       } finally {
         setLoading(false);
       }
@@ -123,7 +123,11 @@ export default function Catalogue() {
   const calculateTotalItems = () =>
     Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  const updateCartFromBasket = updatedCart => setCart(updatedCart);
+  // This function will be passed to the Basket component
+  const clearCart = () => {
+    setCart({});
+    console.log('Cart cleared from Catalogue!');
+  };
 
   const toggleSearch = () => {
     setIsSearchVisible(!isSearchVisible);
@@ -153,6 +157,7 @@ export default function Catalogue() {
     );
   }
 
+  // Merges supplier GST into product data
   const mergeSupplierGST = (items, suppliersList) => {
     return items.map(item => {
       const matchedSupplier = suppliersList.find(
@@ -184,7 +189,7 @@ export default function Catalogue() {
               fontSize: 20,
               fontFamily: 'Montserrat',
             }}>
-            {data?.length == 0 ? 'Catalogue' : selectedMainCategory}
+            {data?.length === 0 ? 'Catalogue' : selectedMainCategory}
           </Text>
 
           {data?.length > 0 ? (
@@ -236,18 +241,23 @@ export default function Catalogue() {
         </View>
       ) : (
         <ScrollView style={styles.container}>
-          {isSearchVisible && (
-            <Animated.View
-              style={[styles.searchContainer, {width: searchWidth}]}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search products..."
-                placeholderTextColor="gray"
-                value={searchTerm}
-                onChangeText={setSearchTerm}
-              />
-            </Animated.View>
-          )}
+          {/* Search Bar Toggle and Input */}
+          <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16}}>
+            <TouchableOpacity onPress={toggleSearch} style={{padding: 8}}>
+              <MagnifyingGlassIcon size={24} color="#333" />
+            </TouchableOpacity>
+            {isSearchVisible && (
+              <Animated.View style={[styles.searchContainer, {width: searchWidth}]}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search products..."
+                  placeholderTextColor="gray"
+                  value={searchTerm}
+                  onChangeText={setSearchTerm}
+                />
+              </Animated.View>
+            )}
+          </View>
 
           <ScrollView
             horizontal
@@ -299,7 +309,7 @@ export default function Catalogue() {
                   <View style={styles.productCard}>
                     <Image
                       source={{
-                        uri: 'https://www.themealdb.com/images/category/beef.png',
+                        uri: item.image || 'https://www.themealdb.com/images/category/beef.png', // Use item.image if available
                       }}
                       style={styles.productImageCard}
                     />
@@ -341,25 +351,24 @@ export default function Catalogue() {
         </ScrollView>
       )}
 
-      {searchedItems.length > 0 && (
-        <View>
-          <TouchableOpacity
-            style={styles.floatingButton}
-            onPress={() => navigation.navigate('Add Product Manually')}>
-            <Text style={styles.floatingButtonText}>+</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Floating Add Product Button - Conditionally Rendered */}
+      {data.length > 0 && ( // Only show if catalogue is not empty
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => navigation.navigate('Add Product Manually')}>
+          <Text style={styles.floatingButtonText}>+</Text>
+        </TouchableOpacity>
       )}
 
       {calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
           onPress={() => {
-            const enrichedData = mergeSupplierGST(data, suppliers); // enrich manually
+            const enrichedData = mergeSupplierGST(data, suppliers);
             navigation.navigate('View Basket', {
-              cart,
-              data: enrichedData, // pass enriched data
-              updateCart: updateCartFromBasket,
+              cart: cart,
+              data: enrichedData,
+              clearCart: clearCart, // Pass the clearCart function here
             });
           }}>
           <Text style={styles.viewBasketText}>View Basket</Text>
@@ -469,13 +478,21 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat',
   },
   basketCount: {color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 6},
+  searchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+    marginBottom: 10,
+    paddingHorizontal: 16,
+  },
   searchInput: {
     backgroundColor: '#fff',
     borderRadius: 8,
     padding: 10,
-    marginBottom: 10,
+    flex: 1, // Allow TextInput to take available space
     fontSize: 16,
     color: '#000',
+    marginRight: 10, // Add some space between search icon and input
   },
   noProductsText: {
     textAlign: 'center',
@@ -507,7 +524,7 @@ const styles = StyleSheet.create({
   addProductText: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: 700,
+    fontWeight: '700',
     width: '100%',
     height: 'fit-content',
     textAlign: 'center',
@@ -518,7 +535,7 @@ const styles = StyleSheet.create({
     height: 50,
     borderRadius: 30,
     position: 'absolute',
-    bottom: '80',
+    bottom: 80, // Adjust this as needed to position above the basket button
     right: 20,
     justifyContent: 'center',
     alignItems: 'center',

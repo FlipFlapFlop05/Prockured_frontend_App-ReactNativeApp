@@ -32,7 +32,7 @@ export default function ClientProfile() {
   const [billingAddress, setBillingAddress] = useState('');
   const [previousBillingAddress, setPreviousBillingAddress] = useState('');
 
-  const [gstNumber, setGstNumber] = useState('');
+  const [gstNumber, setGSTNumber] = useState('');
   const [pincode, setPincode] = useState('');
   const [state, setState] = useState('');
   const [country, setCountry] = useState('');
@@ -45,14 +45,14 @@ export default function ClientProfile() {
     const fetchClientData = async () => {
       try {
         const storedPassword = await AsyncStorage.getItem('password');
-        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
+        const storedPhoneNumber = await AsyncStorage.getItem('clientPhoneNumber');
         const storedShippingAddress = await AsyncStorage.getItem(
           'shippingAddress',
         );
         const storedBillingAddress = await AsyncStorage.getItem(
           'billingAddress',
         );
-        const storedGSTNumber = await AsyncStorage.getItem('gstNumber');
+        const storedGSTNumber = await AsyncStorage.getItem('clientGST');
 
         if (storedPassword) {
           setClientPassword(storedPassword);
@@ -67,12 +67,12 @@ export default function ClientProfile() {
           setBillingAddress(storedBillingAddress);
         }
         if (storedGSTNumber) {
-          setGstNumber(storedGSTNumber);
+          setGSTNumber(storedGSTNumber);
         }
 
         if (storedPhoneNumber) {
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedPhoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedGSTNumber}`,
           );
 
           setData(response.data);
@@ -368,7 +368,7 @@ export default function ClientProfile() {
           keyboardType={'default'}
           style={styles.input}
           value={gstNumber}
-          onChangeText={setGstNumber}
+          onChangeText={setGSTNumber}
           placeholderTextColor={'black'}
         />
       </View>

@@ -212,7 +212,7 @@ export default function VendorCatalogue() {
                       <Text style={styles.productPriceCard}>
                         ₹ {item.myPrice}
                       </Text>
-                    </View>
+                    {/* </View>
                     <View style={styles.quantityControlsCard}>
                       <TouchableOpacity
                         style={styles.quantityButtonCard}
@@ -227,18 +227,12 @@ export default function VendorCatalogue() {
                         onPress={() => handleAddToCart(item.productId)}>
                         <Text style={styles.quantityButtonTextCard}>+</Text>
                       </TouchableOpacity>
+                    </View> */}
                     </View>
                   </View>
                 )}
               />
             ))}
-            <TouchableOpacity
-              style={styles.floatingButton}
-              onPress={() => navigation.navigate('Vendor Add Product')}
-            >
-                <Text style={styles.floatingButtonText}>+</Text>
-            </TouchableOpacity>
-            
           </View>
         ) : (
           <View style={styles.emptyState}>
@@ -256,6 +250,14 @@ export default function VendorCatalogue() {
           </View>
         )}
       </ScrollView>
+
+      {/* Floating Add Product Button - Moved outside the ScrollView */}
+      <TouchableOpacity
+        style={styles.floatingButton}
+        onPress={() => navigation.navigate('Vendor Add Product')}>
+        <Text style={styles.floatingButtonText}>+</Text>
+      </TouchableOpacity>
+
       {calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
@@ -278,6 +280,7 @@ export default function VendorCatalogue() {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
+    position: 'relative', // Essential for absolute positioning of children
   },
   container: {
     flex: 1,
@@ -289,7 +292,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     paddingTop: 10,
     width: width * 0.9,
-    position: 'relative', // Ensure header is positioned relatively
+    // position: 'relative', // This can stay or be removed, depends on other header styles
   },
   headerText: {
     fontWeight: 'bold',
@@ -391,9 +394,9 @@ const styles = StyleSheet.create({
   addProductText: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: 700,
+    fontWeight: '700', // Use string for fontWeight
     width: '100%',
-    height: 'fit-content',
+    height: 'fit-content', // 'fit-content' is not a valid React Native style property. Use flex or explicit height.
     textAlign: 'center',
   },
   viewBasketButton: {
@@ -402,13 +405,14 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     position: 'absolute',
-    bottom: 0,
+    bottom: 0, // Adjusted to stick to the bottom of the screen
     left: 0,
     right: 0,
     width: '90%',
     alignSelf: 'center',
     justifyContent: 'center',
-    marginLeft: 20,
+    marginLeft: 20, // This will apply to the button's left margin from the parent. Consider using `width: 'auto'` or `marginHorizontal: 20` if you want it centered with some padding.
+    marginRight: 20, // Added for symmetric padding
     marginBottom: 10,
   },
   viewBasketText: {
@@ -421,27 +425,29 @@ const styles = StyleSheet.create({
     color: 'black',
     width: '90%',
     borderColor: 'gray',
-    borderWidth: 1
+    borderWidth: 1,
+    borderRadius: 8, // Added for better aesthetics
+    marginBottom: 10, // Added spacing below search input
   },
   floatingButton: {
     backgroundColor: '#76B117',
-    width: 50,
-    height: 50,
-    borderRadius: 30,
+    width: 60, // Slightly increased size for better tap target
+    height: 60,
+    borderRadius: 30, // half of width/height to make it a perfect circle
     position: 'absolute',
-    bottom: - width * 0.6,
-    right: -width * 0.01,
+    bottom: 90, // Positioned above the "View Basket" button
+    right: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
+    elevation: 5, // Android shadow
+    shadowColor: '#000', // iOS shadow
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
   floatingButtonText: {
     color: 'white',
-    fontSize: 30,
+    fontSize: 35, // Slightly larger text
     fontWeight: 'bold',
   },
 });

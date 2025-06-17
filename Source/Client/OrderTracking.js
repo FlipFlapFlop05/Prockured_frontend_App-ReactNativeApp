@@ -8,7 +8,7 @@ const { width: screenWidth } = Dimensions.get('window');
 const OrderTracking = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const {data} = route.params;
+  const {order} = route.params;
   const {getData, setGetData} = useState({});
   const orderItems = [];
 
@@ -16,8 +16,8 @@ const OrderTracking = () => {
     const orderStatus = async() => {
       try{
         const response = await axios.post('https://api-v7quhc5aza-uc.a.run.app/orderTracking', {
-          "clientGST": data.clientGST,
-          "orderId": data.orderId
+          "clientGST": order.clientGST,
+          "orderId": order.orderId
         });
 
         if(response){
@@ -54,7 +54,7 @@ const OrderTracking = () => {
             <Text style={styles.itemHeaderText}>Item</Text>
             <Text style={styles.itemHeaderText}>Quantity</Text>
           </View>
-          {data.items.map((item, index) => (
+          {order.items.map((item, index) => (
             <View key={index} style={styles.itemRow}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemQuantity}>{item.quantity}</Text>
@@ -63,7 +63,7 @@ const OrderTracking = () => {
         </View>
 
         <View style={styles.orderIdContainer}>
-          <Text style={styles.orderIdText}>Order ID - {data.orderId}</Text>
+          <Text style={styles.orderIdText}>Order ID - {order.orderId}</Text>
         </View>
 
       </ScrollView>

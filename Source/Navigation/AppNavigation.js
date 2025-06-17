@@ -68,6 +68,7 @@ import OutletDashboard from '../Client/OutletDashboard';
 import OutletSummary from '../Client/OutletSummary';
 import OutletEditDetails from '../Client/OutletEditDetails';
 import CampaignOverview from '../Vendor/CampaignOverview';
+import CustomerChatDetail from '../Vendor/CustomerChatDetail';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -158,9 +159,7 @@ const AppNavigation = () => {
   };
   return (
     <NavigationContainer>
-      <Stack.Navigator
-        initialRouteName={'Splash Screen'}
-        screenOptions={{headerShown: false}}>
+      <Stack.Navigator initialRouteName={'Splash Screen'} screenOptions={{headerShown: false}}>
         {/*Splash Screen*/}
         <Stack.Screen name={'Splash Screen'} component={SplashScreen} />
         {/*Authentication Screen*/}
@@ -169,6 +168,7 @@ const AppNavigation = () => {
         <Stack.Screen name={'Main'} component={MainApp} />
         {/*Vendor Main Screen*/}
         <Stack.Screen name={'Vendor App'} component={VendorMainApp} />
+        <Stack.Screen name={'CustomerChatDetail'} component={CustomerChatDetail} />
         {/*Client Stack*/}
         <Stack.Screen name={'Home'} component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name={'Add Supplier'} component={AddSupplier} />
