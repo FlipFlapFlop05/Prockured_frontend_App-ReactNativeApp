@@ -118,6 +118,11 @@ const SpecificVendorOrderNow = ({route}) => {
         ...p,
         count: 0,
         image: require('../Images/VendorProfileImage.png'),
+        ...(selected === 'supplier' && {
+          SupplierName: details.businessName,
+          SupplierPhone: details.phone,
+          gstNumber: details.gstNumber,
+        }),
       }));
 
       setProducts(prev => ({
