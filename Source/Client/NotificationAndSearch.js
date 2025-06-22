@@ -37,24 +37,18 @@ export default function NotificationAndSearch() {
     },
     {
       id: 2,
-      title: 'Order Tracking',
-      icon: DocumentChartBarIcon,
-      screen: 'Order Tracking',
-    },
-    {
-      id: 3,
       title: 'Find new item',
       icon: MagnifyingGlassIcon,
       modal: 'categoryModal',
     },
     {
-      id: 4,
+      id: 3,
       title: 'Support History',
       icon: ClockIcon,
       screen: 'Chat Support',
     },
     {
-      id: 5,
+      id: 4,
       title: 'FAQs & SOP',
       icon: ChatBubbleBottomCenterIcon,
       screen: 'Client FAQ',

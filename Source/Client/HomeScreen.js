@@ -474,16 +474,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
-            <TouchableOpacity
-              style={styles.chatButton}
-              onPress={() => setChatModalVisible(true)}>
-              <View style={styles.chatButtonInner}>
-                <Image
-                  source={require('../Images/Categories.png')}
-                  style={styles.categoryPopUp}
-                />
-              </View>
-            </TouchableOpacity>
+            
             <Modal
               animationType="slide"
               transparent={true}
@@ -507,6 +498,16 @@ export default function HomeScreen() {
               </View>
             </Modal>
           </ScrollView>
+          <TouchableOpacity
+              style={styles.chatButton}
+              onPress={() => setChatModalVisible(true)}>
+              <View style={styles.chatButtonInner}>
+                <Image
+                  source={require('../Images/Categories.png')}
+                  style={styles.categoryPopUp}
+                />
+              </View>
+            </TouchableOpacity>
         </SafeAreaView>
       )}
     </SafeAreaView>

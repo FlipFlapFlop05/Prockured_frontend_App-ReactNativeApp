@@ -130,17 +130,28 @@ export default function Catalogue() {
   };
 
   const toggleSearch = () => {
-    setIsSearchVisible(!isSearchVisible);
-    Animated.timing(searchAnim, {
-      toValue: isSearchVisible ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    if (isSearchVisible) {
+      // If search is visible, animate it out first, then hide
+      Animated.timing(searchAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => setIsSearchVisible(false));
+    } else {
+      // If search is hidden, show it first, then animate it in
+      setIsSearchVisible(true);
+      Animated.timing(searchAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
+    setSearchTerm(''); // Clear search term when toggling
   };
 
   const searchWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, width * 0.9],
+    outputRange: [0, width * 0.8], // Adjust this value to control search input width when open
   });
 
   const handleCategoryChange = category => {
@@ -175,33 +186,24 @@ export default function Catalogue() {
 
   return (
     <View style={styles.outerContainer}>
-      <View
-        style={{flexDirection: 'row', alignItems: 'center', marginTop: '3%'}}>
+      {/* Header Container */}
+      <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
-          style={{marginLeft: '5%', position: 'relative', bottom: '10%'}}>
+          style={styles.backButton}>
           <ChevronLeftIcon size={21} color="#333" strokeWidth={2} />
         </TouchableOpacity>
-        <View style={{marginLeft: '2%'}}>
-          <Text
-            style={{
-              fontWeight: 'bold',
-              fontSize: 20,
-              fontFamily: 'Montserrat',
-            }}>
+
+        <View style={styles.headerTitleContainer}>
+          <Text style={styles.headerTitle}>
             {data?.length === 0 ? 'Catalogue' : selectedMainCategory}
           </Text>
 
           {data?.length > 0 ? (
             <TouchableOpacity
               onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
-              <View
-                style={{
-                  flexDirection: 'row',
-                  alignItems: 'center',
-                  marginTop: '2%',
-                }}>
-                <Text style={{color: '#76B117'}}>Change Category</Text>
+              <View style={styles.changeCategoryButton}>
+                <Text style={styles.changeCategoryText}>Change Category</Text>
                 <ChevronDownIcon
                   size={18}
                   color="#76B117"
@@ -211,7 +213,25 @@ export default function Catalogue() {
             </TouchableOpacity>
           ) : null}
         </View>
+
+        {/* Search Icon */}
+        <TouchableOpacity onPress={toggleSearch} style={styles.searchIcon}>
+          <MagnifyingGlassIcon size={24} color="#333" />
+        </TouchableOpacity>
       </View>
+
+      {/* Search Bar - Conditionally rendered below the header */}
+      {isSearchVisible && (
+        <Animated.View style={[styles.searchBarWrapper, {width: searchWidth}]}>
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Search products..."
+            placeholderTextColor="gray"
+            value={searchTerm}
+            onChangeText={setSearchTerm}
+          />
+        </Animated.View>
+      )}
 
       {isDropdownVisible && (
         <View style={styles.dropdown}>
@@ -225,6 +245,7 @@ export default function Catalogue() {
           ))}
         </View>
       )}
+
       {data.length === 0 ? (
         <View style={styles.emptyState}>
           <Image
@@ -241,24 +262,6 @@ export default function Catalogue() {
         </View>
       ) : (
         <ScrollView style={styles.container}>
-          {/* Search Bar Toggle and Input */}
-          <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end', paddingHorizontal: 16}}>
-            <TouchableOpacity onPress={toggleSearch} style={{padding: 8}}>
-              <MagnifyingGlassIcon size={24} color="#333" />
-            </TouchableOpacity>
-            {isSearchVisible && (
-              <Animated.View style={[styles.searchContainer, {width: searchWidth}]}>
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search products..."
-                  placeholderTextColor="gray"
-                  value={searchTerm}
-                  onChangeText={setSearchTerm}
-                />
-              </Animated.View>
-            )}
-          </View>
-
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
@@ -381,16 +384,65 @@ export default function Catalogue() {
 }
 
 const styles = StyleSheet.create({
-  outerContainer: {flex: 1, backgroundColor: '#f9f9f9'},
-  container: {padding: 15},
+  outerContainer: {
+    flex: 1, 
+    backgroundColor: '#f9f9f9'
+  },
+  container: {
+    padding: 15
+  },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
+  // Header Styles
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: '3%',
+    paddingHorizontal: 16,
+  },
+  backButton: {
+    // position: 'relative', // Removed, not needed with flexbox
+    // bottom: '5%', // Removed, not needed with flexbox
+  },
+  headerTitleContainer: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  headerTitle: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    fontFamily: 'Montserrat',
+  },
+  changeCategoryButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: '2%',
+  },
+  changeCategoryText: {color: '#76B117'},
+  searchIcon: {
+    padding: 8,
+  },
+  // New Styles for Search Bar placement
+  searchBarWrapper: {
+    paddingHorizontal: 16,
+    marginBottom: 10, // Space below the search bar
+    alignSelf: 'center', // Center the animated view if its width is less than parent
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    color: '#000',
+    // flex: 1, // Not needed here as width is set by animation
+  },
   dropdown: {
     position: 'absolute',
-    top: 70,
+    top: 100, // Adjusted top to be below the new header
     left: 20,
     right: 20,
     backgroundColor: '#fff',
@@ -478,22 +530,6 @@ const styles = StyleSheet.create({
     fontFamily: 'Montserrat',
   },
   basketCount: {color: '#fff', fontSize: 16, fontWeight: 'bold', marginLeft: 6},
-  searchContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-end',
-    marginBottom: 10,
-    paddingHorizontal: 16,
-  },
-  searchInput: {
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    padding: 10,
-    flex: 1, // Allow TextInput to take available space
-    fontSize: 16,
-    color: '#000',
-    marginRight: 10, // Add some space between search icon and input
-  },
   noProductsText: {
     textAlign: 'center',
     marginTop: 20,
