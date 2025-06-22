@@ -68,7 +68,7 @@ import OutletDashboard from '../Client/OutletDashboard';
 import OutletSummary from '../Client/OutletSummary';
 import OutletEditDetails from '../Client/OutletEditDetails';
 import CampaignOverview from '../Vendor/CampaignOverview';
-import CustomerChatDetail from '../Vendor/CustomerChatDetail';
+import CustomerChatDetails from '../ChatDetail/CustomerChatDetail';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -168,7 +168,6 @@ const AppNavigation = () => {
         <Stack.Screen name={'Main'} component={MainApp} />
         {/*Vendor Main Screen*/}
         <Stack.Screen name={'Vendor App'} component={VendorMainApp} />
-        <Stack.Screen name={'CustomerChatDetail'} component={CustomerChatDetail} />
         {/*Client Stack*/}
         <Stack.Screen name={'Home'} component={HomeScreen} options={{headerShown: false}} />
         <Stack.Screen name={'Add Supplier'} component={AddSupplier} />
@@ -198,6 +197,7 @@ const AppNavigation = () => {
         <Stack.Screen name={'Orders'} component={Orders} options={{headerShown: false}} />
         <Stack.Screen name={'Outlet Edit Details'} component={OutletEditDetails} />
         <Stack.Screen name={'Setting'} component={ClientSetting} />
+        <Stack.Screen name = {"CustomerChatDetail"} component={CustomerChatDetails} />
         {/*Vendor Stack*/}
         <Stack.Screen name={'Basic Vendor Profile'} component={BasicVendorProfile} />
         <Stack.Screen name={'Customer Details'} component={CustomerDetails} />

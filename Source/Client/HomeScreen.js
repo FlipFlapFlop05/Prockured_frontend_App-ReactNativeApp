@@ -1,87 +1,96 @@
-import React, {useEffect, useState} from 'react';
-import {useFocusEffect} from '@react-navigation/native'; // Import useFocusEffect
+// HomeScreen.js
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  StyleSheet,
   FlatList,
-  Dimensions,
-  Modal,
-  SafeAreaView,
+  TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Image,
+  Modal,
+  ScrollView,
+  SafeAreaView,
+  StyleSheet,
+  Dimensions,
+  Alert
 } from 'react-native';
-import {BellIcon} from 'react-native-heroicons/solid';
-import {
-  ChatBubbleLeftEllipsisIcon,
-  ChevronDownIcon,
-  MagnifyingGlassIcon,
-  QuestionMarkCircleIcon,
-} from 'react-native-heroicons/outline';
-import {categories, worksData} from '../Constant/constant';
-import {useNavigation} from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import GenericVectorIcon from '../components/GenericVectorIcon';
-import {useDispatch, useSelector} from 'react-redux';
-import {setSelectedOutlet, setAllOutlets} from '../../store/slice/OutletSlice';
+import { useDispatch, useSelector } from 'react-redux';
+import { BellIcon, QuestionMarkCircleIcon, MagnifyingGlassIcon, ChevronDownIcon, ChatBubbleLeftEllipsisIcon } from 'react-native-heroicons/outline';
+import GenericVectorIcon from 'react-native-vector-icons/FontAwesome'; // Example for FontAwesome icon
+import { database } from '../Firebase/firebase'; // Ensure this path is correct
+import { categories, worksData } from '../Constant/constant';
 
-const {width, height} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
-const dummyOutlets = [];
+const dummyOutlets = [
+  { id: 'outlet1', outletId: 'outlet1', OutletName: 'Main Store', Address: '123 Main St, Anytown' },
+  { id: 'outlet2', outletId: 'outlet2', OutletName: 'Warehouse', Address: '456 Warehouse Rd, Anytown' },
+];
+
 
 export default function HomeScreen() {
   const [isChatModalVisible, setChatModalVisible] = useState(false);
   const navigation = useNavigation();
-  const [data, setData] = useState([]);
-  const [clientData, setClientData] = useState([]);
+  const [data, setData] = useState([]); // This will hold supplier data
+  const [clientData, setClientData] = useState([]); // This will hold client's own data
   const [clientOutlet, setClientOutlet] = useState(dummyOutlets ?? []);
-  const [clientPhoneNumber, setClientPhoneNumber] = useState(null);
+  const [clientGST, setClientGST] = useState(null); // Client's GST number
   const [isLoading, setIsLoading] = useState(true);
   const [isWorkDataVisible, setWorkDataVisible] = useState(false);
   const [searchText, setSearchText] = useState('');
   const [showCategories, setShowCategories] = useState(true);
   const [showHowItWorks, setShowHowItWorks] = useState(true);
   const [isOutletDropdownVisible, setIsOutletDropdownVisible] = useState(false);
+  const [hasSuppliers, setHasSuppliers] = useState(false); // New state to manage conditional rendering
 
   const dispatch = useDispatch();
-  const {selectedOutlet} = useSelector(state => state.outlet);
+  const { selectedOutlet } = useSelector(state => state.outlet);
 
   const filteredData = data.filter(item =>
     item?.businessName?.toLowerCase().includes(searchText.toLowerCase()),
   );
+
+  // Effect to determine if there are suppliers to show the main layout
+  useEffect(() => {
+    setHasSuppliers(filteredData.length > 0);
+  }, [filteredData]);
 
   useFocusEffect(
     React.useCallback(() => {
       const fetchData = async () => {
         setIsLoading(true);
         try {
-          const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-          setClientPhoneNumber(storedPhoneNumber);
+          const storedClientGst = await AsyncStorage.getItem('clientGST'); // Fetch client's own GST
+          setClientGST(storedClientGst); // Set client's GST state
 
-          if (storedPhoneNumber) {
+          if (storedClientGst) {
+            // Fetch suppliers associated with this client
             const supplierResponse = await axios.get(
-              `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedPhoneNumber}`,
+              `https://api-v7quhc5aza-uc.a.run.app/getSupplier/${storedClientGst}`,
             );
-            const supplierData = Object.values(supplierResponse.data);
-            setData(supplierData);
+            // Assuming response.data is an object, convert it to an array of suppliers
+            const supplierDataArray = Object.values(supplierResponse.data).map(sup => ({
+                ...sup,
+                supplierGST: sup.gstNumber // Assuming 'gst' key holds supplier's GST
+            }));
+            setData(supplierDataArray);
 
-            const gstNumber = await AsyncStorage.getItem('clientGST');
-            if (gstNumber) {
-              const clientResponse = await axios.get(
-                `https://api-v7quhc5aza-uc.a.run.app/getClient/${gstNumber}`,
-              );
-              setClientData(clientResponse.data);
-            }
+            // Fetch client's own data (if needed, though not directly used for chat init here)
+            const clientResponse = await axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getClient/${storedClientGst}`,
+            );
+            setClientData(clientResponse.data);
 
             // Fetch outlets data
-            await fetchClientOutletData(storedPhoneNumber);
+            await fetchClientOutletData(storedClientGst);
           }
         } catch (error) {
           console.error('Fetch error:', error);
+          Alert.alert('Error', 'Failed to load data. Please try again.');
           // Fallback to dummy data if API fails
           dispatch(setAllOutlets(dummyOutlets));
           if (dummyOutlets.length > 0) {
@@ -99,21 +108,18 @@ export default function HomeScreen() {
           );
 
           if (response.data && Object.keys(response.data).length > 0) {
-            // Convert the response object to an array
             const dataArray = Object.values(response.data).map(item => ({
               ...item,
               id: item.outletId, // ensure id is present for FlatList
             }));
 
-            // Update both Redux and local state
             dispatch(setAllOutlets(dataArray));
             dispatch(setSelectedOutlet(dataArray[0]));
             setClientOutlet(dataArray);
           } else {
-            // Handle the case where no outlets are found
             const dummyWithIds = dummyOutlets.map(item => ({
               ...item,
-              id: item.outletId || item.id || Math.random().toString(), // ensure id fallback
+              id: item.outletId || item.id || Math.random().toString(),
             }));
 
             dispatch(setAllOutlets(dummyWithIds));
@@ -122,7 +128,6 @@ export default function HomeScreen() {
           }
         } catch (error) {
           console.error('Error fetching outlets:', error);
-          // Fallback to dummy data if API fails
           const dummyWithIds = dummyOutlets.map(item => ({
             ...item,
             id: item.outletId || item.id || Math.random().toString(),
@@ -138,11 +143,11 @@ export default function HomeScreen() {
     }, []),
   );
 
-  const renderCategoryItem = ({item}) => (
+  const renderCategoryItem = ({ item }) => (
     <TouchableOpacity
       style={styles.categoryItem}
-      onPress={() => navigation.navigate('View Categories', {...item})}>
-      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      onPress={() => navigation.navigate('View Categories', { ...item })}>
+      <Image source={{ uri: item.image }} style={styles.categoryImage} />
       <Text
         style={styles.categoryText}
         numberOfLines={2}
@@ -152,11 +157,11 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const renderCategoryItemModal = ({item}) => (
+  const renderCategoryItemModal = ({ item }) => (
     <TouchableOpacity
       style={styles.categoryItemModal}
-      onPress={() => navigation.navigate('View Categories', {...item})}>
-      <Image source={{uri: item.image}} style={styles.categoryImage} />
+      onPress={() => navigation.navigate('View Categories', { ...item })}>
+      <Image source={{ uri: item.image }} style={styles.categoryImage} />
       <Text
         style={styles.categoryText}
         numberOfLines={2}
@@ -166,7 +171,7 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const renderWorkItem = ({item}) => (
+  const renderWorkItem = ({ item }) => (
     <View style={styles.workItem}>
       <Image source={item.image} style={styles.workImage} />
       <Text style={styles.workTitle}>{item.title}</Text>
@@ -174,7 +179,7 @@ export default function HomeScreen() {
     </View>
   );
 
-  const renderWorkItemModal = ({item}) => (
+  const renderWorkItemModal = ({ item }) => (
     <View
       style={{
         flexDirection: 'column',
@@ -183,14 +188,14 @@ export default function HomeScreen() {
       }}>
       <Image
         source={item.image}
-        style={{width: width * 0.4, height: width * 0.3}}
+        style={{ width: width * 0.4, height: width * 0.3 }}
       />
       <Text style={styles.workTitle}>{item.title}</Text>
       <Text style={styles.workDescription}>{item.description}</Text>
     </View>
   );
 
-  const renderOutletItem = ({item}) => (
+  const renderOutletItem = ({ item }) => (
     <TouchableOpacity
       style={styles.outletItem}
       onPress={() => {
@@ -202,11 +207,59 @@ export default function HomeScreen() {
     </TouchableOpacity>
   );
 
-  const [hasSuppliers, setHasSuppliers] = useState(false);
+  // New function to handle chat with a supplier
+  const handleChatWithSupplier = async (supplier) => {
+    if (!clientGST) {
+      Alert.alert("Error", "Your GST number is not found. Cannot start chat.");
+      return;
+    }
+    if (!supplier.supplierGST) {
+      Alert.alert("Error", "Supplier GST not found. Cannot start chat.");
+      return;
+    }
 
-  useEffect(() => {
-    setHasSuppliers(filteredData.length > 0);
-  }, [filteredData]);
+    const supplierName = supplier.businessName || supplier.name || 'Unknown Supplier';
+
+    // Fetch existing chat history for this specific supplier-client pair
+    const chatId = [clientGST, supplier.supplierGST].sort().join('_');
+    const chatMessagesRef = database.ref(`chats/${chatId}/messages`);
+
+    try {
+        const snapshot = await chatMessagesRef.orderByChild('timestamp').once('value');
+        const existingMessages = [];
+        snapshot.forEach((childSnapshot) => {
+            const messageData = childSnapshot.val();
+            existingMessages.push({
+                id: childSnapshot.key,
+                sender: messageData.sender,
+                type: messageData.type || 'text',
+                text: messageData.message,
+                order: messageData.order,
+                timestamp: new Date(messageData.timestamp),
+            });
+        });
+
+        // Navigate to the chat detail screen
+        navigation.navigate('CustomerChatDetail', {
+            customerGST: clientGST,        // Your GST as the client
+            vendorGST: supplier.supplierGST,
+            customerName: supplierName,
+            initialMessages: existingMessages,
+            currentUserGST: clientGST, // <--- Add this line: the current user (client)'s GST
+        });
+    } catch (error) {
+        console.error("Error fetching existing chat messages:", error);
+        Alert.alert("Error", "Failed to load chat history.");
+        // Navigate anyway, but with no initial messages
+        navigation.navigate('CustomerChatDetail', {
+            customerGST: clientGST,
+            vendorGST: supplier.supplierGST,
+            customerName: supplierName,
+            initialMessages: [],
+        });
+    }
+  };
+
 
   return (
     <SafeAreaView style={styles.safeAreaContainer}>
@@ -217,7 +270,7 @@ export default function HomeScreen() {
       ) : hasSuppliers ? (
         <View style={styles.chatScreenHeaderView}>
           <View style={styles.chatScreenHeaderViewIcon}>
-            <View style={{flex: 1}}>
+            <View style={{ flex: 1 }}>
               <TouchableOpacity
                 onPress={() =>
                   setIsOutletDropdownVisible(!isOutletDropdownVisible)
@@ -235,7 +288,7 @@ export default function HomeScreen() {
                     color={'#000'}
                     style={{
                       transform: [
-                        {rotate: isOutletDropdownVisible ? '180deg' : '0deg'},
+                        { rotate: isOutletDropdownVisible ? '180deg' : '0deg' },
                       ],
                     }}
                   />
@@ -255,7 +308,7 @@ export default function HomeScreen() {
                 </View>
               )}
             </View>
-            <View style={{flexDirection: 'row'}}>
+            <View style={{ flexDirection: 'row' }}>
               <TouchableOpacity onPress={() => setWorkDataVisible(true)}>
                 <BellIcon size={30} color={'#a9a9a9'} strokeWidth={2} />
               </TouchableOpacity>
@@ -287,14 +340,13 @@ export default function HomeScreen() {
 
           <FlatList
             data={filteredData}
-            keyExtractor={item => item.supplierId}
-            renderItem={({item}) => (
+            keyExtractor={item => item.supplierId || item.gst} // Use gst as fallback key
+            renderItem={({ item }) => (
               <View>
                 <TouchableOpacity
                   style={styles.chatScreenCard}
-                  onPress={() =>
-                    navigation.navigate('Chat With Supplier', {vendor: item})
-                  }>
+                  onPress={() => handleChatWithSupplier(item)} // Use the new chat handler
+                >
                   <View style={styles.chatScreenCardView}>
                     <Image
                       source={require('../Images/VendorProfileImage.png')}
@@ -316,7 +368,7 @@ export default function HomeScreen() {
             <View style={styles.chatButtonInner}>
               <Image
                 source={require('../Images/Categories.png')}
-                style={{width: 25, height: 25}}
+                style={{ width: 25, height: 25 }}
               />
             </View>
           </TouchableOpacity>
@@ -389,7 +441,7 @@ export default function HomeScreen() {
                     type="FontAwesome"
                     color="rgba(0, 0, 0, 0.54)"
                     size={23}
-                    style={{marginRight: 10}}
+                    style={{ marginRight: 10 }}
                   />
                 </TouchableOpacity>
                 <QuestionMarkCircleIcon
@@ -419,7 +471,7 @@ export default function HomeScreen() {
                   color={'black'}
                   strokeWidth={3}
                   style={{
-                    transform: [{rotate: showCategories ? '180deg' : '0deg'}],
+                    transform: [{ rotate: showCategories ? '180deg' : '0deg' }],
                   }}
                 />
               </TouchableOpacity>
@@ -442,7 +494,7 @@ export default function HomeScreen() {
                   color={'black'}
                   strokeWidth={3}
                   style={{
-                    transform: [{rotate: showHowItWorks ? '180deg' : '0deg'}],
+                    transform: [{ rotate: showHowItWorks ? '180deg' : '0deg' }],
                   }}
                 />
               </TouchableOpacity>
@@ -474,7 +526,7 @@ export default function HomeScreen() {
                 </View>
               </View>
             </View>
-            
+
             <Modal
               animationType="slide"
               transparent={true}
@@ -499,400 +551,378 @@ export default function HomeScreen() {
             </Modal>
           </ScrollView>
           <TouchableOpacity
-              style={styles.chatButton}
-              onPress={() => setChatModalVisible(true)}>
-              <View style={styles.chatButtonInner}>
-                <Image
-                  source={require('../Images/Categories.png')}
-                  style={styles.categoryPopUp}
-                />
-              </View>
-            </TouchableOpacity>
+            style={styles.chatButton}
+            onPress={() => setChatModalVisible(true)}>
+            <View style={styles.chatButtonInner}>
+              <Image
+                source={require('../Images/Categories.png')}
+                style={styles.categoryPopUp}
+              />
+            </View>
+          </TouchableOpacity>
         </SafeAreaView>
       )}
     </SafeAreaView>
   );
 }
 
+// Minimal styles needed for this component, add others as per your design
 const styles = StyleSheet.create({
-  safeAreaContainer: {
-    flex: 1,
-    backgroundColor: '#fff',
-  },
-  chatScreenHeaderView: {
-    flex: 1,
-    display: 'flex',
-    backgroundColor: 'white',
-  },
-  chatScreenHeaderViewIcon: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    padding: 10,
-    paddingTop: '7%',
-    paddingHorizontal: '5%',
-  },
-  chatScreenTextInputView: {
-    backgroundColor: 'gainsboro',
-    width: '90%',
-    alignSelf: 'center',
-    borderRadius: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  chatScreenTextInputViewIcon: {
-    marginLeft: 20,
-  },
-  chatScreenTextInput: {
-    marginLeft: 10,
-    width: '70%',
-    color: 'black',
-  },
-  chatScreenCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: 20,
-    padding: 20,
-    borderWidth: 2,
-    borderColor: 'lightgray',
-    width: '95%',
-    alignSelf: 'center',
-    borderRadius: 20,
-  },
-  chatScreenCardView: {
-    flexDirection: 'row',
-  },
-  chatScreenCardImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 20,
-  },
-  chatScreenCardTextView: {
-    flexDirection: 'column',
-    justifyContent: 'space-evenly',
-    marginLeft: 10,
-  },
-  chatScreenCardText: {
-    color: '#76B117',
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  scrollViewContent: {
-    paddingBottom: width * 0.2,
-  },
-  centeredView: {
-    flex: 1,
-    alignItems: 'center',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignContent: 'center',
-  },
-  header: {
-    flexDirection: 'row',
-    paddingTop: 30,
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    alignItems: 'center', // Vertically center items
-  },
-  profileImage: {
-    width: width * 0.2,
-    height: width * 0.1,
-    borderRadius: 35, // Half of width/height for perfect circle
-  },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center', // Vertically center icons
-  },
-  searchBar: {
-    backgroundColor: '#F8F9FE',
-    width: '90%',
-    alignSelf: 'center',
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
-    padding: 10,
-  },
-  searchIcon: {
-    marginLeft: 10,
-  },
-  searchText: {
-    marginLeft: 10,
-    flex: 1,
-  },
-  sectionHeader: {
-    paddingHorizontal: 20,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: 5, // Add margin top for spacing
-  },
-  sectionTitle: {
-    fontWeight: 'bold',
-    fontSize: 18,
-  },
-  flatListContent: {
-    paddingHorizontal: 10,
-  },
-  categoryItem: {
-    flex: 1,
-    margin: 5,
-    padding: 10,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 5,
-    height: 100,
-    width: (width - 40) / 3,
-  },
-  categoryItemModal: {
-    margin: 5,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderRadius: 5,
-    height: 100,
-    width: (width - 100) / 3,
-  },
-  categoryImage: {
-    width: 65,
-    height: 65,
-    borderRadius: 10,
-  },
-  categoryText: {
-    fontSize: 14,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    flexWrap: 'wrap',
-    width: 80,
-  },
-  workItem: {
-    width: (width - 60) / 2,
-    height: 190,
-    margin: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -5,
-    borderRadius: 10,
-  },
-  safeAreaViewContainer: {
-    flex: 1,
-  },
-  workImage: {
-    width: width * 0.4,
-    height: width * 0.3,
-    marginTop: 40,
-    borderRadius: 30,
-  },
-  workTitle: {
-    fontSize: 13,
-    fontWeight: 'bold',
-    color: 'black',
-    marginTop: 7,
-  },
-  workDescription: {
-    fontSize: 12,
-    fontWeight: '500',
-    color: 'black',
-    textAlign: 'center',
-    paddingHorizontal: 10,
-    marginTop: 5,
-  },
-  chatButton: {
-    position: 'absolute',
-    bottom: height * 0.173,
-    right: 20,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  chatButtonInner: {
-    backgroundColor: '#76B117',
-    padding: 10,
-    borderRadius: 25, // Make it a circle
-    height: 50,
-    width: 50,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Semi-transparent background
-  },
-  modalContent: {
-    width: 300,
-    backgroundColor: 'white',
-    borderRadius: 20,
-    padding: 35,
-    alignItems: 'center',
-    elevation: 5, // For Android shadow
-    shadowColor: '#000', // For iOS shadow
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-  },
-  modalTitle: {
-    marginBottom: 15,
-    textAlign: 'center',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  modalCloseButton: {
-    borderRadius: 20,
-    padding: 10,
-    backgroundColor: '#76B117', // Example color
-    marginTop: 20, // Add some margin top
-  },
-  modalCloseButtonText: {
-    color: 'white',
-    fontWeight: 'bold',
-    textAlign: 'center',
-  },
-  floatingButton: {
-    backgroundColor: '#76B117',
-    width: 50,
-    height: 50,
-    borderRadius: 30,
-    position: 'absolute',
-    bottom: 80,
-    right: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.3,
-    shadowRadius: 2,
-  },
-  floatingButtonText: {
-    color: 'white',
-    fontSize: 30,
-    fontWeight: 'bold',
-  },
-  AddSupplierTouchableOpacity: {
-    backgroundColor: '#76B117',
-    paddingVertical: 12,
-    paddingHorizontal: 20,
-    borderRadius: 20,
-    width: 320,
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
-  },
-  AddSupplierText: {
-    fontSize: 18,
-    color: '#fff',
-    fontWeight: 700,
-    alignSelf: 'center',
-    font: 'Montserrat',
-  },
-  categoryPopUp: {
-    width: 25,
-    height: 25,
-  },
-  allChatView: {
-    flex: 1,
-    height: height * 0.5,
-  },
-  allChatText: {
-    fontStyle: 'normal',
-    fontWeight: '800',
-    fontSize: 16,
-    fontFamily: 'Montserrat',
-    lineHeight: 30,
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    letterSpacing: 1,
-  },
-  chatContainer: {
-    width: '90%',
-    height: '85%',
-    borderWidth: 1,
-    borderColor: '#76B117',
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'space-evenly',
-    borderRadius: 25,
-  },
-  imageContainer: {
-    width: width * 0.4,
-    height: width * 0.3,
-    borderRadius: 20,
-  },
-  emptyChatView: {
-    alignItems: 'center',
-    alignSelf: 'center',
-    justifyContent: 'center',
-  },
-  emptyChatText: {
-    fontStyle: 'normal',
-    fontWeight: '800',
-    fontSize: 16,
-    lineHeight: 20,
-    letterSpacing: 0.5,
-    fontFamily: 'Montserrat',
-    color: '#757575',
-  },
-  outletSelector: {
-    // paddingVertical: 8,
-    paddingBottom: '4%',
-  },
-  deliveryAddressLabel: {
-    fontSize: 16,
-    fontWeight: '200',
-    fontFamily: 'Montserrat',
-    color: '#666',
-  },
-  selectedOutletContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  selectedOutletName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    fontFamily: 'Montserrat',
-    marginRight: 8,
-    maxWidth: width * 0.6,
-  },
-  selectedOutletAddress: {
-    fontSize: 14,
-    color: '#666',
-    fontFamily: 'Montserrat',
-    maxWidth: width * 0.7,
-  },
-  outletDropdown: {
-    position: 'absolute',
-    top: 70,
-    left: 0,
-    right: 0,
-    backgroundColor: 'white',
-    borderRadius: 8,
-    padding: 10,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    elevation: 5,
-    zIndex: 100,
-    maxHeight: 200,
-  },
-  outletItem: {
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
-  },
-  outletName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#333',
-  },
-  outletAddress: {
-    fontSize: 12,
-    color: '#666',
-    marginTop: 4,
-  },
-});
+    safeAreaContainer: {
+      flex: 1,
+      backgroundColor: '#f5f5f5',
+    },
+    centeredView: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    chatScreenHeaderView: {
+      flex: 1,
+      paddingTop: Platform.OS === 'android' ? 20 : 0, // Adjust for status bar
+    },
+    chatScreenHeaderViewIcon: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 15,
+      paddingVertical: 10,
+    },
+    outletSelector: {
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      padding: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+      maxWidth: '80%', // Limit width
+    },
+    deliveryAddressLabel: {
+      fontSize: 12,
+      color: '#666',
+    },
+    selectedOutletContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginTop: 5,
+    },
+    selectedOutletName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#333',
+      marginRight: 5,
+      flexShrink: 1, // Allow text to shrink
+    },
+    selectedOutletAddress: {
+      fontSize: 12,
+      color: '#888',
+      marginTop: 2,
+    },
+    outletDropdown: {
+      position: 'absolute',
+      top: 130, // Adjust based on your header height
+      left: 15,
+      right: 15,
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+      zIndex: 1000, // Ensure it's above other content
+      maxHeight: 200, // Limit height
+    },
+    outletItem: {
+      padding: 15,
+      borderBottomWidth: 1,
+      borderBottomColor: '#eee',
+    },
+    outletName: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    outletAddress: {
+      fontSize: 13,
+      color: '#666',
+    },
+    chatScreenTextInputView: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      marginHorizontal: 15,
+      paddingHorizontal: 10,
+      marginBottom: 15,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    chatScreenTextInputViewIcon: {
+      marginRight: 10,
+    },
+    chatScreenTextInput: {
+      flex: 1,
+      height: 45,
+      color: 'black',
+    },
+    chatScreenCard: {
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      padding: 15,
+      marginBottom: 10,
+      marginHorizontal: 15,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    chatScreenCardView: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    chatScreenCardImage: {
+      width: 50,
+      height: 50,
+      borderRadius: 25,
+      marginRight: 15,
+    },
+    chatScreenCardTextView: {
+      flex: 1,
+    },
+    chatScreenCardText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      color: '#333',
+    },
+    chatButton: {
+      position: 'absolute',
+      bottom: 20,
+      right: 20,
+      backgroundColor: '#76B117',
+      borderRadius: 30,
+      width: 60,
+      height: 60,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    chatButtonInner: {
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    floatingButton: {
+      position: 'absolute',
+      bottom: 90, // Adjust as needed, above the chat button
+      right: 20,
+      backgroundColor: '#007bff', // Or your preferred color
+      borderRadius: 30,
+      width: 60,
+      height: 60,
+      justifyContent: 'center',
+      alignItems: 'center',
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 2 },
+      shadowOpacity: 0.25,
+      shadowRadius: 3.84,
+      elevation: 5,
+    },
+    floatingButtonText: {
+      color: 'white',
+      fontSize: 30,
+      lineHeight: 30, // Adjust to center the '+' vertically
+    },
+    modalOverlay: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0,0,0,0.5)',
+    },
+    modalContent: {
+      backgroundColor: 'white',
+      borderRadius: 10,
+      padding: 20,
+      alignItems: 'center',
+      width: '80%',
+      maxHeight: '70%',
+    },
+    modalCloseButton: {
+      marginTop: 20,
+      padding: 10,
+      backgroundColor: '#76B117',
+      borderRadius: 5,
+    },
+    modalCloseButtonText: {
+      color: 'white',
+      fontWeight: 'bold',
+    },
+    flatListContent: {
+      // styles for FlatLists within modals or categories/works
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    categoryItem: {
+      alignItems: 'center',
+      width: width / 3 - 20, // Adjust for spacing
+      margin: 10,
+    },
+    categoryItemModal: {
+      alignItems: 'center',
+      width: width / 3 - 20, // Adjust for spacing
+      margin: 10,
+    },
+    categoryImage: {
+      width: 80,
+      height: 80,
+      borderRadius: 40,
+      marginBottom: 5,
+    },
+    categoryText: {
+      textAlign: 'center',
+      fontSize: 13,
+      color: '#333',
+    },
+    workItem: {
+      alignItems: 'center',
+      width: width / 2 - 30, // Adjust for spacing
+      margin: 10,
+      backgroundColor: '#fff',
+      borderRadius: 10,
+      padding: 10,
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.2,
+      shadowRadius: 1.41,
+      elevation: 2,
+    },
+    workImage: {
+      width: width * 0.35,
+      height: width * 0.25,
+      resizeMode: 'contain',
+    },
+    workTitle: {
+      fontSize: 15,
+      fontWeight: 'bold',
+      marginTop: 5,
+      textAlign: 'center',
+    },
+    workDescription: {
+      fontSize: 12,
+      color: '#666',
+      textAlign: 'center',
+      marginTop: 3,
+    },
+    safeAreaViewContainer: {
+        flex: 1,
+        backgroundColor: '#f5f5f5',
+    },
+    scrollViewContent: {
+        paddingBottom: 80, // Space for the floating button
+    },
+    header: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 15,
+    },
+    profileImage: {
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+    },
+    headerIcons: {
+        flexDirection: 'row',
+    },
+    searchBar: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        marginHorizontal: 15,
+        paddingHorizontal: 10,
+        height: 45,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
+        marginBottom: 20,
+    },
+    searchIcon: {
+        marginRight: 10,
+    },
+    searchText: {
+        color: '#888',
+        fontSize: 16,
+    },
+    sectionHeader: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 15,
+        marginBottom: 15,
+    },
+    sectionTitle: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#333',
+    },
+    allChatView: {
+        paddingHorizontal: 15,
+        marginTop: 20,
+    },
+    allChatText: {
+        fontSize: 20,
+        fontWeight: 'bold',
+        marginBottom: 15,
+        color: '#333',
+    },
+    chatContainer: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: '#fff',
+        borderRadius: 10,
+        padding: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.2,
+        shadowRadius: 1.41,
+        elevation: 2,
+    },
+    emptyChatView: {
+        alignItems: 'center',
+        marginTop: 10,
+    },
+    emptyChatText: {
+        fontSize: 18,
+        fontWeight: 'bold',
+        color: '#757575',
+        marginTop: 10,
+    },
+    AddSupplierTouchableOpacity: {
+        backgroundColor: '#76B117',
+        paddingVertical: 10,
+        paddingHorizontal: 20,
+        borderRadius: 5,
+        marginTop: 20,
+    },
+    AddSupplierText: {
+        color: 'white',
+        fontSize: 16,
+        fontWeight: 'bold',
+    },
+    categoryPopUp: {
+        width: 25,
+        height: 25,
+    }
+  });
