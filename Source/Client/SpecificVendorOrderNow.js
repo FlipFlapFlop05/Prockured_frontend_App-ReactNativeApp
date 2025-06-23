@@ -16,23 +16,53 @@ import {
   PlusIcon,
   MinusIcon,
 } from 'react-native-heroicons/outline';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native'; // Import useRoute
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 
 const screenWidth = Dimensions.get('window').width;
 
-const SpecificVendorOrderNow = ({route}) => {
-  const {details} = route.params;
+const SpecificVendorOrderNow = () => { // Removed {route} from props, use useRoute hook
+  const navigation = useNavigation();
+  const route = useRoute(); // Use useRoute hook to get route params
+
+  // Destructure the parameters passed from the previous screen (CustomerChatDetails)
+  const {clientGST: clientGstFromChat, vendorGST, customerName} = route.params || {};
 
   const [selectedTab, setSelectedTab] = useState('supplier');
   const [selectedUnit, setSelectedUnit] = useState('carton');
-  const [clientGST, setClientGST] = useState('');
+  const [clientGST, setClientGST] = useState(''); // This will store the current user's (client's) GST
   const [products, setProducts] = useState({my: [], supplier: []});
   const [loading, setLoading] = useState(true); // initial screen loader
   const [tabLoading, setTabLoading] = useState(false); // loader during tab switch
 
-  const navigation = useNavigation();
+  // This useEffect now takes care of setting the clientGST from AsyncStorage
+  // It also correctly prioritizes clientGstFromChat if available (passed from chat screen)
+  useEffect(() => {
+    const fetchAndSetClientGST = async () => {
+      try {
+        if (clientGstFromChat) {
+          // If clientGST is passed as a route param, use it directly
+          setClientGST(clientGstFromChat);
+        } else {
+          // Otherwise, try to get it from AsyncStorage
+          const gst = await AsyncStorage.getItem('clientGST');
+          if (gst) {
+            setClientGST(gst);
+          } else {
+            // Handle case where client GST is not found (e.g., alert user, navigate back)
+            Alert.alert("Error", "Your Client GST could not be found. Please log in again.");
+            setLoading(false); // Stop loading, as we can't proceed
+          }
+        }
+      } catch (error) {
+        console.log('Error reading client GST:', error);
+        Alert.alert("Error", "Failed to retrieve client GST.");
+        setLoading(false);
+      }
+    };
+    fetchAndSetClientGST();
+  }, [clientGstFromChat]); // Rerun if clientGstFromChat changes
 
   const updateCount = (tab, productId, delta) => {
     setProducts(prev => {
@@ -82,47 +112,45 @@ const SpecificVendorOrderNow = ({route}) => {
     </View>
   );
 
-  // Get client GST once on mount
-  useEffect(() => {
-    const fetchClientGST = async () => {
-      try {
-        const gst = await AsyncStorage.getItem('clientGST');
-        if (gst) setClientGST(gst);
-      } catch (error) {
-        console.log('Error reading client GST:', error);
-      }
-    };
-    fetchClientGST();
-  }, []);
-
-  // Fetch catalogue
+  // Fetch catalogue function
   const fetchCatalogue = async selected => {
-    if (
-      (selected === 'my' && !clientGST) ||
-      (selected === 'supplier' && !details?.gstNumber)
-    ) {
-      Alert.alert('Missing GST', 'Could not find a valid GST number.');
+    let gstToFetch = '';
+    let supplierDisplayName = ''; // To pass to products as SupplierName
+
+    if (selected === 'my') {
+      gstToFetch = clientGST; // This is the current user's GST
+      supplierDisplayName = "My Products"; // Or client's own name/business name
+    } else if (selected === 'supplier') {
+      gstToFetch = vendorGST; // This is the vendor's GST passed from chat
+      supplierDisplayName = customerName; // This is the vendor's display name passed from chat
+    }
+
+    if (!gstToFetch) {
+      Alert.alert('Missing GST', 'Could not find a valid GST number for the selected catalogue.');
+      setLoading(false); // Stop loading if GST is missing
+      setTabLoading(false);
       return;
     }
 
-    console.log(details);
+    // Only fetch if products for this tab are not already loaded OR if it's the initial load
+    // This prevents re-fetching unnecessarily on tab switch if data is already there.
+    if (products[selected].length === 0 || loading) {
+        setTabLoading(true); // Show tab-specific loader
+    }
 
-    const gstToUse = selected === 'my' ? clientGST : details?.gstNumber;
 
     try {
-      if (products[selected].length === 0) setTabLoading(true); // show only if data isn't cached
+      console.log(`Fetching catalogue for GST: ${gstToFetch}, Tab: ${selected}`);
       const res = await axios.get(
-        `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToUse}`,
+        `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToFetch}`,
       );
       const fetched = Object.values(res.data || []).map(p => ({
         ...p,
+        productId: p.productId || p.prodId, // Ensure productId exists, sometimes it's prodId from API
         count: 0,
         image: require('../Images/VendorProfileImage.png'),
-        ...(selected === 'supplier' && {
-          SupplierName: details.businessName,
-          SupplierPhone: details.phone,
-          gstNumber: details.gstNumber,
-        }),
+        SupplierName: supplierDisplayName, // Use the dynamically determined display name
+        gstNumber: gstToFetch, // Store the GST number associated with these products
       }));
 
       setProducts(prev => ({
@@ -130,23 +158,34 @@ const SpecificVendorOrderNow = ({route}) => {
         [selected]: fetched,
       }));
     } catch (err) {
-      console.log('Catalogue fetch failed:', err);
-      // Alert.alert('Error', 'Failed to load catalogue.');
+      console.log('Catalogue fetch failed:', err.message);
+      // More specific error message for the user
+      Alert.alert('Error', `Failed to load ${selected} catalogue. Please try again.`);
+      setProducts(prev => ({ // Clear products for the failed tab to allow re-fetch
+        ...prev,
+        [selected]: []
+      }));
     } finally {
-      setLoading(false);
-      setTabLoading(false);
+      setLoading(false); // Turn off initial loader
+      setTabLoading(false); // Turn off tab loader
     }
   };
 
-  // Initial fetch for default tab
+  // Initial fetch for default tab (supplier) AFTER clientGST is set
   useEffect(() => {
-    fetchCatalogue(selectedTab);
-  }, [clientGST]);
+    if (clientGST || vendorGST) { // Ensure either clientGST or vendorGST is available before initial fetch
+      fetchCatalogue(selectedTab);
+    }
+  }, [clientGST, vendorGST]); // Add vendorGST to dependencies for initial fetch
 
   // Refetch when tab changes
   const handleTabChange = tab => {
     setSelectedTab(tab);
-    fetchCatalogue(tab);
+    // Only refetch if data for the new tab is not already present
+    // or if you always want to ensure fresh data.
+    if (products[tab].length === 0) {
+      fetchCatalogue(tab);
+    }
   };
 
   const goToBasket = () => {
@@ -157,16 +196,28 @@ const SpecificVendorOrderNow = ({route}) => {
       return;
     }
 
-    const cart = {};
-    selectedProducts.forEach(product => {
-      cart[product.productId] = product.count;
-    });
+    // Prepare cart data as an array of objects for easier processing on next screen
+    const cartItems = selectedProducts.map(product => ({
+      productId: product.productId,
+      quantity: product.count,
+      prodName: product.prodName,
+      prodUnit: product.prodUnit,
+      myPrice: product.myPrice,
+      SupplierName: product.SupplierName,
+      gstNumber: product.gstNumber, // The GST of the supplier of *this specific product*
+    }));
 
+    // Ensure we're passing the correct clientGST and vendorGST for the order
+    // clientGST will be the current user's GST (from clientGstFromChat or AsyncStorage)
+    // vendorGST will be the GST of the supplier for this order (from route.params)
     navigation.navigate('View Basket', {
-      cart,
-      data: selectedProducts,
+      cartItems: cartItems, // Changed from 'cart' to 'cartItems' for clarity
+      clientGST: clientGST, // The client's GST
+      vendorGST: vendorGST, // The supplier/vendor's GST
+      vendorName: customerName, // The display name of the vendor
     });
   };
+
 
   return (
     <View style={styles.container}>
@@ -184,11 +235,13 @@ const SpecificVendorOrderNow = ({route}) => {
           source={require('../Images/VendorProfileImage.png')}
           style={styles.vendorLogo}
         />
-        <Text style={styles.vendorName}>{details.businessName}</Text>
+        {/* Display the vendor's name passed from chat */}
+        <Text style={styles.vendorName}>{customerName}</Text>
         <Text style={styles.vendorLabel}>Vendor</Text>
         <TouchableOpacity
           style={styles.addProductBtn}
-          onPress={() => navigation.navigate('Add Product Manually')}>
+          onPress={() => Alert.alert('Add Product Manually', 'This feature is under development.')}>
+          {/* You might want to remove this or make it functional if it's for this screen's products */}
           <Text style={styles.addProductText}>+ Add Products</Text>
         </TouchableOpacity>
       </View>
@@ -211,35 +264,35 @@ const SpecificVendorOrderNow = ({route}) => {
         </TouchableOpacity>
       </View>
 
-      {/* Unit Switch */}
+      {/* Unit Switch - Commented out as per original code */}
       {/* <View style={styles.unitSwitch}>
-        <TouchableOpacity
-          onPress={() => setSelectedUnit('kg')}
-          style={
-            selectedUnit === 'kg' ? styles.unitBtnGreen : styles.unitBtnGray
-          }>
-          <Text
-            style={
-              selectedUnit === 'kg' ? styles.unitTextGreen : styles.unitTextGray
-            }>
-            Per Kg
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setSelectedUnit('carton')}
-          style={
-            selectedUnit === 'carton' ? styles.unitBtnGreen : styles.unitBtnGray
-          }>
-          <Text
-            style={
-              selectedUnit === 'carton'
-                ? styles.unitTextGreen
-                : styles.unitTextGray
-            }>
-            Per 10 kg Carton
-          </Text>
-        </TouchableOpacity>
-      </View> */}
+         <TouchableOpacity
+           onPress={() => setSelectedUnit('kg')}
+           style={
+             selectedUnit === 'kg' ? styles.unitBtnGreen : styles.unitBtnGray
+           }>
+           <Text
+             style={
+               selectedUnit === 'kg' ? styles.unitTextGreen : styles.unitTextGray
+             }>
+             Per Kg
+           </Text>
+         </TouchableOpacity>
+         <TouchableOpacity
+           onPress={() => setSelectedUnit('carton')}
+           style={
+             selectedUnit === 'carton' ? styles.unitBtnGreen : styles.unitBtnGray
+           }>
+           <Text
+             style={
+               selectedUnit === 'carton'
+                 ? styles.unitTextGreen
+                 : styles.unitTextGray
+             }>
+             Per 10 kg Carton
+           </Text>
+         </TouchableOpacity>
+       </View> */}
 
       {/* Loader or Product List */}
       {loading || tabLoading ? (
@@ -256,7 +309,7 @@ const SpecificVendorOrderNow = ({route}) => {
         <FlatList
           data={products[selectedTab]}
           renderItem={renderProduct}
-          keyExtractor={item => item?.productId?.toString()}
+          keyExtractor={item => item?.productId?.toString() || Math.random().toString()} // Fallback keyExtractor
           contentContainerStyle={{paddingBottom: 100, paddingTop: '3%'}}
         />
       )}

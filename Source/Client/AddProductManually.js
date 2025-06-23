@@ -15,11 +15,22 @@ import {useNavigation} from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import {ChevronLeftIcon} from 'react-native-heroicons/outline';
-import {categories} from '../Constant/constant';
+import {categories} from '../Constant/constant'; // Assuming 'categories' is defined here
 import ValidatedInput from '../components/Inputs/ValidatedInput';
-import Config from 'react-native-config';
+// import Config from 'react-native-config'; // Not used in the provided snippet, so keeping it commented
 
 const {width: screenWidth, height} = Dimensions.get('window');
+
+// Define your available units
+const productUnits = [
+  {name: 'kg', value: 'kg'},
+  {name: 'grams', value: 'grams'},
+  {name: 'pounds', value: 'pounds'},
+  {name: 'liters', value: 'liters'},
+  {name: 'ml', value: 'ml'},
+  {name: 'Pcs', value: 'Pcs'}, // Pieces
+  {name: 'dozen', value: 'dozen'},
+];
 
 const AddProductManually = () => {
   const navigation = useNavigation();
@@ -31,14 +42,20 @@ const AddProductManually = () => {
   });
   const [modalVisible, setModalVisible] = useState(false);
   const [categoryModalVisible, setCategoryModalVisible] = useState(false);
+  const [unitModalVisible, setUnitModalVisible] = useState(false); // New state for unit modal
   const [selectedCategory, setSelectedCategory] = useState({
     categoryImage: '',
     categoryName: '',
   });
 
+  const [selectedProductUnit, setSelectedProductUnit] = useState({ // New state for selected unit
+    name: '',
+    value: '',
+  });
+
   const [formData, setFormData] = useState({
     productName: '',
-    productUnit: '',
+    productQuantity: '', // Changed from productUnit to productQuantity for clarity
     productPrice: '',
     productCategory: '',
   });
@@ -89,6 +106,14 @@ const AddProductManually = () => {
     }));
   }, [selectedCategory]);
 
+  // New useEffect to sync formData with selectedProductUnit
+  useEffect(() => {
+    // The actual unit type will now be stored in selectedProductUnit.value,
+    // so we don't need to put it into formData for quantity itself.
+    // If you had a field like 'unitType' in formData, you'd update it here.
+  }, [selectedProductUnit]);
+
+
   const fetchPhoneNumber = async () => {
     try {
       const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
@@ -130,6 +155,11 @@ const AddProductManually = () => {
     setCategoryModalVisible(false);
   };
 
+  const handleSelectUnit = unit => { // New handler for unit selection
+    setSelectedProductUnit(unit);
+    setUnitModalVisible(false);
+  };
+
   const renderCategoryItemModal = ({item}) => (
     <TouchableOpacity
       style={styles.categoryItemModal}
@@ -143,21 +173,32 @@ const AddProductManually = () => {
       </Text>
     </TouchableOpacity>
   );
+
+  const renderUnitItemModal = ({item}) => ( // New render function for units
+    <TouchableOpacity
+      style={styles.unitItemModal}
+      onPress={() => handleSelectUnit(item)}>
+      <Text style={styles.unitTextModal}>{item.name}</Text>
+    </TouchableOpacity>
+  );
+
   console.log(formData);
+  console.log("Selected Product Unit:", selectedProductUnit); // Log the selected unit
 
   const handleSave = async () => {
     const productId = Math.floor(Math.random() * 10000000);
     const PhoneNumber = clientPhoneNumber;
-    const {productName, productUnit, productCategory, productPrice} = formData;
+    const {productName, productQuantity, productPrice} = formData; // Changed productUnit to productQuantity
 
     if (
       !PhoneNumber ||
       !productName ||
-      !productUnit ||
+      !productQuantity ||
       !productPrice ||
-      !selectedSupplier.supplierId
+      !selectedSupplier.supplierId ||
+      !selectedProductUnit.value // Ensure a unit is selected
     ) {
-      Alert.alert('Error', 'All fields are required!');
+      Alert.alert('Error', 'All fields (Product Name, Quantity, Price, Unit, Category, Supplier) are required!');
       return;
     }
 
@@ -165,26 +206,26 @@ const AddProductManually = () => {
       clientGST: PhoneNumber,
       productId: productId,
       prodName: productName,
-      prodUnit: productUnit,
-      myPrice: productPrice,
-      CategoryName: productCategory,
+      prodUnit: parseFloat(productQuantity) + ' ' + selectedProductUnit.value, // <--- Send the selected unit here
+      myPrice: parseFloat(productPrice), // Ensure price is a number
+      CategoryName: selectedCategory.categoryName, // Use selectedCategory.categoryName
       supplierPhone: selectedSupplier.supplierId,
       supplierName: selectedSupplier.supplierName,
     };
-    console.log(payload);
+    console.log("Payload to API:", payload);
 
-    // Alert.alert('Payload', JSON.stringify(payload, null, 2));
     try {
       const response = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/addProductManually',
         payload,
       );
-      console.log(response);
+      console.log("API Response:", response.data); // Log response.data for more info
 
       navigation.navigate('Main', {screen: 'Home'});
       Alert.alert('Success', 'Product added successfully!');
     } catch (error) {
-      Alert.alert('Error', error);
+      console.error("Error adding product:", error.response ? error.response.data : error.message);
+      Alert.alert('Error', `Failed to add product: ${error.response?.data?.message || error.message}`);
     }
   };
 
@@ -216,22 +257,34 @@ const AddProductManually = () => {
         </View>
 
         <View style={styles.row}>
-          <View style={styles.inputContainer}>
+        <View style = {styles.row1}>
+          <View style={styles.inputContainerHalf}> {/* Use a new style for half width */}
             <ValidatedInput
-              label={'Unit'}
+              label={'Unit'} 
               labelStyle={{color: '#76B117'}}
               placeholderTextColor="black"
-              value={formData.productUnit}
+              value={formData.productQuantity} // Changed from productUnit to productQuantity
               onChangeText={text =>
-                setFormData({...formData, productUnit: text})
+                setFormData({...formData, productQuantity: text})
               }
-              placeholder="Unit"
+              placeholder="Quantity"
               keyboardType="numeric"
-              validationFunc={val => /^\d+(\.\d+)?$/.test(val)}
-              errorMessage="Enter a valid unit"
+              validationFunc={val => /^\d+(\.\d+)?$/.test(val) && parseFloat(val) > 0} // Ensure positive number
+              errorMessage="Enter a valid quantity"
             />
           </View>
 
+          <View style={styles.inputContainerHalf}> {/* Use a new style for half width */}
+            <Text style={styles.inputLabel}></Text>
+            <TouchableOpacity
+              style={styles.selectButton}
+              onPress={() => setUnitModalVisible(true)}>
+              <Text style={styles.selectButtonText}>
+                {selectedProductUnit.name || 'Unit'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        </View>
           <View style={styles.inputContainer}>
             <ValidatedInput
               label={'My Price'}
@@ -243,16 +296,18 @@ const AddProductManually = () => {
               }
               placeholder="Price"
               keyboardType="numeric"
-              validationFunc={val => /^\d+(\.\d+)?$/.test(val)}
+              validationFunc={val => /^\d+(\.\d+)?$/.test(val) && parseFloat(val) > 0} // Ensure positive number
               errorMessage="Enter a valid price"
             />
           </View>
         </View>
 
+        
+
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Category</Text>
           <TouchableOpacity
-            style={styles.selectButton}
+            style={styles.selectButton1}
             onPress={() => setCategoryModalVisible(true)}>
             <Text style={styles.selectButtonText}>
               {selectedCategory.categoryName || 'Select Category'}
@@ -263,7 +318,7 @@ const AddProductManually = () => {
         <View style={styles.inputContainer}>
           <Text style={styles.inputLabel}>Link to Supplier *</Text>
           <TouchableOpacity
-            style={styles.selectButton}
+            style={styles.selectButton1}
             onPress={() => setModalVisible(true)}>
             <Text style={styles.selectButtonText}>
               {selectedSupplier.supplierName || 'Select Supplier'}
@@ -275,6 +330,7 @@ const AddProductManually = () => {
           <Text style={styles.addProductButtonText}>Add Product</Text>
         </TouchableOpacity>
 
+        {/* Category Selection Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -293,6 +349,25 @@ const AddProductManually = () => {
           </View>
         </Modal>
 
+        {/* Unit Selection Modal */}
+        <Modal
+          animationType="slide"
+          transparent={true}
+          visible={unitModalVisible}
+          onRequestClose={() => setUnitModalVisible(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={styles.unitModalContent}>
+              <FlatList
+                data={productUnits}
+                keyExtractor={item => item.value}
+                renderItem={renderUnitItemModal}
+                contentContainerStyle={styles.flatListContent}
+              />
+            </View>
+          </View>
+        </Modal>
+
+        {/* Supplier Selection Modal */}
         <Modal
           animationType="slide"
           transparent={true}
@@ -303,13 +378,13 @@ const AddProductManually = () => {
               <View style={styles.modalContent}>
                 <FlatList
                   data={suppliers}
-                  keyExtractor={item => item.supplierId}
+                  keyExtractor={item => item.phone} 
                   renderItem={({item}) => (
                     <TouchableOpacity
                       style={styles.modalItem}
                       onPress={() => handleSelectSupplier(item)}>
                       <Image
-                        source={require('../Images/ProckuredImage.jpg')}
+                        source={require('../Images/ProckuredImage.jpg')} // Make sure this path is correct
                         style={styles.modalImage}
                       />
                       <Text style={styles.modalText}>{item.businessName}</Text>
@@ -322,7 +397,7 @@ const AddProductManually = () => {
             <View style={styles.modalBackdrop}>
               <View style={styles.addSupplierModalContent}>
                 <Image
-                  source={require('../Images/FindAnySupplier.png')}
+                  source={require('../Images/FindAnySupplier.png')} // Make sure this path is correct
                   style={styles.addSupplierImage}
                 />
                 <TouchableOpacity
@@ -376,7 +451,7 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color: '#76B117',
     fontWeight: '500',
-    fontStyle: 'Montserrat',
+    // fontFamily: 'Montserrat', // Commented out as it might not be a valid font on all devices
     lineHeight: 15,
   },
   input: {
@@ -385,12 +460,20 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 10,
     color: 'black',
-    width: 100,
+    // width: 100, // Removed this as ValidatedInput handles width
   },
   row: {
-    justifyContent: 'space-between',
+    flexDirection: 'row', // Use flex for horizontal arrangement
+    justifyContent: 'space-between', // Distribute space evenly between children
     marginBottom: 15,
+  },
+  row1: {
     flexDirection: 'row',
+    marginBottom: 15,
+  },
+  inputContainerHalf: { // New style for half-width inputs
+    width: '35%', 
+    marginLeft: 5,
   },
   modalBackdrop: {
     flex: 1,
@@ -403,6 +486,7 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: 10,
     width: screenWidth * 0.8,
+    maxHeight: screenWidth * 1.2, // Limit height for long lists
   },
   addSupplierModalContent: {
     backgroundColor: 'white',
@@ -419,15 +503,17 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#eee',
     flexDirection: 'row',
+    alignItems: 'center', // Align items vertically
   },
   modalImage: {
     width: 50,
     height: 50,
     borderRadius: 10,
+    marginRight: 10, // Space between image and text
   },
   modalText: {
     fontWeight: 'bold',
-    marginLeft: 5,
+    flex: 1, // Allow text to take remaining space
   },
   selectButton: {
     backgroundColor: 'white',
@@ -438,6 +524,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexDirection: 'row',
     justifyContent: 'center',
+    marginTop: 2,
+    width: '70%'
+  },
+  selectButton1: {
+    backgroundColor: 'white',
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    padding: 10,
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginTop: 2,
   },
   selectButtonText: {
     color: '#76B117',
@@ -521,6 +620,27 @@ const styles = StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.25,
     shadowRadius: 4,
+  },
+  // New styles for Unit Modal
+  unitModalContent: {
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    width: screenWidth * 0.7,
+    maxHeight: screenWidth * 0.8, // Limit height
+    alignItems: 'center',
+  },
+  unitItemModal: {
+    padding: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+    width: '100%',
+    alignItems: 'center',
+  },
+  unitTextModal: {
+    fontSize: 18,
+    color: '#333',
+    fontWeight: '500',
   },
 });
 

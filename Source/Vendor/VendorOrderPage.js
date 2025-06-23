@@ -16,7 +16,7 @@ import axios from 'axios';
 import { ChevronLeftIcon, CheckCircleIcon, XCircleIcon } from 'react-native-heroicons/outline';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import { database, firebase } from '../Firebase/firebase';
 
 const BASE_URL = 'https://api-v7quhc5aza-uc.a.run.app';
 
@@ -26,7 +26,7 @@ const endpoints = {
   past: '/getCompletedOrders',
   accept: '/acceptOrder',
   dispatch: '/orderDelivered',
-  clientProfile: '/getClient',
+  clientProfile: '/getClient' 
 };
 
 const tabs = ['Pending Order', 'Confirmed Order', 'Past Order'];
@@ -50,8 +50,6 @@ export default function VendorOrderPage() {
   const [isGSTLoaded, setIsGSTLoaded] = useState(false); // New state to track if GST is loaded
 
   const [clientCache, setClientCache] = useState({});
-
-  // 1. Fetch GST once when the component mounts
   useEffect(() => {
     const loadSupplierGST = async () => {
       try {
@@ -100,10 +98,39 @@ export default function VendorOrderPage() {
     }
   };
 
-  const normaliseOrders = (arr = []) => arr.map((o, idx) => ({
-    ...o,
-    orderId: o.orderId ?? o.id ?? o.Order_ID ?? o.order_ID ?? `temp-${idx}`,
-  }));
+  const normaliseOrders = (arr = []) => arr.map((o, idx) => {
+    const rawTimestamp = o.timestamp ?? o.createdAt ?? o.orderDate ?? o.OrderDate; // Look for common timestamp fields
+    let timestamp;
+    if (rawTimestamp) {
+      // Attempt to parse the timestamp. Firebase server timestamps are numbers.
+      // Other APIs might return ISO strings.
+      timestamp = new Date(rawTimestamp);
+      // Basic validation to ensure it's a valid date
+      if (isNaN(timestamp.getTime())) {
+        console.warn('Invalid timestamp format for order:', o.orderId, rawTimestamp);
+        timestamp = new Date(); // Fallback to current date or null
+      }
+    } else {
+      timestamp = new Date(); // Fallback if no timestamp found, might need adjustment
+    }
+
+    return {
+      ...o,
+      orderId: o.orderId ?? o.id ?? o.Order_ID ?? o.order_ID ?? `temp-${idx}`,
+      timestamp: timestamp, // Add the normalized timestamp here
+    };
+  });
+  // Add this helper function outside the component or within it if you prefer
+  const formatOrderDate = (timestamp) => {
+    if (!timestamp || isNaN(timestamp.getTime())) {
+      return 'N/A';
+    }
+    const date = new Date(timestamp);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`; // DD/MM/YYYY
+  };
 
   const fetchClientProfile = useCallback(async (clientGST) => {
     if (!clientGST) return {};
@@ -186,16 +213,49 @@ export default function VendorOrderPage() {
     }
   }, [isGSTLoaded, supplierGST, fetchOrdersGroup]);
 
-
+  
   const acceptOrder = async (order) => {
     try {
       await genericFetch(endpoints.accept, {
         supplierGST: supplierGST,
-        orderId: order.orderId, // Use normalized orderId
+        orderId: order.orderId,
         clientGST: order.clientGST,
       });
+
+      // --- NEW: Directly send message to Firebase ---
+      const orderDate = order.timestamp ? new Date(order.timestamp).toLocaleDateString('en-GB') : 'N/A';
+      const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
+
+      const summaryMessageText = `Your order (ID: ${order.orderId}) has been accepted!\nOrder Date: ${orderDate}\nEstimated Delivery: ${deliveryDate}`;
+
+      // Derive chat ID consistently: [vendorGST, customerGST].sort().join('_');
+      const chatIDForFirebase = [supplierGST, order.clientGST].sort().join('_');
+      const chatMessagesRef = database.ref(`chats/${chatIDForFirebase}/messages`);
+      const chatMetadataRef = database.ref(`chats/${chatIDForFirebase}`);
+
+      const newMessagePayload = {
+        sender: supplierGST, // Supplier is the sender of this message
+        message: summaryMessageText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        type: 'text', // It's a plain text message summarizing the order
+      };
+
+      try {
+        await chatMessagesRef.push(newMessagePayload);
+        await chatMetadataRef.update({
+          lastMessageText: summaryMessageText,
+          lastMessageTimestamp: firebase.database.ServerValue.TIMESTAMP,
+          lastMessageSender: supplierGST,
+        });
+        console.log('Order summary message sent to Firebase successfully.');
+      } catch (firebaseError) {
+        console.error('Firebase Send Message Error:', firebaseError);
+        Alert.alert('Firebase Chat Error', `Failed to send order summary via Firebase: ${firebaseError.message}`);
+      }
+      // --- END NEW LOGIC ---
+
       showToast(`Order from ${order.businessName || order.clientGST} is confirmed`);
-      await fetchOrdersGroup();
+      await fetchOrdersGroup(); // Refresh orders after successful acceptance
     } catch (err) {
       Alert.alert('Error', err.response?.data?.message || err.message || "Failed to accept order.");
     }
@@ -208,6 +268,41 @@ export default function VendorOrderPage() {
         orderId: order.orderId, // Use normalized orderId
         clientGST: order.clientGST,
       });
+
+      
+
+      // --- NEW: Directly send message to Firebase ---
+      const orderDate = order.timestamp ? new Date(order.timestamp).toLocaleDateString('en-GB') : 'N/A';
+      const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
+
+      const summaryMessageText = `Your order (ID: ${order.orderId}) has been Dispatched!\nOrder Date: ${orderDate}\nEstimated Delivery: ${deliveryDate}`;
+
+      // Derive chat ID consistently: [vendorGST, customerGST].sort().join('_');
+      const chatIDForFirebase = [supplierGST, order.clientGST].sort().join('_');
+      const chatMessagesRef = database.ref(`chats/${chatIDForFirebase}/messages`);
+      const chatMetadataRef = database.ref(`chats/${chatIDForFirebase}`);
+
+      const newMessagePayload = {
+        sender: supplierGST, // Supplier is the sender of this message
+        message: summaryMessageText,
+        timestamp: firebase.database.ServerValue.TIMESTAMP,
+        type: 'text', // It's a plain text message summarizing the order
+      };
+
+      try {
+        await chatMessagesRef.push(newMessagePayload);
+        await chatMetadataRef.update({
+          lastMessageText: summaryMessageText,
+          lastMessageTimestamp: firebase.database.ServerValue.TIMESTAMP,
+          lastMessageSender: supplierGST,
+        });
+        console.log('Order summary message sent to Firebase successfully.');
+      } catch (firebaseError) {
+        console.error('Firebase Send Message Error:', firebaseError);
+        Alert.alert('Firebase Chat Error', `Failed to send order summary via Firebase: ${firebaseError.message}`);
+      }
+
+
       showToast(`Order from ${order.businessName || order.clientGST} has been dispatched`);
       await fetchOrdersGroup();
     } catch (err) {
@@ -245,34 +340,45 @@ export default function VendorOrderPage() {
     return pastOrders;
   };
 
-  const renderOrder = ({item: order}) => (
-    <View style={styles.card} key={order.orderId}> {/* Use order.orderId as key after normalisation */}
-      <View style={styles.orderItem}>
-        {/* CLIENT INFO */}
-        <View style={styles.vendorInfo}>
-          <Image
-              source={order.clientAvatar ? {uri: order.clientAvatar} : require('../Images/VendorProfileImage.png')}
-              style={{width: 50, height: 50, borderRadius: 25}}
-          />
-          <View>
-            <Text style={styles.vendorName} numberOfLines={1}>
-              {order.businessName
-                  || order.clientName
-                  || order.name
-                  || order.clientGST
-                  || order.orderId} {/* Use orderId here too */}
-            </Text>
+  const renderOrder = ({ item: order }) => (
+  <View style={styles.card} key={order.orderId}>
+    <View style={styles.orderItem}>
+      {/* CLIENT INFO */}
+      <View style={styles.vendorInfo}>
+        <Image
+          source={order.clientAvatar ? { uri: order.clientAvatar } : require('../Images/VendorProfileImage.png')}
+          style={{ width: 50, height: 50, borderRadius: 25 }}
+        />
+        <View>
+          <Text style={styles.vendorName} numberOfLines={1}>
+            {order.businessName
+              || order.clientName
+              || order.name
+              || order.clientGST
+              || order.orderId}
+          </Text>
+          {/* Add the Order Date here */}
+          <Text style={styles.orderDateText}>Order Date: {formatOrderDate(order.timestamp)}</Text>
+          {/* Your existing View Chat, Confirmed, Completed texts */}
+          {activeTab === 'Pending Order' && (
+            <TouchableOpacity
+              style={styles.chatBtn}
+              onPress={() => navigation.navigate('CustomerChatDetail', {
+                customerGST: order.clientGST, // Pass clientGST as customerGST
+                vendorGST: supplierGST, // Pass supplierGST as vendorGST
+                customerName: order.businessName || order.clientName || order.clientGST,
+                currentUserGST: supplierGST, // Current user is supplier
+              })}
+            >
+              <Text style={{ color: 'white' }}>View Chat</Text>
+            </TouchableOpacity>
+          )}
 
-            {activeTab === 'Pending Order' && (
-                <TouchableOpacity style={styles.chatBtn}>
-                  <Text style={{color: 'white'}}>View Chat</Text>
-                </TouchableOpacity>
-            )}
-
-            {activeTab === 'Confirmed Order' && <Text style={styles.confirmedText}>Confirmed</Text>}
-            {activeTab === 'Past Order' && <Text style={styles.confirmedText}>Completed</Text>}
-          </View>
+          {activeTab === 'Confirmed Order' && <Text style={styles.confirmedText}>Confirmed</Text>}
+          {activeTab === 'Past Order' && <Text style={styles.confirmedText}>Completed</Text>}
         </View>
+      </View>
+
 
         {/* ACTIONS */}
         {activeTab === 'Pending Order' && (
@@ -418,162 +524,162 @@ export default function VendorOrderPage() {
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1, 
-    backgroundColor: '#fff', 
+    flex: 1,
+    backgroundColor: '#fff',
     padding: 16
   },
   header: {
-    flexDirection: 'row', 
-    alignItems: 'center', 
-    marginBottom: 16, 
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
     gap: 8
   },
   heading: {
-    fontSize: 22, 
+    fontSize: 22,
     fontWeight: 'bold'
   },
   search: {
-    borderWidth: 1, 
-    borderColor: '#ccc', 
-    borderRadius: 10, 
-    padding: 10, 
+    borderWidth: 1,
+    borderColor: '#ccc',
+    borderRadius: 10,
+    padding: 10,
     marginBottom: 16
   },
   tabs: {
-    flexDirection: 'row', 
-    justifyContent: 'space-around', 
+    flexDirection: 'row',
+    justifyContent: 'space-around',
     marginBottom: 16
   },
   tab: {
-    fontSize: 16, 
-    padding: 8, 
-    color: '#76B117', 
-    fontWeight: '500', 
+    fontSize: 16,
+    padding: 8,
+    color: '#76B117',
+    fontWeight: '500',
     textAlign: 'center'
   },
   activeTab: {
-    color: 'green', 
-    fontWeight: 'bold', 
-    borderBottomWidth: 2, 
+    color: 'green',
+    fontWeight: 'bold',
+    borderBottomWidth: 2,
     borderColor: '#76B117'
   },
   card: {
-    backgroundColor: '#fff', 
-    borderRadius: 12, 
-    padding: 12, 
-    marginBottom: 16, 
-    shadowColor: '#000', 
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+    shadowColor: '#000',
     shadowOffset: {
-      width: 0, 
+      width: 0,
       height: 4
-    }, 
-    shadowOpacity: 0.1, 
-    shadowRadius: 6, 
+    },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
     elevation: 5
   },
   orderItem: {
-    flexDirection: 'row', 
-    justifyContent: 'space-between', 
-    alignItems: 'center', 
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingHorizontal: '5%'
   },
   vendorInfo: {
-    flexDirection: 'row', 
-    gap: 10, 
+    flexDirection: 'row',
+    gap: 10,
     alignItems: 'center'
   },
   vendorName: {
-    fontSize: 16, 
-    fontWeight: '500', 
+    fontSize: 16,
+    fontWeight: '500',
     maxWidth: 140
   },
   chatBtn: {
-    backgroundColor: '#76B117', 
-    justifyContent: 'center', 
-    alignItems: 'center', 
-    borderRadius: 10, 
-    height: 26, 
-    width: 100, 
+    backgroundColor: '#76B117',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 10,
+    height: 26,
+    width: 100,
     marginTop: 4
   },
   confirmedText: {
-    color: '#FBBC05', 
-    fontWeight: '500', 
+    color: '#FBBC05',
+    fontWeight: '500',
     fontSize: 14
   },
   actions: {
-    flexDirection: 'row', 
+    flexDirection: 'row',
     gap: 8
   },
   actionButton: {
-    borderColor: '#76B117', 
-    padding: 8, 
-    borderRadius: 20, 
-    borderWidth: 1, 
-    alignItems: 'center', 
+    borderColor: '#76B117',
+    padding: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    alignItems: 'center',
     marginBottom: 10
   },
   actionText: {
-    color: 'green', 
+    color: 'green',
     fontWeight: '600'
   },
   commentBox: {
-    flexDirection: 'row', 
-    gap: 8, 
-    marginTop: 10, 
+    flexDirection: 'row',
+    gap: 8,
+    marginTop: 10,
     borderWidth: 1,
-    borderColor: '#C8C8C8', 
-    paddingVertical: '3%', 
-    borderRadius: 10, 
-    paddingHorizontal: '4%', 
+    borderColor: '#C8C8C8',
+    paddingVertical: '3%',
+    borderRadius: 10,
+    paddingHorizontal: '4%',
     alignItems: 'center'
   },
   modalContainer: {
-    flex: 1, 
-    justifyContent: 'center', 
-    alignItems: 'center', 
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: 'rgba(0,0,0,0.5)'
   },
   modalBox: {
-    backgroundColor: 'white', 
-    padding: 20, 
-    borderRadius: 12, 
-    alignItems: 'center', 
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
     width: '80%'
   },
   modalText: {
-    fontSize: 18, 
-    marginBottom: 12, 
-    textAlign: 'center', 
-    fontWeight: 'bold', 
+    fontSize: 18,
+    marginBottom: 12,
+    textAlign: 'center',
+    fontWeight: 'bold',
     marginTop: '5%'
   },
   modalButton: {
-    padding: 10, 
+    padding: 10,
     borderRadius: 20
   },
   toast: {
-    position: 'absolute', 
-    bottom: 30, 
-    left: 20, 
-    right: 20, 
-    backgroundColor: '#00ED51', 
-    paddingVertical: 14, 
-    paddingHorizontal: 16, 
-    borderRadius: 10, 
-    alignItems: 'center', 
-    elevation: 5, 
-    shadowColor: '#000', 
+    position: 'absolute',
+    bottom: 30,
+    left: 20,
+    right: 20,
+    backgroundColor: '#00ED51',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    alignItems: 'center',
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: {
-      width: 0, 
+      width: 0,
       height: 2
-    }, 
-    shadowOpacity: 0.3, 
+    },
+    shadowOpacity: 0.3,
     shadowRadius: 4
   },
   toastText: {
-    color: 'white', 
-    fontWeight: 'bold', 
+    color: 'white',
+    fontWeight: 'bold',
     fontSize: 16
   },
 });

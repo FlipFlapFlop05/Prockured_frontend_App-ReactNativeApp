@@ -1,44 +1,43 @@
-// VendorChatScreen.js
-import React, 
-      { 
-          useState, 
-          useEffect, 
-          useRef 
+import React,
+      {
+          useState,
+          useEffect,
+          useRef
       } from 'react';
-import { 
-  View, 
-  Text, 
-  FlatList, 
-  TouchableOpacity, 
-  TextInput, 
-  ActivityIndicator, 
-  Image, 
-  Modal, 
-  Alert, 
-  Dimensions, 
-  StyleSheet 
+import {
+  View,
+  Text,
+  FlatList,
+  TouchableOpacity,
+  TextInput,
+  ActivityIndicator,
+  Image,
+  Modal,
+  Alert,
+  Dimensions,
+  StyleSheet
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import { 
-  BellIcon, 
-  QuestionMarkCircleIcon, 
-  MagnifyingGlassIcon, 
-  ChatBubbleLeftEllipsisIcon 
+import {
+  BellIcon,
+  QuestionMarkCircleIcon,
+  MagnifyingGlassIcon,
+  ChatBubbleLeftEllipsisIcon
 } from 'react-native-heroicons/outline';
-import { database } from '../Firebase/firebase'; 
+import { database } from '../Firebase/firebase';
 import { worksData } from '../Constant/constant';
 
 const { width } = Dimensions.get('window');
 
-const categories = []; // Dummy categories if needed, otherwise remove
+const categories = [];
 
-// --- Customer Chat Item Component (No change needed here for functionality, but added for completeness) ---
+// --- Customer Chat Item Component (MODIFIED) ---
 const CustomerChatItem = ({ customer, onPress }) => {
   // Determine the last message/order for display
   const lastDisplayInfo = customer.lastChatMessage
-    ? `Last Chat: ${customer.lastChatMessage}`
+    ? `${customer.lastMessageSender === customer.currentVendorGST ? 'You: ' : ''}${customer.lastChatMessage}` // Add "You: " if it's the current vendor's last message
     : `Last Order: ${customer.lastOrderTotal} on ${customer.lastOrderDate}`;
 
   return (
@@ -50,12 +49,17 @@ const CustomerChatItem = ({ customer, onPress }) => {
       </View>
       <View style={styles.customerInfo}>
         <Text style={styles.customerName}>{customer.businessName || customer.name || 'Unknown Customer'}</Text>
-        <Text style={styles.lastOrderInfo}>
+        <Text style={styles.lastOrderInfo} numberOfLines={1}>
           {lastDisplayInfo}
         </Text>
       </View>
       <View style={styles.chatIconContainer}>
         <ChatBubbleLeftEllipsisIcon size={24} color={'#76B117'} />
+        {customer.unreadCount > 0 && ( // <--- NEW: Unread badge
+          <View style={styles.unreadBadge}>
+            <Text style={styles.unreadBadgeText}>{customer.unreadCount}</Text>
+          </View>
+        )}
       </View>
     </TouchableOpacity>
   );
@@ -91,167 +95,154 @@ export default function VendorChatScreen() {
 
   // Fetch customer list and establish Firebase listeners for chats
   useEffect(() => {
-    const fetchDataAndListenToChats = async () => {
-      if (!gstNumber) {
-        setLoading(false);
-        return;
-      }
+  let unsubscribeFirebaseListeners = () => {}; // Initialize a no-op function for cleanup
 
-      setLoading(true);
-      try {
-        const response = await axios.post(
-          'https://api-v7quhc5aza-uc.a.run.app/getCustomersList',
-          { supplierGST: gstNumber },
-        );
+  const fetchDataAndListenToChats = async () => {
+    if (!gstNumber) {
+      setLoading(false);
+      return;
+    }
 
-        if (response.status === 200 && response.data && response.data.clients) {
-          const clientsData = response.data.clients;
-          const transformedClients = [];
-          const firebaseListeners = []; // To store cleanup functions for listeners
+    setLoading(true);
+    try {
+      const response = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getCustomersList',
+        { supplierGST: gstNumber },
+      );
 
-          for (const clientGstKey in clientsData) {
-            const client = clientsData[clientGstKey];
-            let chatHistory = [];
-            let lastOrderTotal = 'N/A';
-            let lastOrderDate = 'N/A';
-            let lastChatMessage = ''; // To store the last message for the chat list
+      if (response.status === 200 && response.data && response.data.clients) {
+        const clientsData = response.data.clients;
+        const initialTransformedClients = [];
+        const firebaseListenersCleanups = []; // To store cleanup functions for Firebase listeners
 
-            // --- Process Open_Orders into chat history (as 'order' type messages) ---
-            const openOrders = client.Open_Orders || {};
-            Object.keys(openOrders).forEach(orderId => {
-              const orderSpecificData = openOrders[orderId];
-              const supplierGSTForOrder = orderSpecificData.supplierGST;
+        for (const clientGstKey in clientsData) {
+          const client = clientsData[clientGstKey];
+          let chatHistory = [];
+          let lastOrderTotal = 'N/A';
+          let lastOrderDate = 'N/A';
+          let lastChatMessage = '';
 
-              if (supplierGSTForOrder && orderSpecificData[supplierGSTForOrder]) {
-                const supplierOrderDetails = orderSpecificData[supplierGSTForOrder];
-                const orderMessage = {
-                  id: orderId,
-                  sender: 'customer', // Orders are typically from the customer
-                  type: 'order',
-                  order: {
-                    orderId: orderId,
-                    date: supplierOrderDetails.OrderDate || 'N/A',
-                    status: supplierOrderDetails.Status || 'Pending',
-                    deliveryDate: supplierOrderDetails.DeliveryDate || 'N/A',
-                    totalAmount: Number(supplierOrderDetails.totalAmount) || 0,
-                    items: Array.isArray(supplierOrderDetails.items) ? supplierOrderDetails.items : [],
-                    notes: supplierOrderDetails.notes || '',
-                  },
-                  timestamp: new Date(orderSpecificData.createdAt || supplierOrderDetails.OrderDate || Date.now()),
-                };
-                chatHistory.push(orderMessage);
-              }
-            });
+          // Process Open_Orders into chat history (as 'order' type messages)
+          const openOrders = client.Open_Orders || {};
+          Object.keys(openOrders).forEach(orderId => {
+            const orderSpecificData = openOrders[orderId];
+            const supplierGSTForOrder = orderSpecificData.supplierGST;
 
-            // Determine last order details for display on the customer card
-            const lastOrderIdFromOpenOrders = Object.keys(client.Open_Orders || {})[0];
-            if (lastOrderIdFromOpenOrders && openOrders[lastOrderIdFromOpenOrders]) {
-              const orderSpecificData = openOrders[lastOrderIdFromOpenOrders];
-              const supplierGSTForLastOrder = orderSpecificData.supplierGST;
-              if (supplierGSTForLastOrder && orderSpecificData[supplierGSTForLastOrder]) {
-                const supplierOrderDetails = orderSpecificData[supplierGSTForLastOrder];
-                lastOrderTotal = supplierOrderDetails.totalAmount !== undefined
-                  ? `₹ ${Number(supplierOrderDetails.totalAmount).toFixed(2)}`
-                  : 'N/A';
-                lastOrderDate = supplierOrderDetails.OrderDate || 'N/A';
-              }
+            if (supplierGSTForOrder && orderSpecificData[supplierGSTForOrder]) {
+              const supplierOrderDetails = orderSpecificData[supplierGSTForOrder];
+              const orderMessage = {
+                id: orderId,
+                sender: client.gst, // Customer is the sender of the order request
+                type: 'order',
+                order: {
+                  orderId: orderId,
+                  date: supplierOrderDetails.OrderDate || 'N/A',
+                  status: supplierOrderDetails.Status || 'Pending',
+                  deliveryDate: supplierOrderDetails.DeliveryDate || 'N/A',
+                  totalAmount: Number(supplierOrderDetails.totalAmount) || 0,
+                  items: Array.isArray(supplierOrderDetails.items) ? supplierOrderDetails.items : [],
+                  notes: supplierOrderDetails.notes || '',
+                },
+                timestamp: new Date(orderSpecificData.createdAt || supplierOrderDetails.OrderDate || Date.now()),
+              };
+              chatHistory.push(orderMessage);
             }
+          });
 
-            // --- Set up Firebase listener for real-time chat messages ---
-            const customerGST = client.gst; // Assuming client.gst is the customer's GST
-            const currentChatId = [gstNumber, customerGST].sort().join('_'); // Consistent chat ID
-
-            // Listen to the last message for display in the list
-            const chatMetadataRef = database.ref(`chats/${currentChatId}`);
-            const onChatMetadataValue = chatMetadataRef.on('value', (snapshot) => {
-                const chatData = snapshot.val();
-                if (chatData && chatData.lastMessageText) {
-                    setCustomerList(prevList =>
-                        prevList.map(c =>
-                            c.id === clientGstKey
-                                ? { ...c, lastChatMessage: chatData.lastMessageText }
-                                : c
-                        )
-                    );
-                } else {
-                    setCustomerList(prevList =>
-                        prevList.map(c =>
-                            c.id === clientGstKey
-                                ? { ...c, lastChatMessage: '' } // Clear if no last message
-                                : c
-                        )
-                    );
-                }
-            });
-
-            // Store the cleanup function
-            firebaseListeners.push(() => chatMetadataRef.off('value', onChatMetadataValue));
-
-            // Fetch *all* chat messages for passing to the detail screen (they will be refreshed there too)
-            const chatMessagesRef = database.ref(`chats/${currentChatId}/messages`);
-            const messagesSnapshot = await chatMessagesRef.orderByChild('timestamp').once('value');
-            const firebaseMessages = [];
-            messagesSnapshot.forEach((childSnapshot) => {
-              const messageData = childSnapshot.val();
-              if (messageData.message && messageData.sender && messageData.timestamp) {
-                firebaseMessages.push({
-                  id: childSnapshot.key,
-                  sender: messageData.sender,
-                  type: messageData.type || 'text',
-                  text: messageData.message,
-                  order: messageData.order, // Include order data if present
-                  timestamp: new Date(messageData.timestamp),
-                });
-              }
-            });
-
-            const combinedChatHistory = [...chatHistory, ...firebaseMessages];
-            combinedChatHistory.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
-
-            transformedClients.push({
-              id: clientGstKey,
-              gst: client.gst,
-              name: client.Name,
-              businessName: client.BusinessName,
-              phone: client.phone,
-              email: client.email,
-              country: client.country,
-              state: client.state,
-              pincode: client.pincode,
-              shippingAddress: client.shippingAddress,
-              billingAddress: client.billingAddress,
-              lastOrderTotal: lastOrderTotal,
-              lastOrderDate: lastOrderDate,
-              chatHistory: combinedChatHistory, // Pass all combined history to detail screen
-              lastChatMessage: lastChatMessage, // This will be updated by the listener
-            });
+          // Determine last order details for display on the customer card
+          const lastOrderIdFromOpenOrders = Object.keys(client.Open_Orders || {})[0];
+          if (lastOrderIdFromOpenOrders && openOrders[lastOrderIdFromOpenOrders]) {
+            const orderSpecificData = openOrders[lastOrderIdFromOpenOrders];
+            const supplierGSTForLastOrder = orderSpecificData.supplierGST;
+            if (supplierGSTForLastOrder && orderSpecificData[supplierGSTForLastOrder]) {
+              const supplierOrderDetails = orderSpecificData[supplierGSTForLastOrder];
+              lastOrderTotal = supplierOrderDetails.totalAmount !== undefined
+                ? `₹ ${Number(supplierOrderDetails.totalAmount).toFixed(2)}`
+                : 'N/A';
+              lastOrderDate = supplierOrderDetails.OrderDate || 'N/A';
+            }
           }
 
-          setCustomerList(transformedClients);
-          setLoading(false);
+          const customerGST = client.gst;
+          const currentChatId = [gstNumber, customerGST].sort().join('_');
 
-          // Return a cleanup function for all Firebase listeners
-          return () => {
-            firebaseListeners.forEach(cleanup => cleanup());
-          };
-
-        } else {
-          Alert.alert('Error', 'No clients found for this supplier or unexpected response structure.');
-          console.log('API Response:', JSON.stringify(response.data, null, 2));
-          setCustomerList([]);
-          setLoading(false);
+          initialTransformedClients.push({
+            id: clientGstKey,
+            gst: client.gst,
+            name: client.Name,
+            businessName: client.BusinessName,
+            phone: client.phone,
+            email: client.email,
+            country: client.country,
+            state: client.state,
+            pincode: client.pincode,
+            shippingAddress: client.shippingAddress,
+            billingAddress: client.billingAddress,
+            lastOrderTotal: lastOrderTotal,
+            lastOrderDate: lastOrderDate,
+            chatHistory: chatHistory, // Initial orders, Firebase messages will be merged in the detail screen
+            lastChatMessage: lastChatMessage,
+            unreadCount: 0, // Initialize unread count
+            lastMessageSender: '', // To store the sender of the last message
+            currentVendorGST: gstNumber, // Pass vendor's GST to CustomerChatItem for "You:" logic
+          });
         }
-      } catch (error) {
-        console.error('Error fetching customers list or Firebase data:', error);
-        Alert.alert('Error', `Failed to fetch customers: ${error.message}`);
+
+        setCustomerList(initialTransformedClients);
+        setLoading(false);
+
+        // Now, set up real-time Firebase listeners for chat metadata and unread counts
+        initialTransformedClients.forEach(customer => {
+          const currentChatId = [gstNumber, customer.gst].sort().join('_');
+          const chatMetadataRef = database.ref(`chats/${currentChatId}`);
+
+          const onChatMetadataValue = chatMetadataRef.on('value', (snapshot) => {
+            const chatData = snapshot.val();
+            setCustomerList(prevList =>
+              prevList.map(c => {
+                if (c.id === customer.id) {
+                  const newUnreadCount = chatData?.participants?.[gstNumber]?.unreadCount || 0;
+                  return {
+                    ...c,
+                    lastChatMessage: chatData?.lastMessageText || '',
+                    lastMessageSender: chatData?.lastMessageSender || '',
+                    unreadCount: newUnreadCount,
+                  };
+                }
+                return c;
+              })
+            );
+          });
+          firebaseListenersCleanups.push(() => chatMetadataRef.off('value', onChatMetadataValue));
+        });
+
+        // This function will be returned by the useEffect, which will then be called on cleanup
+        unsubscribeFirebaseListeners = () => {
+          firebaseListenersCleanups.forEach(cleanup => cleanup());
+        };
+
+      } else {
+        Alert.alert('Error', 'No clients found for this supplier or unexpected response structure.');
+        console.log('API Response:', JSON.stringify(response.data, null, 2));
         setCustomerList([]);
         setLoading(false);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching customers list or Firebase data:', error);
+      Alert.alert('Error', `Failed to fetch customers: ${error.message}`);
+      setCustomerList([]);
+      setLoading(false);
+    }
+  };
 
-    fetchDataAndListenToChats();
-    // Re-run if gstNumber changes
-  }, [gstNumber]);
+  // Call the async function here
+  fetchDataAndListenToChats();
+
+  // Return the cleanup function directly from useEffect
+  return () => {
+    unsubscribeFirebaseListeners(); // Call the stored cleanup function
+  };
+}, [gstNumber]); // Depend on gstNumber
 
 
   const renderWorkItemModal = ({ item }) => (
@@ -263,24 +254,36 @@ export default function VendorChatScreen() {
   );
 
   // Filter customers based on search term
-  const filteredCustomers = customerList.filter(customer => {
-    const searchLower = searchTerm.toLowerCase();
-    return (
-      (customer.name && customer.name.toLowerCase().includes(searchLower)) ||
-      (customer.businessName && customer.businessName.toLowerCase().includes(searchLower)) ||
-      (customer.phone && customer.phone.includes(searchLower))
-    );
-  });
+  const filteredCustomers = customerList
+    .filter(customer => {
+      const searchLower = searchTerm.toLowerCase();
+      return (
+        (customer.name && customer.name.toLowerCase().includes(searchLower)) ||
+        (customer.businessName && customer.businessName.toLowerCase().includes(searchLower)) ||
+        (customer.phone && customer.phone.includes(searchLower))
+      );
+    })
+    .sort((a, b) => {
+      // Sort by unread messages first, then by last message timestamp (descending)
+      // Note: We don't have lastMessageTimestamp here, only lastChatMessage.
+      // For proper sorting, Firebase chat metadata should include lastMessageTimestamp.
+      // For now, sorting by unread count is primary.
+      if (a.unreadCount > 0 && b.unreadCount === 0) return -1;
+      if (b.unreadCount > 0 && a.unreadCount === 0) return 1;
+      // If both have unread or neither, sort by something else, e.g., businessName
+      return (a.businessName || a.name || '').localeCompare(b.businessName || b.name || '');
+    });
+
 
   const handleCustomerChatPress = (customer) => {
-  navigation.navigate('CustomerChatDetail', {
-    customerGST: customer.gst,
-    vendorGST: gstNumber, // Your GST as the vendor
-    customerName: customer.businessName || customer.name,
-    initialMessages: customer.chatHistory,
-    currentUserGST: gstNumber, // <--- Add this line: the current user (vendor)'s GST
-  });
-};
+    navigation.navigate('CustomerChatDetail', {
+      customerGST: customer.gst,
+      vendorGST: gstNumber, // Your GST as the vendor
+      customerName: customer.businessName || customer.name,
+      initialMessages: customer.chatHistory, // Initial orders, Firebase messages will be merged there
+      currentUserGST: gstNumber, // The current user (vendor)'s GST
+    });
+  };
 
   return (
     <View style={styles.container}>
@@ -362,7 +365,6 @@ export default function VendorChatScreen() {
   );
 }
 
-// Minimal styles needed for this component, add others as per your design
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -508,6 +510,7 @@ const styles = StyleSheet.create({
   },
   chatIconContainer: {
     marginLeft: 10,
+    position: 'relative', // For absolute positioning of the badge
   },
   customerListContent: {
     paddingBottom: 20,
@@ -526,5 +529,23 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     textAlign: 'center',
+  },
+  // NEW STYLES for unread badge
+  unreadBadge: {
+    position: 'absolute',
+    top: -5,  // Adjust positioning as needed
+    right: -5, // Adjust positioning as needed
+    backgroundColor: 'red',
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 4, // Add padding for double-digit numbers
+  },
+  unreadBadgeText: {
+    color: 'white',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
 });

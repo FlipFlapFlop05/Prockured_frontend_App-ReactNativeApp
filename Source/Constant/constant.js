@@ -34,6 +34,7 @@ export const categories = [
     image:
       'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Ffruits.png?alt=media&token=211f8eaa-5971-417f-bc7f-c134a957b8c9',
   },
+  
 ];
 export const Vegetable_Categories = [
   {id: 1, title: 'all'},

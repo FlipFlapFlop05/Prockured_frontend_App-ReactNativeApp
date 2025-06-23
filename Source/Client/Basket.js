@@ -8,56 +8,65 @@ import {
   Image,
   TextInput,
   Linking,
-  Alert, // Make sure Alert is imported
+  Alert,
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon} from 'react-native-heroicons/solid';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { database, firebase } from '../Firebase/firebase'; // Ensure this path is correct
 
 export default function Basket() {
   const navigation = useNavigation();
   const route = useRoute();
-  // Destructure clearCart from route.params
   const {cart, data, clearCart} = route.params;
-  const [Data, setData] = useState([]);
-  const [phoneNumber, setPhoneNumber] = React.useState(null);
-  const [gstNumber, setGSTNumber] = React.useState(null);
+  const [Data, setData] = useState({}); // <--- Changed to empty object {}
+  const [clientGSTState, setClientGSTState] = useState(null); // Renamed for clarity: holds client's GST
+  const [clientPhoneNumberState, setClientPhoneNumberState] = useState(null); // Renamed for clarity: holds client's phone
 
   useEffect(() => {
-    const fetchPhoneNumber = async () => {
+    const fetchClientInfo = async () => {
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        const storedGST = await AsyncStorage.getItem('clientPhoneNumber');
-        if (storedPhoneNumber && storedGST) { // Use && for both to be true
-          setPhoneNumber(storedPhoneNumber);
-          setGSTNumber(storedGST);
+        const storedClientGST = await AsyncStorage.getItem('clientGST');
+        const storedClientPhoneNumber = await AsyncStorage.getItem('clientPhoneNumber');
+        if (storedClientGST && storedClientPhoneNumber) {
+          setClientGSTState(storedClientGST);
+          setClientPhoneNumberState(storedClientPhoneNumber);
+          console.log("Fetched Client GST from AsyncStorage:", storedClientGST);
+          console.log("Fetched Client Phone from AsyncStorage:", storedClientPhoneNumber);
+        } else {
+            console.warn("Client GST or Phone Number not found in AsyncStorage.");
         }
       } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
+        console.error('Error Fetching Client Info from AsyncStorage: ', error);
       }
     };
+    fetchClientInfo();
+  }, []); // Run once on mount
 
-    const fetchData = async () => {
-      if (phoneNumber) {
+  useEffect(() => {
+    const fetchClientDataFromApi = async () => {
+      // Use clientGSTState here, as it's the actual client GST
+      if (clientGSTState) {
         try {
+          console.log("Fetching client business data from API for GST:", clientGSTState);
           const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getClient/${phoneNumber}`,
+            `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientGSTState}`,
           );
-          setData(response.data);
+          setData(response.data); // This is where Data.businessName would come from
+          console.log("Client business data fetched:", response.data);
         } catch (error) {
-          console.log(error);
+          console.error("Error fetching client data from API:", error);
+          Alert.alert("Error", "Failed to load your business data.");
         }
       }
     };
-
-    // Call fetchPhoneNumber immediately
-    fetchPhoneNumber();
-    // Only call fetchData if phoneNumber is available after fetchPhoneNumber
-    if (phoneNumber) {
-      fetchData();
+    // Trigger this effect when clientGSTState changes
+    if (clientGSTState) {
+      fetchClientDataFromApi();
     }
-  }, [phoneNumber]); // Depend on phoneNumber so fetchData runs when it's set
+  }, [clientGSTState]); // <--- Depend on clientGSTState
+
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -87,7 +96,7 @@ export default function Basket() {
     });
   }, [navigation]);
 
-  const openWhatsApp = (number, message) => { // Renamed phoneNumber to number to avoid confusion with state
+  const openWhatsApp = (number, message) => {
     const url = `https://wa.me/${number}?text=${encodeURIComponent(
       message,
     )}`;
@@ -131,15 +140,40 @@ export default function Basket() {
   };
 
   const placeOrder = async () => {
-    Alert.alert("Placing Order", "Initiating order placement...");
+    console.log("--- Starting placeOrder function ---");
+    console.log("Current Data state:", Data); // Check Data here
+    console.log("Data.businessName:", Data.BusinessName); // Specific check
 
-    const clientGSTValue = phoneNumber; // Assuming phoneNumber holds client GST
-    const clientPhoneNumber = gstNumber; // Assuming gstNumber holds client Phone
+    const clientGSTValue = clientGSTState;
+    const clientPhoneNumberValue = clientPhoneNumberState;
+    const clientBusinessName = Data.BusinessName; // Get from state
+
+    if (!clientGSTValue || !clientPhoneNumberValue) {
+        Alert.alert("Error", "Client GST or Phone Number not found. Please log in again.");
+        console.error("Place Order Error: Client GST or Phone number missing.");
+        return;
+    }
+    if (!clientBusinessName) { // <--- Added check for clientBusinessName
+        Alert.alert("Error", "Your business name could not be loaded. Please ensure your profile is complete or try again.");
+        console.error("Place Order Error: Client business name is undefined.");
+        return;
+    }
+    if (cartItems.length === 0) {
+        Alert.alert("Empty Cart", "Your basket is empty. Add items before placing an order.");
+        return;
+    }
+
+    Alert.alert("Placing Order", "Initiating order placement...");
 
     const orderId = Math.floor(Math.random() * 1000000).toString();
 
     const groupedBySupplier = cartItems.reduce((acc, item) => {
       const supplierGST = item.gstNumber;
+      if (!supplierGST) {
+          console.warn(`Product ${item.prodName} is missing supplier GST. Skipping.`);
+          return acc;
+      }
+
       if (!acc[supplierGST]) {
         const orderDateToday = new Date();
         const deliveryDateCalculated = new Date(orderDateToday);
@@ -149,11 +183,14 @@ export default function Basket() {
           items: [],
           supplierName: item.supplierName,
           supplierPhone: item.supplierPhone,
-          clientName: Data.businessName,
-          clientPhone: clientPhoneNumber,
+          clientName: clientBusinessName, // <--- Use the validated clientBusinessName
+          clientGST: clientGSTValue,
+          clientPhone: clientPhoneNumberValue,
           totalAmount: 0,
           OrderDate: orderDateToday.toISOString().split('T')[0],
           DeliveryDate: deliveryDateCalculated.toISOString().split('T')[0],
+          orderId: orderId,
+          status: 'Pending Approval'
         };
       }
 
@@ -168,7 +205,7 @@ export default function Basket() {
       return acc;
     }, {});
 
-    const payload = {
+    const apiPayload = {
       Open_Orders: {
         [orderId]: groupedBySupplier,
       },
@@ -177,7 +214,7 @@ export default function Basket() {
       Order_ID: orderId,
     };
 
-    console.log("Payload:", JSON.stringify(payload, null, 2));
+    console.log("API Payload:", JSON.stringify(apiPayload, null, 2));
 
     try {
       Alert.alert(
@@ -190,17 +227,73 @@ export default function Basket() {
 
       const response = await axios.post(
         'https://api-v7quhc5aza-uc.a.run.app/placeOrder',
-        payload
+        apiPayload
       );
       console.log("Response from API:", response.data);
-      Alert.alert('Success', 'Order placed successfully!');
-      // Clear the cart after successful order placement
+
+      console.log("Initiating Firebase chat message for orders...");
+      for (const supplierGST in groupedBySupplier) {
+        const supplierOrder = groupedBySupplier[supplierGST];
+        const chatOrderId = [clientGSTValue, supplierGST].sort().join('_');
+        const chatMessagesRef = database.ref(`chats/${chatOrderId}/messages`);
+        const chatMetadataRef = database.ref(`chats/${chatOrderId}`);
+
+        const chatMessageContent = {
+            orderId: orderId,
+            supplierGST: supplierGST,
+            clientGST: clientGSTValue,
+            clientName: supplierOrder.clientName, // This will now be correctly defined
+            clientPhone: supplierOrder.clientPhone,
+            supplierName: supplierOrder.supplierName,
+            supplierPhone: supplierOrder.supplierPhone,
+            totalAmount: supplierOrder.totalAmount,
+            date: supplierOrder.OrderDate,
+            deliveryDate: supplierOrder.DeliveryDate,
+            items: supplierOrder.items.map(item => ({
+                productName: item.name,
+                quantity: item.quantity,
+                price: item.price,
+            })),
+            notes: "New order placed. Please review and confirm."
+        };
+
+        const newChatMessage = {
+          sender: clientGSTValue,
+          type: 'order',
+          message: `New Order (ID: ${orderId}) from ${supplierOrder.clientName}. Total: ₹${supplierOrder.totalAmount.toFixed(2)}`,
+          order: chatMessageContent,
+          timestamp: firebase.database.ServerValue.TIMESTAMP,
+        };
+
+        try {
+          await chatMessagesRef.push(newChatMessage);
+
+          await chatMetadataRef.update({
+            participants: {
+              [clientGSTValue]: true,
+              [supplierGST]: true,
+            },
+            lastMessageText: newChatMessage.message,
+            lastMessageTimestamp: firebase.database.ServerValue.TIMESTAMP,
+            lastMessageSender: clientGSTValue,
+            // Only set createdAt if it doesn't exist, to preserve original creation time
+            ...(! (await chatMetadataRef.child('createdAt').once('value')).exists() && { createdAt: firebase.database.ServerValue.TIMESTAMP })
+          });
+          console.log(`Order message sent to chat with supplier ${supplierGST}`);
+        } catch (firebaseError) {
+          console.error(`Error sending order message to Firebase for ${supplierGST}:`, firebaseError);
+          Alert.alert('Chat Error', `Failed to send order notification to ${supplierOrder.supplierName}. ${firebaseError.message}`);
+        }
+      }
+
+      Alert.alert('Success', 'Order placed successfully and chat initiated!');
       if (clearCart) {
         clearCart();
       }
       navigation.navigate('Approval Pending', { orderID: orderId });
+
     } catch (error) {
-      console.error("Error placing order:", error);
+      console.error("Error placing order (main catch block):", error);
       if (error.response) {
         console.error("Error response data:", error.response.data);
         console.error("Error response status:", error.response.status);
@@ -231,9 +324,9 @@ export default function Basket() {
           text: "Yes",
           onPress: () => {
             if (clearCart) {
-              clearCart(); // Call the function passed from Catalogue to clear the cart
+              clearCart();
             }
-            navigation.goBack(); // Go back to the previous screen (Catalogue)
+            navigation.goBack();
           }
         }
       ]
@@ -290,7 +383,7 @@ export default function Basket() {
           <Text style={styles.deliveryLabel}>Delivery by:</Text>
           <Text style={styles.deliveryDate}>25 July 2024</Text>
         </View>
-        <TouchableOpacity onPress={handleCancelOrder}> {/* Call new handler */}
+        <TouchableOpacity onPress={handleCancelOrder}>
           <Text style={styles.cancelOrder}>Cancel order</Text>
         </TouchableOpacity>
       </View>
@@ -325,7 +418,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
   },
   editOrderContainer: {
-    alignItems: 'flex-end', // Align to the right
+    alignItems: 'flex-end',
     marginBottom: 20,
     marginRight: 20,
   },
