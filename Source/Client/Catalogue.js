@@ -364,21 +364,23 @@ export default function Catalogue() {
       )}
 
       {calculateTotalItems() > 0 && (
-        <TouchableOpacity
-          style={styles.viewBasketButton}
-          onPress={() => {
-            const enrichedData = mergeSupplierGST(data, suppliers);
-            navigation.navigate('View Basket', {
-              cart: cart,
-              data: enrichedData,
-              clearCart: clearCart, // Pass the clearCart function here
-            });
-          }}>
-          <Text style={styles.viewBasketText}>View Basket</Text>
-          <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
-          <Text style={styles.basketCount}> {calculateTotalItems()}</Text>
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.viewBasketButton}
+        onPress={() => {
+          // Pass the current cart state and the full data array for Basket to work with
+          // The 'data' here refers to the 'catalogue' items that Basket.js will use to find product details
+          navigation.navigate('View Basket', {
+            cart: cart, // The quantities of items in the cart
+            catalogueData: data, // The full catalogue data to look up product details
+            suppliers: suppliers, // Pass suppliers if their GST is needed in Basket
+            clearCart: clearCart, // Pass the clearCart function
+          });
+        }}>
+        <Text style={styles.viewBasketText}>View Basket</Text>
+        <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
+        <Text style={styles.basketCount}> {calculateTotalItems()}</Text>
+      </TouchableOpacity>
+    )}
     </View>
   );
 }
@@ -509,7 +511,7 @@ const styles = StyleSheet.create({
     paddingVertical: 4,
     backgroundColor: '#76B117',
   },
-  quantityButtonTextCard: {color: '#fff', fontSize: 18, fontWeight: '400'},
+  quantityButtonTextCard: {color: '#fff', fontSize: 24, fontWeight: '400'},
   quantityTextCard: {marginHorizontal: 8, fontWeight: '600', color: '#fff'},
   viewBasketButton: {
     flexDirection: 'row',

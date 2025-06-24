@@ -9,7 +9,7 @@ import {
   TextInput,
   Linking,
   Alert,
-  ActivityIndicator,
+  ActivityIndicator, // Added for loading state
 } from 'react-native';
 import {useNavigation, useRoute} from '@react-navigation/native';
 import {ChevronLeftIcon} from 'react-native-heroicons/solid';
@@ -17,23 +17,30 @@ import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {database, firebase} from '../Firebase/firebase'; // Ensure this path is correct
 
-export default function Basket() {
+export default function NewBasket() {
   const navigation = useNavigation();
   const route = useRoute();
 
-  // Destructure parameters, providing default empty objects/arrays for safety.
-  // This is crucial for handling cases where parameters might be missing from one screen.
-  const {
-    cart = {}, // Default to empty object if 'cart' is not passed
-    catalogueData = [], // Default to empty array if 'catalogueData' is not passed
-    suppliers = [], // Default to empty array if 'suppliers' is not passed
-    clearCart, // This will be a function or undefined
-  } = route.params || {}; // Also provide default empty object for route.params itself
+  // Destructure the parameters correctly
+  // 'cartItems' is what's being passed from SpecificVendorOrderNow
+  // 'clientGST' and 'vendorGST' are also passed
+  // 'clearCart' needs to be handled if it's actually passed as a function
+  const {cartItems: initialCartItems, clientGST, vendorGST, vendorName} =
+    route.params || {};
 
-  const [clientGSTState, setClientGSTState] = useState(null);
-  const [clientPhoneNumberState, setClientPhoneNumberState] = useState(null);
-  const [clientBusinessData, setClientBusinessData] = useState({});
-  const [loadingClientData, setLoadingClientData] = useState(true);
+  const [clientGSTState, setClientGSTState] = useState(null); // Renamed for clarity: holds client's GST
+  const [clientPhoneNumberState, setClientPhoneNumberState] = useState(null); // Renamed for clarity: holds client's phone
+  const [clientBusinessData, setClientBusinessData] = useState({}); // Stores data fetched from /getClient API
+  const [loadingClientData, setLoadingClientData] = useState(true); // New loading state for client data
+
+  // State to hold the current items in the basket (if you want to allow modification here)
+  const [currentCartItems, setCurrentCartItems] = useState(initialCartItems);
+
+  // You might want to remove this if you only expect data to come from navigation
+  // and handle quantity changes within this component if needed.
+  // For now, it's safer to use initialCartItems directly if quantities are finalized
+  // before navigating to Basket.
+  // If quantities *can* be changed on this screen, you'd need functions to update currentCartItems.
 
   useEffect(() => {
     const fetchClientInfo = async () => {
@@ -45,29 +52,35 @@ export default function Basket() {
         if (storedClientGST && storedClientPhoneNumber) {
           setClientGSTState(storedClientGST);
           setClientPhoneNumberState(storedClientPhoneNumber);
+          console.log('Fetched Client GST from AsyncStorage:', storedClientGST);
+          console.log(
+            'Fetched Client Phone from AsyncStorage:',
+            storedClientPhoneNumber,
+          );
         } else {
           console.warn('Client GST or Phone Number not found in AsyncStorage.');
-          // Optionally, navigate to login or show an error
         }
       } catch (error) {
         console.error('Error Fetching Client Info from AsyncStorage: ', error);
-        Alert.alert("Error", "Could not retrieve your stored details. Please try logging in again.");
-      } finally {
-        setLoadingClientData(false); // Ensure loading state is turned off
       }
     };
     fetchClientInfo();
-  }, []);
+  }, []); // Run once on mount
 
   useEffect(() => {
     const fetchClientBusinessData = async () => {
       if (clientGSTState) {
         try {
           setLoadingClientData(true);
+          console.log(
+            'Fetching client business data from API for GST:',
+            clientGSTState,
+          );
           const response = await axios.get(
             `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientGSTState}`,
           );
-          setClientBusinessData(response.data);
+          setClientBusinessData(response.data); // Set the fetched client business data
+          console.log('Client business data fetched:', response.data);
         } catch (error) {
           console.error('Error fetching client data from API:', error);
           Alert.alert('Error', 'Failed to load your business data.');
@@ -79,7 +92,7 @@ export default function Basket() {
     if (clientGSTState) {
       fetchClientBusinessData();
     }
-  }, [clientGSTState]);
+  }, [clientGSTState]); // Depend on clientGSTState
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -101,7 +114,7 @@ export default function Basket() {
       },
       headerLeft: () => (
         <TouchableOpacity
-          onPress={() => navigation.goBack()}
+          onPress={() => navigation.goBack()} // Changed to goBack for a more natural flow
           style={{paddingHorizontal: 13}}>
           <ChevronLeftIcon size={28} color="#333" />
         </TouchableOpacity>
@@ -120,53 +133,21 @@ export default function Basket() {
       .catch(err => console.error('Error opening WhatsApp:', err));
   };
 
-  // This is the core logic that processes the cart and catalogueData
-  const cartItems = Object.keys(cart)
-    .map(productIdStr => {
-      const productId = parseInt(productIdStr);
-      const product = catalogueData.find(item => item.productId === productId);
-
-      if (product) {
-        const matchedSupplier = suppliers.find(
-          supplier =>
-            supplier.businessName === product.SupplierName &&
-            supplier.supplierPhone === product.SupplierPhone,
-        );
-
-        return {
-          productId: productId,
-          prodName: product.prodName,
-          quantity: cart[productIdStr],
-          price: parseFloat(product.myPrice),
-          category: product.CategoryName,
-          image:
-            product.image ||
-            'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
-          supplierPhone: product.SupplierPhone,
-          supplierName: product.SupplierName,
-          gstNumber: matchedSupplier ? matchedSupplier.gstNumber : null,
-          prodUnit: product.prodUnit,
-        };
-      }
-      return null;
-    })
-    .filter(item => item !== null);
-
   const calculateTotal = () => {
-    return cartItems.reduce(
-      (total, item) => total + item.price * item.quantity,
+    return currentCartItems.reduce(
+      (total, item) => total + item.myPrice * item.quantity,
       0,
     );
   };
 
   const placeOrder = async () => {
     console.log('--- Starting placeOrder function ---');
-    console.log('Current Client Business Data state:', clientBusinessData);
-    console.log('clientBusinessData.BusinessName:', clientBusinessData.BusinessName);
+    console.log('Current Client Business Data state:', clientBusinessData); // Check Data here
+    console.log('clientBusinessData.BusinessName:', clientBusinessData.BusinessName); // Specific check
 
     const clientGSTValue = clientGSTState;
     const clientPhoneNumberValue = clientPhoneNumberState;
-    const clientBusinessName = clientBusinessData.BusinessName;
+    const clientBusinessName = clientBusinessData.BusinessName; // Get from state
 
     if (!clientGSTValue || !clientPhoneNumberValue) {
       Alert.alert(
@@ -184,7 +165,7 @@ export default function Basket() {
       console.error('Place Order Error: Client business name is undefined.');
       return;
     }
-    if (cartItems.length === 0) {
+    if (currentCartItems.length === 0) {
       Alert.alert(
         'Empty Cart',
         'Your basket is empty. Add items before placing an order.',
@@ -196,7 +177,9 @@ export default function Basket() {
 
     const orderId = Math.floor(Math.random() * 1000000).toString();
 
-    const groupedBySupplier = cartItems.reduce((acc, item) => {
+    // Grouping by supplier is still relevant if cartItems might contain products from different suppliers
+    // (though in this flow, they generally come from one specific vendor)
+    const groupedBySupplier = currentCartItems.reduce((acc, item) => {
       const supplierGST = item.gstNumber;
       if (!supplierGST) {
         console.warn(`Product ${item.prodName} is missing supplier GST. Skipping.`);
@@ -210,8 +193,8 @@ export default function Basket() {
 
         acc[supplierGST] = {
           items: [],
-          supplierName: item.supplierName,
-          supplierPhone: item.supplierPhone,
+          supplierName: item.SupplierName, // Use SupplierName from the passed cartItem
+          supplierPhone: null, // You'll need to fetch supplier phone if not in cartItem
           clientName: clientBusinessName,
           clientGST: clientGSTValue,
           clientPhone: clientPhoneNumberValue,
@@ -227,10 +210,10 @@ export default function Basket() {
         itemId: item.productId,
         name: item.prodName,
         quantity: item.quantity,
-        price: item.price,
+        price: item.myPrice, // Use myPrice from the passed cartItem
       });
 
-      acc[supplierGST].totalAmount += item.quantity * item.price;
+      acc[supplierGST].totalAmount += item.quantity * item.myPrice;
       return acc;
     }, {});
 
@@ -272,7 +255,7 @@ export default function Basket() {
           clientName: supplierOrder.clientName,
           clientPhone: supplierOrder.clientPhone,
           supplierName: supplierOrder.supplierName,
-          supplierPhone: supplierOrder.supplierPhone,
+          supplierPhone: supplierOrder.supplierPhone, // Will be null if not fetched
           totalAmount: supplierOrder.totalAmount,
           date: supplierOrder.OrderDate,
           deliveryDate: supplierOrder.DeliveryDate,
@@ -305,6 +288,7 @@ export default function Basket() {
             lastMessageText: newChatMessage.message,
             lastMessageTimestamp: firebase.database.ServerValue.TIMESTAMP,
             lastMessageSender: clientGSTValue,
+            // Only set createdAt if it doesn't exist, to preserve original creation time
             ...(!(await chatMetadataRef.child('createdAt').once('value')).exists() && {
               createdAt: firebase.database.ServerValue.TIMESTAMP,
             }),
@@ -323,10 +307,8 @@ export default function Basket() {
       }
 
       Alert.alert('Success', 'Order placed successfully and chat initiated!');
-      if (clearCart) {
-        // Call the clearCart function passed from the originating screen
-        clearCart();
-      }
+      setCurrentCartItems([]); 
+      Alert.alert("Order Placed", "Your order has been placed successfully. It is now pending approval.");
       navigation.navigate('Approval Pending', {orderID: orderId});
     } catch (error) {
       console.error('Error placing order (main catch block):', error);
@@ -359,9 +341,7 @@ export default function Basket() {
         {
           text: 'Yes',
           onPress: () => {
-            if (clearCart) {
-              clearCart(); // Call the clearCart function passed from the originating screen
-            }
+            setCurrentCartItems([]); // Clear the local cart
             navigation.goBack();
           },
         },
@@ -394,33 +374,31 @@ export default function Basket() {
         onPress={() => navigation.goBack()}>
         <Text style={styles.editOrder}>Edit Order</Text>
       </TouchableOpacity>
-      {cartItems.length === 0 ? (
+      {currentCartItems.length === 0 ? (
         <View style={styles.emptyCartContainer}>
           <Text style={styles.emptyCartText}>Your basket is empty.</Text>
           <Text style={styles.emptyCartSubText}>Add items to place an order.</Text>
         </View>
       ) : (
         <FlatList
-          data={cartItems}
+          data={currentCartItems}
           keyExtractor={item => item.productId.toString()}
           renderItem={({item}) => (
             <View style={styles.cartItem}>
               <Image
                 source={{
                   uri:
-                    item.image ||
+                    item.image || // Use the image from cartItem if available
                     'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fvegetables.png?alt=media&token=53260745-7f43-45aa-8bd4-585fb38ed1f7',
                 }}
                 style={styles.itemImage}
               />
               <View style={styles.itemDetails}>
                 <Text style={styles.itemName}>{item.prodName}</Text>
-                <Text style={styles.itemQuantity}>
-                  {item.quantity} {item.prodUnit || 'units'}
-                </Text>
+                <Text style={styles.itemQuantity}>{item.quantity} {item.prodUnit || 'units'}</Text>
               </View>
               <Text style={styles.itemPrice}>
-                ₹ {(item.price * item.quantity).toFixed(2)}
+                ₹ {(item.myPrice * item.quantity).toFixed(2)}
               </Text>
             </View>
           )}
@@ -439,6 +417,7 @@ export default function Basket() {
       <View style={styles.deliveryContainer}>
         <View style={{flexDirection: 'column'}}>
           <Text style={styles.deliveryLabel}>Delivery by:</Text>
+          {/* Dynamically calculate delivery date based on current date + 2 days */}
           <Text style={styles.deliveryDate}>
             {new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString(
               'en-IN',
@@ -517,7 +496,7 @@ const styles = StyleSheet.create({
     padding: 15,
     marginBottom: 10,
     alignSelf: 'center',
-    width: '100%',
+    width: '100%', // Ensure it takes full width
   },
   itemImage: {
     width: 50,

@@ -26,10 +26,7 @@ import { categories, worksData } from '../Constant/constant';
 
 const { width } = Dimensions.get('window');
 
-const dummyOutlets = [
-  { id: 'dummy_outlet1', outletId: 'dummy_outlet1', OutletName: 'Main Store', Address: '123 Main St, Anytown' },
-  { id: 'dummy_outlet2', outletId: 'dummy_outlet2', OutletName: 'Warehouse', Address: '456 Warehouse Rd, Anytown' },
-];
+const dummyOutlets = [];
 
 export default function HomeScreen() {
   const navigation = useNavigation();
@@ -684,7 +681,8 @@ export default function HomeScreen() {
           </ScrollView>
           <TouchableOpacity
             style={styles.chatButton}
-            onPress={() => setChatModalVisible(true)}>
+            onPress={() => setChatModalVisible(true)}
+          >
             <View style={styles.chatButtonInner}>
               <Image
                 source={require('../Images/Categories.png')}

@@ -210,7 +210,7 @@ const SpecificVendorOrderNow = () => { // Removed {route} from props, use useRou
     // Ensure we're passing the correct clientGST and vendorGST for the order
     // clientGST will be the current user's GST (from clientGstFromChat or AsyncStorage)
     // vendorGST will be the GST of the supplier for this order (from route.params)
-    navigation.navigate('View Basket', {
+    navigation.navigate('New Basket', {
       cartItems: cartItems, // Changed from 'cart' to 'cartItems' for clarity
       clientGST: clientGST, // The client's GST
       vendorGST: vendorGST, // The supplier/vendor's GST

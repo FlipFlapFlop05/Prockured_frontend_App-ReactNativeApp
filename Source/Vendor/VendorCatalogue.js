@@ -10,14 +10,15 @@ import {
   Dimensions,
   TextInput,
   Animated,
-  Alert
+  ActivityIndicator, // Added ActivityIndicator for loading state
+  Alert,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useNavigation} from '@react-navigation/native';
 import axios from 'axios';
 import {MagnifyingGlassIcon} from 'react-native-heroicons/outline';
 
-const {width, height} = Dimensions.get('window');
+const {width} = Dimensions.get('window'); // Removed 'height' as it's not used here
 
 export default function VendorCatalogue() {
   const navigation = useNavigation();
@@ -29,38 +30,44 @@ export default function VendorCatalogue() {
   const [isSearchVisible, setIsSearchVisible] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const searchAnim = useRef(new Animated.Value(0)).current;
+  const [loading, setLoading] = useState(true); // Added loading state
 
+  // This useEffect now handles fetching both client GST (for the API call) and then the data
   useEffect(() => {
-    const fetchClientId = async () => {
+    const initDataFetch = async () => {
+      setLoading(true); // Start loading
       try {
-        const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+        // Correctly fetch supplierGST to use as the phone number for the API
         const supplierGst = await AsyncStorage.getItem('supplierGST');
-        if (storedPhoneNumber) {
-          // setPhoneNumber(storedPhoneNumber);
-          setPhoneNumber(supplierGst);
+        // If you still need the client's actual phone number for other purposes, fetch it too
+        // const storedPhoneNumber = await AsyncStorage.getItem('phoneNumber');
+
+        if (supplierGst) {
+          setPhoneNumber(supplierGst); // Set the GST as phoneNumber for the API endpoint
+          try {
+            const response = await axios.get(
+              `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${supplierGst}`, // Use supplierGst here
+            );
+            const dataArray = Object.values(response.data);
+            setData(dataArray);
+          } catch (apiError) {
+            console.log('Error fetching catalogue data:', apiError);
+            Alert.alert("Error", "Failed to load catalogue. Please check your network or try again.");
+          }
+        } else {
+          console.warn('Supplier GST not found in AsyncStorage. Cannot fetch catalogue.');
+          Alert.alert("Login Required", "Please ensure you are logged in as a supplier.");
         }
-      } catch (error) {
-        console.log('Error Fetching Client ID: ', error);
+      } catch (storageError) {
+        console.log('Error Fetching Supplier GST from AsyncStorage: ', storageError);
+        Alert.alert("Error", "Could not retrieve your details. Please try logging in again.");
+      } finally {
+        setLoading(false); // End loading
       }
     };
 
-    const fetchData = async () => {
-      if (phoneNumber) {
-        try {
-          const response = await axios.get(
-            `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${phoneNumber}`,
-          );
-          const dataArray = Object.values(response.data);
-          setData(dataArray);
-        } catch (error) {
-          console.log(error);
-        }
-      }
-    };
-
-    fetchClientId();
-    fetchData();
-  }, [phoneNumber]);
+    initDataFetch();
+  }, []); // Run only once on component mount
 
   const groupedData = data.reduce((acc, item) => {
     const category = item.CategoryName;
@@ -114,12 +121,25 @@ export default function VendorCatalogue() {
   };
 
   const toggleSearch = () => {
-    setIsSearchVisible(!isSearchVisible);
-    Animated.timing(searchAnim, {
-      toValue: isSearchVisible ? 0 : 1,
-      duration: 300,
-      useNativeDriver: false,
-    }).start();
+    // If search is visible, animate it out first, then hide
+    if (isSearchVisible) {
+      Animated.timing(searchAnim, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false,
+      }).start(() => {
+        setIsSearchVisible(false);
+        setSearchTerm(''); // Clear search term when hiding
+      });
+    } else {
+      // If search is hidden, show it first, then animate it in
+      setIsSearchVisible(true);
+      Animated.timing(searchAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: false,
+      }).start();
+    }
   };
 
   const searchWidth = searchAnim.interpolate({
@@ -127,17 +147,33 @@ export default function VendorCatalogue() {
     outputRange: [0, width * 0.9],
   });
 
-  const searchOpacity = searchAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0, 1],
-  });
+  // No need for searchOpacity if you're using width interpolation for visibility
+  // const searchOpacity = searchAnim.interpolate({
+  //   inputRange: [0, 1],
+  //   outputRange: [0, 1],
+  // });
 
   const filteredItems = Object.keys(filteredData).reduce((acc, category) => {
-    acc[category] = filteredData[category].filter(item =>
-      item.prodName.toLowerCase().includes(searchTerm.toLowerCase()),
-    );
+    // Ensure filteredData[category] exists before filtering
+    if (filteredData[category]) {
+      acc[category] = filteredData[category].filter(item =>
+        item.prodName.toLowerCase().includes(searchTerm.toLowerCase()),
+      );
+    } else {
+      acc[category] = []; // If category doesn't exist in filteredData, return empty array
+    }
     return acc;
   }, {});
+
+  // Render a loading indicator while data is being fetched
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#76B117" />
+        <Text style={{ marginTop: 10, fontSize: 16, color: '#333' }}>Loading your catalogue...</Text>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.outerContainer}>
@@ -149,7 +185,7 @@ export default function VendorCatalogue() {
           </TouchableOpacity>
         </View>
 
-        {isSearchVisible && ( // Conditionally render the search bar
+        {isSearchVisible && (
           <Animated.View style={[styles.searchContainer, {width: searchWidth}]}>
             <TextInput
               style={styles.searchInput}
@@ -189,52 +225,64 @@ export default function VendorCatalogue() {
               ))}
             </ScrollView>
 
-            {Object.keys(filteredItems).map((category, index) => (
-              <FlatList
-                key={index}
-                data={filteredItems[category]}
-                keyExtractor={item => item.productId}
-                renderItem={({item}) => (
-                  <View style={styles.productCard}>
-                    <Image
-                      source={{
-                        uri: 'https://www.themealdb.com/images/category/beef.png',
-                      }}
-                      style={styles.productImageCard}
-                    />
-                    <View style={styles.productDetailsCard}>
-                      <Text style={styles.productNameCard}>
-                        {item.prodName}
-                      </Text>
-                      <Text style={styles.productCategoryCard}>
-                        {item.CategoryName}
-                      </Text>
-                      <Text style={styles.productPriceCard}>
-                        ₹ {item.myPrice}
-                      </Text>
-                    {/* </View>
-                    <View style={styles.quantityControlsCard}>
-                      <TouchableOpacity
-                        style={styles.quantityButtonCard}
-                        onPress={() => handleRemoveFromCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantityTextCard}>
-                        {cart[item.productId] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        style={styles.quantityButtonCard}
-                        onPress={() => handleAddToCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>+</Text>
-                      </TouchableOpacity>
-                    </View> */}
-                    </View>
-                  </View>
-                )}
-              />
-            ))}
+            {Object.keys(filteredItems).length === 0 && searchTerm ? (
+                <Text style={styles.noProductsText}>No products match your search.</Text>
+            ) : Object.keys(filteredItems).length === 0 && !searchTerm ? (
+                <Text style={styles.noProductsText}>No products available in this category.</Text>
+            ) : (
+              Object.keys(filteredItems).map((category, index) => (
+                // Only render FlatList if there are items in the category after filtering
+                filteredItems[category].length > 0 && (
+                  <FlatList
+                    key={index}
+                    data={filteredItems[category]}
+                    keyExtractor={item => item.productId}
+                    renderItem={({item}) => (
+                      <View style={styles.productCard}>
+                        <Image
+                          source={{
+                            uri:
+                              item.image || // Use item.image if available, otherwise fallback
+                              'https://www.themealdb.com/images/category/beef.png',
+                          }}
+                          style={styles.productImageCard}
+                        />
+                        <View style={styles.productDetailsCard}>
+                          <Text style={styles.productNameCard}>
+                            {item.prodName}
+                          </Text>
+                          <Text style={styles.productCategoryCard}>
+                            {item.CategoryName}
+                          </Text>
+                          <Text style={styles.productPriceCard}>
+                            ₹ {item.myPrice}
+                          </Text>
+                        </View>
+                        {/* Quantity Controls (Re-added, commented out in your original code) */}
+                        <View style={styles.quantityControlsCard}>
+                          <TouchableOpacity
+                            style={styles.quantityButtonCard}
+                            onPress={() => handleRemoveFromCart(item.productId)}>
+                            <Text style={styles.quantityButtonTextCard}>-</Text>
+                          </TouchableOpacity>
+                          <Text style={styles.quantityTextCard}>
+                            {cart[item.productId] || 0}
+                          </Text>
+                          <TouchableOpacity
+                            style={styles.quantityButtonCard}
+                            onPress={() => handleAddToCart(item.productId)}>
+                            <Text style={styles.quantityButtonTextCard}>+</Text>
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    )}
+                  />
+                )
+              ))
+            )}
           </View>
         ) : (
+          // This is the empty state block
           <View style={styles.emptyState}>
             <Image
               source={{
@@ -242,8 +290,9 @@ export default function VendorCatalogue() {
               }}
               style={styles.emptyStateImage}
             />
+            {/* The + Add Product button when catalogue is empty */}
             <TouchableOpacity
-              style={styles.addProductButton}
+              style={styles.addProductButtonEmptyState} 
               onPress={() => navigation.navigate('Vendor Add Product')}>
               <Text style={styles.addProductText}>+ Add Product</Text>
             </TouchableOpacity>
@@ -251,21 +300,25 @@ export default function VendorCatalogue() {
         )}
       </ScrollView>
 
-      {/* Floating Add Product Button - Moved outside the ScrollView */}
-      <TouchableOpacity
-        style={styles.floatingButton}
-        onPress={() => navigation.navigate('Vendor Add Product')}>
-        <Text style={styles.floatingButtonText}>+</Text>
-      </TouchableOpacity>
+      {/* Floating Add Product Button - Only visible if catalogue is NOT empty */}
+      {data.length !== 0 && (
+        <TouchableOpacity
+          style={styles.floatingButton}
+          onPress={() => navigation.navigate('Vendor Add Product')}>
+          <Text style={styles.floatingButtonText}>+</Text>
+        </TouchableOpacity>
+      )}
 
+      {/* View Basket Button - Conditionally rendered based on total items */}
       {calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
           onPress={() =>
             navigation.navigate('View Basket', {
-              cart,
-              data,
-              updateCart: updateCartFromBasket,
+              cart: cart,
+              catalogueData: data, // Pass the entire catalogue data
+              suppliers: [], // Vendor's own catalogue, so no other suppliers here. Or fetch it if needed.
+              clearCart: () => setCart({}), // Pass a function to clear the cart in this component
             })
           }>
           <Text style={styles.viewBasketText}>
@@ -280,23 +333,42 @@ export default function VendorCatalogue() {
 const styles = StyleSheet.create({
   outerContainer: {
     flex: 1,
-    position: 'relative', // Essential for absolute positioning of children
+    backgroundColor: '#f5f5f5',
   },
   container: {
     flex: 1,
     padding: 15,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
   header: {
-    justifyContent: 'space-between',
     flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 10,
-    width: width * 0.9,
-    // position: 'relative', // This can stay or be removed, depends on other header styles
+    width: '100%', // Use 100% for flex containers
   },
   headerText: {
     fontWeight: 'bold',
     fontSize: 22,
+  },
+  searchContainer: {
+    alignSelf: 'center', // Keep it centered when animating width
+    paddingVertical: 10, // Add some vertical padding
+    // No need for explicit width here, `searchWidth` from animation handles it
+  },
+  searchInput: {
+    backgroundColor: '#fff',
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    color: '#000',
+    borderColor: '#ccc', // Lighter border
+    borderWidth: 1,
   },
   mainContent: {
     marginTop: 20,
@@ -311,9 +383,12 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
     backgroundColor: '#e0e0e0',
+    borderWidth: 1, // Added border for clarity
+    borderColor: '#d0d0d0', // Lighter border
   },
   selectedCategoryButton: {
     backgroundColor: '#76B117',
+    borderColor: '#76B117', // Match border color
   },
   categoryText: {
     fontSize: 16,
@@ -329,6 +404,11 @@ const styles = StyleSheet.create({
     padding: 10,
     marginVertical: 8,
     alignItems: 'center',
+    elevation: 2, // Subtle shadow for Android
+    shadowColor: '#000', // iOS shadow
+    shadowOffset: {width: 0, height: 1},
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   productImageCard: {
     width: 60,
@@ -342,6 +422,7 @@ const styles = StyleSheet.create({
   productNameCard: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#333',
   },
   productCategoryCard: {
     fontSize: 14,
@@ -350,54 +431,64 @@ const styles = StyleSheet.create({
   productPriceCard: {
     fontSize: 16,
     marginTop: 5,
+    fontWeight: '600', // Slightly bolder price
+    color: '#76B117', // Green price
   },
   quantityControlsCard: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#76B117',
     borderRadius: 8,
-    paddingHorizontal: 8,
+    paddingHorizontal: 5, // Reduced padding
+    paddingVertical: 2, // Reduced padding
   },
   quantityButtonCard: {
-    padding: 5,
+    padding: 7, // Increased touch target
   },
   quantityButtonTextCard: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 20, // Slightly larger for tap
+    fontWeight: 'bold',
   },
   quantityTextCard: {
     color: 'white',
-    fontSize: 16,
+    fontSize: 18, // Slightly larger
     marginHorizontal: 8,
+    fontWeight: 'bold',
   },
   emptyState: {
     alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 100,
+    // Removed justifyContent: 'center' and marginTop: 100
+    // The image's margin will push it down
+    paddingTop: 50, // Added padding from top to visually center content
   },
   emptyStateImage: {
     width: 220,
     height: 220,
     borderRadius: 40,
+    // No specific margin-top needed here, adjust parent padding
   },
-  addProductButton: {
+  // New style for the "Add Product" button in the empty state
+  addProductButtonEmptyState: {
     backgroundColor: '#76B117',
-    paddingVertical: 10,
-    paddingHorizontal: 10,
-    borderRadius: 20,
-    width: '85%',
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 30,
+    paddingVertical: 12, // Slightly more padding
+    paddingHorizontal: 25, // More horizontal padding
+    borderRadius: 25, // More rounded corners
+    marginTop: 20, // This positions it directly below the image
+    alignSelf: 'center', // Ensures it's centered
+    width: '80%', // Make it a bit narrower than 85%
   },
   addProductText: {
     fontSize: 18,
     color: '#fff',
-    fontWeight: '700', // Use string for fontWeight
-    width: '100%',
-    height: 'fit-content', // 'fit-content' is not a valid React Native style property. Use flex or explicit height.
+    fontWeight: '700',
     textAlign: 'center',
+  },
+  noProductsText: {
+    textAlign: 'center',
+    marginTop: 30,
+    fontSize: 16,
+    color: '#666',
   },
   viewBasketButton: {
     backgroundColor: '#76B117',
@@ -405,49 +496,42 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     alignItems: 'center',
     position: 'absolute',
-    bottom: 0, // Adjusted to stick to the bottom of the screen
-    left: 0,
-    right: 0,
-    width: '90%',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    marginLeft: 20, // This will apply to the button's left margin from the parent. Consider using `width: 'auto'` or `marginHorizontal: 20` if you want it centered with some padding.
-    marginRight: 20, // Added for symmetric padding
-    marginBottom: 10,
+    bottom: 10, // Adjusted to be 10px from the bottom
+    left: 20,
+    right: 20,
+    // Removed width/margin overrides, left/right/bottom will stretch it correctly
+    flexDirection: 'row', // Align text and count
+    justifyContent: 'center', // Center content
+    elevation: 5,
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.3,
+    shadowRadius: 2,
   },
   viewBasketText: {
     color: 'white',
     fontSize: 18,
     fontWeight: 'bold',
   },
-  searchInput: {
-    padding: 10,
-    color: 'black',
-    width: '90%',
-    borderColor: 'gray',
-    borderWidth: 1,
-    borderRadius: 8, // Added for better aesthetics
-    marginBottom: 10, // Added spacing below search input
-  },
   floatingButton: {
     backgroundColor: '#76B117',
-    width: 60, // Slightly increased size for better tap target
+    width: 60,
     height: 60,
-    borderRadius: 30, // half of width/height to make it a perfect circle
+    borderRadius: 30,
     position: 'absolute',
-    bottom: 90, // Positioned above the "View Basket" button
+    bottom: 80, // Positioned above the "View Basket" button (10 bottom + 15 padding + ~55 button height = 80)
     right: 20,
     justifyContent: 'center',
     alignItems: 'center',
-    elevation: 5, // Android shadow
-    shadowColor: '#000', // iOS shadow
+    elevation: 5,
+    shadowColor: '#000',
     shadowOffset: {width: 0, height: 2},
     shadowOpacity: 0.3,
     shadowRadius: 2,
   },
   floatingButtonText: {
     color: 'white',
-    fontSize: 35, // Slightly larger text
+    fontSize: 35,
     fontWeight: 'bold',
   },
 });

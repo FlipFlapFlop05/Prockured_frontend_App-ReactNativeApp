@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   quantityButtonTextCard: {
     color: 'white',
-    fontSize: 18,
+    fontSize: 22,
   },
   quantityTextCard: {
     color: 'white',
