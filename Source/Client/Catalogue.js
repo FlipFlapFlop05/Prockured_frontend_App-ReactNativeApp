@@ -28,7 +28,7 @@ const {width} = Dimensions.get('window');
 
 export default function Catalogue() {
   const navigation = useNavigation();
-  const [phoneNumber, setPhoneNumber] = useState(null); // Corrected variable name
+  const [phoneNumber, setPhoneNumber] = useState(null);
   const [data, setData] = useState([]);
   const [cart, setCart] = useState({});
   const [isSearchVisible, setIsSearchVisible] = useState(false);
@@ -42,16 +42,53 @@ export default function Catalogue() {
   const [selectedSupplierTab, setSelectedSupplierTab] =
     useState('My Catalogue');
   const [loading, setLoading] = useState(true);
+  const [clientGST, setClientGST] = useState(null);
+  console.log(suppliers, 'suppliers in catalogue');
+
+  const fetchCatalogue = async selected => {
+    let gstToFetch = '';
+
+    if (selected === 'My Catalogue') {
+      gstToFetch = clientGST;
+    } else {
+      const matchedSupplier = suppliers.find(
+        supplier => supplier.businessName === selected,
+      );
+      gstToFetch = matchedSupplier?.gstNumber;
+    }
+
+    if (!gstToFetch) {
+      Alert.alert(
+        'Missing GST',
+        'Could not find a valid GST number for the selected catalogue.',
+      );
+      setLoading(false);
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const res = await axios.get(
+        `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToFetch}`,
+      );
+      const fetched = Object.values(res.data || []);
+      setData(fetched);
+    } catch (err) {
+      console.log('Catalogue fetch failed:', err.message);
+      setData([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const storedPhoneNumber = await AsyncStorage.getItem('clientGST');
-        console.log("Stored Client GST:", storedPhoneNumber); // Log for debugging
-
-        if (storedPhoneNumber) setPhoneNumber(storedPhoneNumber);
-
         if (storedPhoneNumber) {
+          setPhoneNumber(storedPhoneNumber);
+          setClientGST(storedPhoneNumber);
+
           const [catalogueResponse, suppliersResponse] = await Promise.all([
             axios.get(
               `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${storedPhoneNumber}`,
@@ -69,7 +106,10 @@ export default function Catalogue() {
         }
       } catch (error) {
         console.log('Error fetching data:', error);
-        Alert.alert("Error", "Failed to load catalogue. Please try again later.");
+        Alert.alert(
+          'Error',
+          'Failed to load catalogue. Please try again later.',
+        );
       } finally {
         setLoading(false);
       }
@@ -78,24 +118,18 @@ export default function Catalogue() {
     fetchData();
   }, []);
 
-  // Filter data based on selected category and supplier tab
+  useEffect(() => {
+    if (selectedSupplierTab && clientGST) {
+      fetchCatalogue(selectedSupplierTab);
+    }
+  }, [selectedSupplierTab]);
+
   const filteredData = data.filter(item => {
-    // First filter by the selected category (case insensitive)
     const categoryMatch =
       item.CategoryName?.toLowerCase() === selectedMainCategory?.toLowerCase();
-
-    // Then filter by supplier if not "My Catalogue" (case insensitive)
-    if (selectedSupplierTab === 'My Catalogue') {
-      return categoryMatch;
-    } else {
-      return (
-        categoryMatch &&
-        item.SupplierName?.toLowerCase() === selectedSupplierTab?.toLowerCase()
-      );
-    }
+    return categoryMatch;
   });
 
-  // Filter items based on search term
   const searchedItems = filteredData.filter(item =>
     item.prodName?.toLowerCase().includes(searchTerm.toLowerCase()),
   );
@@ -123,7 +157,6 @@ export default function Catalogue() {
   const calculateTotalItems = () =>
     Object.values(cart).reduce((sum, qty) => sum + qty, 0);
 
-  // This function will be passed to the Basket component
   const clearCart = () => {
     setCart({});
     console.log('Cart cleared from Catalogue!');
@@ -131,14 +164,12 @@ export default function Catalogue() {
 
   const toggleSearch = () => {
     if (isSearchVisible) {
-      // If search is visible, animate it out first, then hide
       Animated.timing(searchAnim, {
         toValue: 0,
         duration: 300,
         useNativeDriver: false,
       }).start(() => setIsSearchVisible(false));
     } else {
-      // If search is hidden, show it first, then animate it in
       setIsSearchVisible(true);
       Animated.timing(searchAnim, {
         toValue: 1,
@@ -146,47 +177,23 @@ export default function Catalogue() {
         useNativeDriver: false,
       }).start();
     }
-    setSearchTerm(''); // Clear search term when toggling
+    setSearchTerm('');
   };
 
   const searchWidth = searchAnim.interpolate({
     inputRange: [0, 1],
-    outputRange: [0, width * 0.8], // Adjust this value to control search input width when open
+    outputRange: [0, width * 0.8],
   });
 
   const handleCategoryChange = category => {
     setSelectedMainCategory(category);
-    setSelectedSupplierTab('My Catalogue'); // Reset to My Catalogue when category changes
+    setSelectedSupplierTab('My Catalogue');
     setIsDropdownVisible(false);
-  };
-
-  if (loading) {
-    return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#76B117" />
-      </View>
-    );
-  }
-
-  // Merges supplier GST into product data
-  const mergeSupplierGST = (items, suppliersList) => {
-    return items.map(item => {
-      const matchedSupplier = suppliersList.find(
-        supplier =>
-          supplier.businessName === item.SupplierName &&
-          supplier.supplierPhone === item.SupplierPhone,
-      );
-
-      return {
-        ...item,
-        gstNumber: matchedSupplier ? matchedSupplier.gstNumber : null,
-      };
-    });
   };
 
   return (
     <View style={styles.outerContainer}>
-      {/* Header Container */}
+      {/* Header */}
       <View style={styles.headerContainer}>
         <TouchableOpacity
           onPress={() => navigation.goBack()}
@@ -195,9 +202,7 @@ export default function Catalogue() {
         </TouchableOpacity>
 
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>
-            {data?.length === 0 ? 'Catalogue' : selectedMainCategory}
-          </Text>
+          <Text style={styles.headerTitle}>{selectedMainCategory}</Text>
 
           {data?.length > 0 ? (
             <TouchableOpacity
@@ -214,13 +219,11 @@ export default function Catalogue() {
           ) : null}
         </View>
 
-        {/* Search Icon */}
         <TouchableOpacity onPress={toggleSearch} style={styles.searchIcon}>
           <MagnifyingGlassIcon size={24} color="#333" />
         </TouchableOpacity>
       </View>
 
-      {/* Search Bar - Conditionally rendered below the header */}
       {isSearchVisible && (
         <Animated.View style={[styles.searchBarWrapper, {width: searchWidth}]}>
           <TextInput
@@ -246,116 +249,111 @@ export default function Catalogue() {
         </View>
       )}
 
-      {data.length === 0 ? (
-        <View style={styles.emptyState}>
-          <Image
-            source={{
-              uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fdiary.png?alt=media&token=28574722-8076-44a0-a093-53e6132b9945',
-            }}
-            style={styles.emptyStateImage}
-          />
+      <ScrollView style={styles.container}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          style={{paddingHorizontal: 16, marginBottom: 10}}>
           <TouchableOpacity
-            style={styles.addProductButton}
-            onPress={() => navigation.navigate('Add Product Manually')}>
-            <Text style={styles.addProductText}>+ Add Product</Text>
+            style={[
+              styles.filterButton,
+              selectedSupplierTab === 'My Catalogue' &&
+                styles.filterButtonActive,
+            ]}
+            onPress={() => setSelectedSupplierTab('My Catalogue')}>
+            <Text
+              style={[
+                styles.filterButtonText,
+                selectedSupplierTab === 'My Catalogue' &&
+                  styles.filterButtonTextActive,
+              ]}>
+              My Catalogue
+            </Text>
           </TouchableOpacity>
-        </View>
-      ) : (
-        <ScrollView style={styles.container}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            style={{paddingHorizontal: 16, marginBottom: 10}}>
+          {suppliers.map(supplier => (
             <TouchableOpacity
+              key={supplier.supplierId}
               style={[
                 styles.filterButton,
-                selectedSupplierTab === 'My Catalogue' &&
+                selectedSupplierTab === supplier.businessName &&
                   styles.filterButtonActive,
               ]}
-              onPress={() => setSelectedSupplierTab('My Catalogue')}>
+              onPress={() => setSelectedSupplierTab(supplier.businessName)}>
               <Text
                 style={[
                   styles.filterButtonText,
-                  selectedSupplierTab === 'My Catalogue' &&
+                  selectedSupplierTab === supplier.businessName &&
                     styles.filterButtonTextActive,
                 ]}>
-                My Catalogue
+                {supplier.businessName}
               </Text>
             </TouchableOpacity>
-            {suppliers.map(supplier => (
-              <TouchableOpacity
-                key={supplier.supplierId}
-                style={[
-                  styles.filterButton,
-                  selectedSupplierTab === supplier.businessName &&
-                    styles.filterButtonActive,
-                ]}
-                onPress={() => setSelectedSupplierTab(supplier.businessName)}>
-                <Text
-                  style={[
-                    styles.filterButtonText,
-                    selectedSupplierTab === supplier.businessName &&
-                      styles.filterButtonTextActive,
-                  ]}>
-                  {supplier.businessName}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          ))}
+        </ScrollView>
 
-          {searchedItems.length > 0 ? (
-            <>
-              <FlatList
-                data={searchedItems}
-                keyExtractor={item => item.productId}
-                renderItem={({item}) => (
-                  <View style={styles.productCard}>
-                    <Image
-                      source={{
-                        uri: item.image || 'https://www.themealdb.com/images/category/beef.png', // Use item.image if available
-                      }}
-                      style={styles.productImageCard}
-                    />
-                    <View style={styles.productDetailsCard}>
-                      <Text style={styles.productNameCard}>
-                        {item.prodName}
-                      </Text>
-                      <Text style={styles.productCategoryCard}>
-                        {item.CategoryName}
-                      </Text>
-                      <Text style={styles.productPriceCard}>
-                        ₹ {item.myPrice}
-                      </Text>
-                    </View>
-                    <View style={styles.quantityControlsCard}>
-                      <TouchableOpacity
-                        onPress={() => handleRemoveFromCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>-</Text>
-                      </TouchableOpacity>
-                      <Text style={styles.quantityTextCard}>
-                        {cart[item.productId] || 0}
-                      </Text>
-                      <TouchableOpacity
-                        onPress={() => handleAddToCart(item.productId)}>
-                        <Text style={styles.quantityButtonTextCard}>+</Text>
-                      </TouchableOpacity>
-                    </View>
-                  </View>
-                )}
-              />
-            </>
-          ) : (
+        {selectedSupplierTab === 'My Catalogue' && data.length === 0 ? (
+          <View style={styles.emptyState}>
+            <Image
+              source={{
+                uri: 'https://firebasestorage.googleapis.com/v0/b/prockured-1ec23.firebasestorage.app/o/Images%2Fdiary.png?alt=media&token=28574722-8076-44a0-a093-53e6132b9945',
+              }}
+              style={styles.emptyStateImage}
+            />
+            <TouchableOpacity
+              style={styles.addProductButton}
+              onPress={() => navigation.navigate('Add Product Manually')}>
+              <Text style={styles.addProductText}>+ Add Product</Text>
+            </TouchableOpacity>
+          </View>
+        ) : searchedItems.length > 0 ? (
+          <FlatList
+            data={searchedItems}
+            keyExtractor={item => item.productId}
+            renderItem={({item}) => (
+              <View style={styles.productCard}>
+                <Image
+                  source={{
+                    uri:
+                      item.image ||
+                      'https://www.themealdb.com/images/category/beef.png', // Use item.image if available
+                  }}
+                  style={styles.productImageCard}
+                />
+                <View style={styles.productDetailsCard}>
+                  <Text style={styles.productNameCard}>{item.prodName}</Text>
+                  <Text style={styles.productCategoryCard}>
+                    {item.CategoryName}
+                  </Text>
+                  <Text style={styles.productPriceCard}>₹ {item.myPrice}</Text>
+                </View>
+                <View style={styles.quantityControlsCard}>
+                  <TouchableOpacity
+                    onPress={() => handleRemoveFromCart(item.productId)}>
+                    <Text style={styles.quantityButtonTextCard}>-</Text>
+                  </TouchableOpacity>
+                  <Text style={styles.quantityTextCard}>
+                    {cart[item.productId] || 0}
+                  </Text>
+                  <TouchableOpacity
+                    onPress={() => handleAddToCart(item.productId)}>
+                    <Text style={styles.quantityButtonTextCard}>+</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            )}
+          />
+        ) : (
+          <View style={{padding: 16}}>
             <Text style={styles.noProductsText}>
               {searchTerm
                 ? 'No matching products found'
-                : 'No products available in this category'}
+                : 'No products available in this catalogue'}
             </Text>
-          )}
-        </ScrollView>
-      )}
+          </View>
+        )}
+      </ScrollView>
 
-      {/* Floating Add Product Button - Conditionally Rendered */}
-      {data.length > 0 && ( // Only show if catalogue is not empty
+      {data.length > 0 && (
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={() => navigation.navigate('Add Product Manually')}>
@@ -364,34 +362,32 @@ export default function Catalogue() {
       )}
 
       {calculateTotalItems() > 0 && (
-      <TouchableOpacity
-        style={styles.viewBasketButton}
-        onPress={() => {
-          // Pass the current cart state and the full data array for Basket to work with
-          // The 'data' here refers to the 'catalogue' items that Basket.js will use to find product details
-          navigation.navigate('View Basket', {
-            cart: cart, // The quantities of items in the cart
-            catalogueData: data, // The full catalogue data to look up product details
-            suppliers: suppliers, // Pass suppliers if their GST is needed in Basket
-            clearCart: clearCart, // Pass the clearCart function
-          });
-        }}>
-        <Text style={styles.viewBasketText}>View Basket</Text>
-        <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
-        <Text style={styles.basketCount}> {calculateTotalItems()}</Text>
-      </TouchableOpacity>
-    )}
+        <TouchableOpacity
+          style={styles.viewBasketButton}
+          onPress={() => {
+            navigation.navigate('View Basket', {
+              cart: cart,
+              catalogueData: data,
+              suppliers: suppliers,
+              clearCart: clearCart,
+            });
+          }}>
+          <Text style={styles.viewBasketText}>View Basket</Text>
+          <ShoppingCartIcon size={20} color="#fff" style={{marginLeft: 10}} />
+          <Text style={styles.basketCount}> {calculateTotalItems()}</Text>
+        </TouchableOpacity>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   outerContainer: {
-    flex: 1, 
-    backgroundColor: '#f9f9f9'
+    flex: 1,
+    backgroundColor: '#f9f9f9',
   },
   container: {
-    padding: 15
+    padding: 15,
   },
   loadingContainer: {
     flex: 1,

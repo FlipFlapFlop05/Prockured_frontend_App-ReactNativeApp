@@ -70,228 +70,244 @@ const Order = () => {
   }, [navigation]);
 
   useEffect(() => {
-        const getAllAsyncStorageItems = async () => {
-            try {
-                const keys = await AsyncStorage.getAllKeys();
-                const stores = await AsyncStorage.multiGet(keys);
-                stores.forEach(([key, value]) => {
-                    if (key === 'clientGST') {
-                        setClientPhoneNumber(value); // This seems to be where clientGST is stored
-                    }
-                });
-            } catch (error) {
-                console.error('Error fetching AsyncStorage items:', error);
-            }
+    const getAllAsyncStorageItems = async () => {
+      try {
+        const keys = await AsyncStorage.getAllKeys();
+        const stores = await AsyncStorage.multiGet(keys);
+        stores.forEach(([key, value]) => {
+          if (key === 'clientGST') {
+            setClientPhoneNumber(value); // This seems to be where clientGST is stored
+          }
+        });
+      } catch (error) {
+        console.error('Error fetching AsyncStorage items:', error);
+      }
+    };
+
+    getAllAsyncStorageItems();
+  }, []); // Run once on mount
+
+  useEffect(() => {
+    const fetchAllData = async () => {
+      if (!clientPhoneNumber) return; // Only fetch if clientPhoneNumber is available
+
+      const currentSupplierMap = await fetchClientData(); // Fetch supplier data first
+      // You might want to update supplierMap state here too if needed elsewhere
+      // setSupplierMap(currentSupplierMap);
+
+      if (selectedStatus === 'Pending') {
+        fetchPendingOrders(currentSupplierMap);
+      } else if (selectedStatus === 'Confirmed') {
+        fetchConfirmedOrders(currentSupplierMap);
+      } else if (selectedStatus === 'Past') {
+        fetchPastOrders(currentSupplierMap);
+      }
+    };
+
+    fetchAllData();
+  }, [clientPhoneNumber, selectedStatus]); // Rerun when clientPhoneNumber or selectedStatus changes
+
+  const fetchClientData = async () => {
+    try {
+      const response = await axios.get(
+        `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientPhoneNumber}`,
+      );
+      const supplierData = response.data?.Supplier || {};
+      // It's good practice to update the state here if supplierMap is used in render or other effects
+      setSupplierMap(supplierData);
+      return supplierData; // Return for immediate use in fetch functions
+    } catch (error) {
+      console.error('Failed to fetch client data', error);
+      return {};
+    }
+  };
+
+  const fetchPendingOrders = async supplierMap => {
+    try {
+      setLoading(prev => ({...prev, pending: true}));
+
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
+        {clientGST: clientPhoneNumber}, // Assuming clientPhoneNumber holds the client's GST
+      );
+
+      // Access the 'data' key from the response
+      const responseData = res?.data?.data || {};
+
+      const orders = Object.values(responseData).map(order => {
+        const orderId = order.Order_ID ?? '';
+        const mainSupplierGST = order.supplierGST ?? ''; // This is the key for the nested supplier object
+        const supplierDetails = order[mainSupplierGST] || {}; // Access the nested supplier object
+
+        // If supplierDetails has its own 'items' array, use that.
+        // Otherwise, fall back to an empty array.
+        const items = Array.isArray(supplierDetails.items)
+          ? supplierDetails.items
+          : [];
+
+        // Use totalAmount from supplierDetails if available, otherwise calculate
+        const orderValue =
+          supplierDetails.totalAmount !== undefined &&
+          supplierDetails.totalAmount !== null
+            ? Number(supplierDetails.totalAmount).toFixed(2)
+            : items
+                .reduce(
+                  (sum, {price = 0, quantity = 0}) =>
+                    sum + Number(price) * Number(quantity),
+                  0,
+                )
+                .toFixed(2);
+
+        return {
+          orderId: orderId,
+          vendor: mainSupplierGST, // The GST number of the main supplier
+          vendorName:
+            supplierDetails.supplierName ||
+            supplierMap[mainSupplierGST]?.businessName ||
+            'Unknown Supplier',
+          status: 'Pending', // As per the API endpoint
+          orderValue: orderValue,
+          items: items,
+          supplierGST: mainSupplierGST,
+          clientGST: order.clientGST ?? '',
+          OrderDate: supplierDetails.OrderDate ?? '',
+          DeliveryDate: supplierDetails.DeliveryDate ?? '',
+          // You might also want to include clientName, clientPhone, supplierPhone if needed on next screen
+          clientName: supplierDetails.clientName,
+          clientPhone: supplierDetails.clientPhone,
+          supplierPhone: supplierDetails.supplierPhone,
+          Approval_Status: order.Approval_Status, // Pass the approval status
         };
+      });
 
-        getAllAsyncStorageItems();
-    }, []); // Run once on mount
+      setPendingOrders(orders);
+    } catch (err) {
+      console.error('Pending orders fetch failed:', err); // Use detailed console.error
+    } finally {
+      setLoading(prev => ({...prev, pending: false}));
+    }
+  };
 
-    useEffect(() => {
-        const fetchAllData = async () => {
-            if (!clientPhoneNumber) return; // Only fetch if clientPhoneNumber is available
+  const fetchConfirmedOrders = async supplierMap => {
+    try {
+      setLoading(prev => ({...prev, confirmed: true}));
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
+        {clientGST: clientPhoneNumber},
+      );
 
-            const currentSupplierMap = await fetchClientData(); // Fetch supplier data first
-            // You might want to update supplierMap state here too if needed elsewhere
-            // setSupplierMap(currentSupplierMap);
+      const responseData = res?.data?.data || {}; // Assuming similar structure for getPlacedOrders
 
-            if (selectedStatus === 'Pending') {
-                fetchPendingOrders(currentSupplierMap);
-            } else if (selectedStatus === 'Confirmed') {
-                fetchConfirmedOrders(currentSupplierMap);
-            } else if (selectedStatus === 'Past') {
-                fetchPastOrders(currentSupplierMap);
-            }
+      const orders = Object.values(responseData).map(order => {
+        const orderId = order.Order_ID ?? '';
+        const mainSupplierGST = order.supplierGST ?? '';
+        const supplierDetails = order[mainSupplierGST] || {};
+
+        const items = Array.isArray(supplierDetails.items)
+          ? supplierDetails.items
+          : [];
+
+        const orderValue =
+          supplierDetails.totalAmount !== undefined &&
+          supplierDetails.totalAmount !== null
+            ? Number(supplierDetails.totalAmount).toFixed(2)
+            : items
+                .reduce(
+                  (sum, {price = 0, quantity = 0}) =>
+                    sum + Number(price) * Number(quantity),
+                  0,
+                )
+                .toFixed(2);
+
+        return {
+          orderId: orderId,
+          vendor: mainSupplierGST,
+          vendorName:
+            supplierDetails.supplierName ||
+            supplierMap[mainSupplierGST]?.businessName ||
+            'Unknown Supplier',
+          status: 'Confirmed', // Or from API if available
+          orderValue,
+          items,
+          supplierGST: mainSupplierGST,
+          clientGST: order.clientGST ?? '',
+          OrderDate: supplierDetails.OrderDate ?? '',
+          DeliveryDate: supplierDetails.DeliveryDate ?? '',
+          clientName: supplierDetails.clientName,
+          clientPhone: supplierDetails.clientPhone,
+          supplierPhone: supplierDetails.supplierPhone,
+          Approval_Status: order.Approval_Status,
         };
+      });
 
-        fetchAllData();
-    }, [clientPhoneNumber, selectedStatus]); // Rerun when clientPhoneNumber or selectedStatus changes
+      setConfirmedOrders(orders);
+    } catch (err) {
+      console.error('Confirmed orders fetch failed:', err);
+    } finally {
+      setLoading(prev => ({...prev, confirmed: false}));
+    }
+  };
 
-    const fetchClientData = async () => {
-        try {
-            const response = await axios.get(
-                `https://api-v7quhc5aza-uc.a.run.app/getClient/${clientPhoneNumber}`,
-            );
-            const supplierData = response.data?.Supplier || {};
-            // It's good practice to update the state here if supplierMap is used in render or other effects
-            setSupplierMap(supplierData); 
-            return supplierData; // Return for immediate use in fetch functions
-        } catch (error) {
-            console.error('Failed to fetch client data', error);
-            return {};
-        }
-    };
+  const fetchPastOrders = async supplierMap => {
+    try {
+      setLoading(prev => ({...prev, past: true}));
+      const res = await axios.post(
+        'https://api-v7quhc5aza-uc.a.run.app/getClientCompletedOrders',
+        {clientGST: clientPhoneNumber},
+      );
 
-    const fetchPendingOrders = async supplierMap => {
-        try {
-            setLoading(prev => ({ ...prev, pending: true }));
+      const responseData = res?.data?.data || {}; // Assuming similar structure for getClientCompletedOrders
 
-            const res = await axios.post(
-                'https://api-v7quhc5aza-uc.a.run.app/getClientOpenOrders',
-                { clientGST: clientPhoneNumber }, // Assuming clientPhoneNumber holds the client's GST
-            );
+      const orders = Object.values(responseData).map(order => {
+        const orderId = order.Order_ID ?? '';
+        const mainSupplierGST = order.supplierGST ?? '';
+        const supplierDetails = order[mainSupplierGST] || {};
 
-            // Access the 'data' key from the response
-            const responseData = res?.data?.data || {};
+        const items = Array.isArray(supplierDetails.items)
+          ? supplierDetails.items
+          : [];
 
-            const orders = Object.values(responseData).map(order => {
-                const orderId = order.Order_ID ?? '';
-                const mainSupplierGST = order.supplierGST ?? ''; // This is the key for the nested supplier object
-                const supplierDetails = order[mainSupplierGST] || {}; // Access the nested supplier object
+        const orderValue =
+          supplierDetails.totalAmount !== undefined &&
+          supplierDetails.totalAmount !== null
+            ? Number(supplierDetails.totalAmount).toFixed(2)
+            : items
+                .reduce(
+                  (sum, {price = 0, quantity = 0}) =>
+                    sum + Number(price) * Number(quantity),
+                  0,
+                )
+                .toFixed(2);
 
-                // If supplierDetails has its own 'items' array, use that.
-                // Otherwise, fall back to an empty array.
-                const items = Array.isArray(supplierDetails.items)
-                    ? supplierDetails.items
-                    : [];
+        return {
+          orderId: orderId,
+          vendor: mainSupplierGST,
+          vendorName:
+            supplierDetails.supplierName ||
+            supplierMap[mainSupplierGST]?.businessName ||
+            'Unknown Supplier',
+          status: 'Delivered', // Or from API if available
+          orderValue,
+          items,
+          deliveryDate:
+            supplierDetails.DeliveryDate ?? order.deliveryDate ?? 'N/A', // Prioritize from supplierDetails
+          supplierGST: mainSupplierGST,
+          clientGST: order.clientGST ?? '',
+          OrderDate: supplierDetails.OrderDate ?? '',
+          clientName: supplierDetails.clientName,
+          clientPhone: supplierDetails.clientPhone,
+          supplierPhone: supplierDetails.supplierPhone,
+          Approval_Status: order.Approval_Status,
+        };
+      });
 
-                // Use totalAmount from supplierDetails if available, otherwise calculate
-                const orderValue = (supplierDetails.totalAmount !== undefined && supplierDetails.totalAmount !== null)
-                    ? Number(supplierDetails.totalAmount).toFixed(2)
-                    : items
-                        .reduce(
-                            (sum, { price = 0, quantity = 0 }) =>
-                                sum + Number(price) * Number(quantity),
-                            0,
-                        )
-                        .toFixed(2);
-
-                return {
-                    orderId: orderId,
-                    vendor: mainSupplierGST, // The GST number of the main supplier
-                    vendorName: supplierDetails.supplierName || supplierMap[mainSupplierGST]?.businessName || 'Unknown Supplier',
-                    status: 'Pending', // As per the API endpoint
-                    orderValue: orderValue,
-                    items: items,
-                    supplierGST: mainSupplierGST,
-                    clientGST: order.clientGST ?? '',
-                    OrderDate: supplierDetails.OrderDate ?? '',
-                    DeliveryDate: supplierDetails.DeliveryDate ?? '',
-                    // You might also want to include clientName, clientPhone, supplierPhone if needed on next screen
-                    clientName: supplierDetails.clientName,
-                    clientPhone: supplierDetails.clientPhone,
-                    supplierPhone: supplierDetails.supplierPhone,
-                    Approval_Status: order.Approval_Status, // Pass the approval status
-                };
-            });
-
-            setPendingOrders(orders);
-        } catch (err) {
-            console.error('Pending orders fetch failed:', err); // Use detailed console.error
-        } finally {
-            setLoading(prev => ({ ...prev, pending: false }));
-        }
-    };
-
-    const fetchConfirmedOrders = async supplierMap => {
-        try {
-            setLoading(prev => ({ ...prev, confirmed: true }));
-            const res = await axios.post(
-                'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
-                { clientGST: clientPhoneNumber },
-            );
-
-            const responseData = res?.data?.data || {}; // Assuming similar structure for getPlacedOrders
-
-            const orders = Object.values(responseData).map(order => {
-                const orderId = order.Order_ID ?? '';
-                const mainSupplierGST = order.supplierGST ?? '';
-                const supplierDetails = order[mainSupplierGST] || {};
-
-                const items = Array.isArray(supplierDetails.items)
-                    ? supplierDetails.items
-                    : [];
-
-                const orderValue = (supplierDetails.totalAmount !== undefined && supplierDetails.totalAmount !== null)
-                    ? Number(supplierDetails.totalAmount).toFixed(2)
-                    : items
-                        .reduce(
-                            (sum, { price = 0, quantity = 0 }) =>
-                                sum + Number(price) * Number(quantity),
-                            0,
-                        )
-                        .toFixed(2);
-
-                return {
-                    orderId: orderId,
-                    vendor: mainSupplierGST,
-                    vendorName: supplierDetails.supplierName || supplierMap[mainSupplierGST]?.businessName || 'Unknown Supplier',
-                    status: 'Confirmed', // Or from API if available
-                    orderValue,
-                    items,
-                    supplierGST: mainSupplierGST,
-                    clientGST: order.clientGST ?? '',
-                    OrderDate: supplierDetails.OrderDate ?? '',
-                    DeliveryDate: supplierDetails.DeliveryDate ?? '',
-                    clientName: supplierDetails.clientName,
-                    clientPhone: supplierDetails.clientPhone,
-                    supplierPhone: supplierDetails.supplierPhone,
-                    Approval_Status: order.Approval_Status,
-                };
-            });
-
-            setConfirmedOrders(orders);
-        } catch (err) {
-            console.error('Confirmed orders fetch failed:', err);
-        } finally {
-            setLoading(prev => ({ ...prev, confirmed: false }));
-        }
-    };
-
-    const fetchPastOrders = async supplierMap => {
-        try {
-            setLoading(prev => ({ ...prev, past: true }));
-            const res = await axios.post(
-                'https://api-v7quhc5aza-uc.a.run.app/getClientCompletedOrders',
-                { clientGST: clientPhoneNumber },
-            );
-
-            const responseData = res?.data?.data || {}; // Assuming similar structure for getClientCompletedOrders
-
-            const orders = Object.values(responseData).map(order => {
-                const orderId = order.Order_ID ?? '';
-                const mainSupplierGST = order.supplierGST ?? '';
-                const supplierDetails = order[mainSupplierGST] || {};
-
-                const items = Array.isArray(supplierDetails.items)
-                    ? supplierDetails.items
-                    : [];
-
-                const orderValue = (supplierDetails.totalAmount !== undefined && supplierDetails.totalAmount !== null)
-                    ? Number(supplierDetails.totalAmount).toFixed(2)
-                    : items
-                        .reduce(
-                            (sum, { price = 0, quantity = 0 }) =>
-                                sum + Number(price) * Number(quantity),
-                            0,
-                        )
-                        .toFixed(2);
-
-                return {
-                    orderId: orderId,
-                    vendor: mainSupplierGST,
-                    vendorName: supplierDetails.supplierName || supplierMap[mainSupplierGST]?.businessName || 'Unknown Supplier',
-                    status: 'Delivered', // Or from API if available
-                    orderValue,
-                    items,
-                    deliveryDate: supplierDetails.DeliveryDate ?? order.deliveryDate ?? 'N/A', // Prioritize from supplierDetails
-                    supplierGST: mainSupplierGST,
-                    clientGST: order.clientGST ?? '',
-                    OrderDate: supplierDetails.OrderDate ?? '',
-                    clientName: supplierDetails.clientName,
-                    clientPhone: supplierDetails.clientPhone,
-                    supplierPhone: supplierDetails.supplierPhone,
-                    Approval_Status: order.Approval_Status,
-                };
-            });
-
-            setPastOrders(orders);
-        } catch (err) {
-            console.error('Past orders fetch failed:', err);
-        } finally {
-            setLoading(prev => ({ ...prev, past: false }));
-        }
-    };
+      setPastOrders(orders);
+    } catch (err) {
+      console.error('Past orders fetch failed:', err);
+    } finally {
+      setLoading(prev => ({...prev, past: false}));
+    }
+  };
 
   const getFilteredOrders = () => {
     let ordersToFilter = [];
@@ -317,38 +333,48 @@ const Order = () => {
     });
   };
 
-  const renderOrderItem = ({ item }) => (
-        <View style={styles.orderItem}>
-            <View style={styles.orderLeft}>
-                {/* You might want to replace this with actual vendor logos */}
-                <Image
-                    source={{ uri: 'https://via.placeholder.com/40' }}
-                    style={styles.logo}
-                />
-                <View>
-                    <Text style={styles.vendor}>{item.vendorName}</Text>
-                    <Text
-                        style={[
-                            styles.status,
-                            item.status === 'Pending' && { color: 'orange' },
-                            item.status === 'Confirmed' && { color: 'blue' },
-                            item.status === 'Delivered' && { color: 'green' },
-                        ]}>
-                        {item.status}
-                    </Text>
-                    <TouchableOpacity
-                        onPress={() =>
-                            navigation.navigate('Specific Order Screen', {
-                                order: item, // Pass the entire item object
-                            })
-                        }>
-                        <Text style={styles.summary}>View Summary</Text>
-                    </TouchableOpacity>
-                </View>
-            </View>
-            <Text style={styles.amount}>₹ {item.orderValue}</Text>
+  const renderOrderItem = ({item}) => (
+    <View style={styles.orderItem}>
+      <View style={styles.orderLeft}>
+        <Image
+          source={{uri: 'https://via.placeholder.com/40'}}
+          style={styles.logo}
+        />
+        <View>
+          <Text style={styles.vendor}>{item.vendorName}</Text>
+          <Text
+            style={[
+              styles.status,
+              item.status === 'Pending' && {color: 'orange'},
+              item.status === 'Confirmed' && {color: 'blue'},
+              item.status === 'Delivered' && {color: 'green'},
+            ]}>
+            {item.status}
+          </Text>
+          <TouchableOpacity
+            onPress={() =>
+              navigation.navigate('Specific Order Screen', {
+                order: item,
+              })
+            }>
+            <Text style={styles.summary}>View Summary</Text>
+          </TouchableOpacity>
+
+          {selectedStatus === 'Confirmed' && (
+            <TouchableOpacity
+              style={styles.downloadButton}
+              onPress={() => {
+                setModalType('featureUnavailable');
+                setModalVisible(true);
+              }}>
+              <Text style={styles.downloadButtonText}>Download Invoice</Text>
+            </TouchableOpacity>
+          )}
         </View>
-    );
+      </View>
+      <Text style={styles.amount}>₹ {item.orderValue}</Text>
+    </View>
+  );
 
   const openModal = type => {
     setModalType(type);
@@ -478,27 +504,40 @@ const Order = () => {
         visible={modalVisible}
         onRequestClose={() => setModalVisible(false)}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalBox}>
-            {modalType === 'date' &&
-              ['24-06-2024', '25-06-2024', '26-06-2024'].map(date => (
-                <Pressable key={date} onPress={() => handleSelect(date)}>
-                  <Text style={styles.modalOption}>{date}</Text>
-                </Pressable>
-              ))}
-            {modalType === 'category' &&
-              ['Vegetables', 'Fruits', 'Groceries'].map(cat => (
-                <Pressable key={cat} onPress={() => handleSelect(cat)}>
-                  <Text style={styles.modalOption}>{cat}</Text>
-                </Pressable>
-              ))}
-            {modalType === 'sort' &&
-              ['Latest First', 'Oldest First', 'Value High to Low'].map(
-                sort => (
-                  <Pressable key={sort} onPress={() => handleSelect(sort)}>
-                    <Text style={styles.modalOption}>{sort}</Text>
-                  </Pressable>
-                ),
-              )}
+          <View style={styles.modalContent}>
+            {modalType === 'featureUnavailable' ? (
+              <>
+                <Text style={styles.categoryText}>Feature Not Available</Text>
+                <TouchableOpacity
+                  style={styles.modalCloseButton}
+                  onPress={() => setModalVisible(false)}>
+                  <Text style={styles.modalCloseButtonText}>Close</Text>
+                </TouchableOpacity>
+              </>
+            ) : (
+              <View style={styles.modalBox}>
+                {modalType === 'date' &&
+                  ['24-06-2024', '25-06-2024', '26-06-2024'].map(date => (
+                    <Pressable key={date} onPress={() => handleSelect(date)}>
+                      <Text style={styles.modalOption}>{date}</Text>
+                    </Pressable>
+                  ))}
+                {modalType === 'category' &&
+                  ['Vegetables', 'Fruits', 'Groceries'].map(cat => (
+                    <Pressable key={cat} onPress={() => handleSelect(cat)}>
+                      <Text style={styles.modalOption}>{cat}</Text>
+                    </Pressable>
+                  ))}
+                {modalType === 'sort' &&
+                  ['Latest First', 'Oldest First', 'Value High to Low'].map(
+                    sort => (
+                      <Pressable key={sort} onPress={() => handleSelect(sort)}>
+                        <Text style={styles.modalOption}>{sort}</Text>
+                      </Pressable>
+                    ),
+                  )}
+              </View>
+            )}
           </View>
         </View>
       </Modal>
