@@ -195,9 +195,7 @@ const Order = () => {
         'https://api-v7quhc5aza-uc.a.run.app/getPlacedOrders',
         {clientGST: clientPhoneNumber},
       );
-
-      const responseData = res?.data?.data || {}; // Assuming similar structure for getPlacedOrders
-
+      const responseData = res?.data || {};
       const orders = Object.values(responseData).map(order => {
         const orderId = order.Order_ID ?? '';
         const mainSupplierGST = order.supplierGST ?? '';
@@ -337,7 +335,7 @@ const Order = () => {
     <View style={styles.orderItem}>
       <View style={styles.orderLeft}>
         <Image
-          source={{uri: 'https://via.placeholder.com/40'}}
+          source={{uri: 'C:\Users\saksh\Prockured\Prockured_frontend_App\Source\Images\VendorProfileImage.png'}}
           style={styles.logo}
         />
         <View>
@@ -360,16 +358,6 @@ const Order = () => {
             <Text style={styles.summary}>View Summary</Text>
           </TouchableOpacity>
 
-          {selectedStatus === 'Confirmed' && (
-            <TouchableOpacity
-              style={styles.downloadButton}
-              onPress={() => {
-                setModalType('featureUnavailable');
-                setModalVisible(true);
-              }}>
-              <Text style={styles.downloadButtonText}>Download Invoice</Text>
-            </TouchableOpacity>
-          )}
         </View>
       </View>
       <Text style={styles.amount}>₹ {item.orderValue}</Text>

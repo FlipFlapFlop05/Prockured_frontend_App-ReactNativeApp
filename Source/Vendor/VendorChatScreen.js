@@ -48,7 +48,7 @@ const CustomerChatItem = ({ customer, onPress }) => {
         </Text>
       </View>
       <View style={styles.customerInfo}>
-        <Text style={styles.customerName}>{customer.businessName || customer.name || 'Unknown Customer'}</Text>
+        <Text style={styles.customerName}>{customer.businessName || 'Unknown Customer'}</Text>
         <Text style={styles.lastOrderInfo} numberOfLines={1}>
           {lastDisplayInfo}
         </Text>

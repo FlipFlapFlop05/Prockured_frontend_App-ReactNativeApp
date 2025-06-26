@@ -18,6 +18,7 @@ import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { database, firebase } from '../Firebase/firebase';
 
+
 const BASE_URL = 'https://api-v7quhc5aza-uc.a.run.app';
 
 const endpoints = {
@@ -26,13 +27,14 @@ const endpoints = {
   past: '/getCompletedOrders',
   accept: '/acceptOrder',
   dispatch: '/orderDelivered',
-  clientProfile: '/getClient' 
+  clientProfile: '/getClient',
 };
+
 
 const tabs = ['Pending Order', 'Confirmed Order', 'Past Order'];
 
 export default function VendorOrderPage() {
-  const [activeTab, setActiveTab] = useState(tabs[0]);
+   const [activeTab, setActiveTab] = useState(tabs[0]);
   const navigation = useNavigation();
 
   const [pendingOrders, setPendingOrders] = useState([]);
@@ -41,15 +43,19 @@ export default function VendorOrderPage() {
 
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
+  const [featureNotAvailableModalVisible, setFeatureNotAvailableModalVisible] = useState(false);
 
   const [toast, setToast] = useState('');
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
-  const [supplierGST, setSupplierGST] = useState(''); // Initial state can be an empty string
-  const [isGSTLoaded, setIsGSTLoaded] = useState(false); // New state to track if GST is loaded
+  const [supplierGST, setSupplierGST] = useState('');
+  const [isGSTLoaded, setIsGSTLoaded] = useState(false);
 
   const [clientCache, setClientCache] = useState({});
+
+  const database = firebase.database();
+
   useEffect(() => {
     const loadSupplierGST = async () => {
       try {
@@ -58,15 +64,13 @@ export default function VendorOrderPage() {
           setSupplierGST(gst);
         }
       } catch (error) {
-        console.error("Failed to load supplier GST from AsyncStorage", error);
-        // Handle error, maybe set a default or show an alert
+        console.error('Failed to load supplier GST from AsyncStorage', error);
       } finally {
-        setIsGSTLoaded(true); // Mark GST as loaded regardless of success or failure
+        setIsGSTLoaded(true);
       }
     };
-
     loadSupplierGST();
-  }, []); // Empty dependency array means this runs once on mount
+  }, []);
 
   const showToast = useCallback((msg) => {
     setToast(msg);
@@ -93,96 +97,94 @@ export default function VendorOrderPage() {
       return [];
     } catch (error) {
       console.error('Error in genericFetch:', error.message || error);
-      // It's good to re-throw or handle specific error types here
-      throw error; // Re-throw to be caught by fetchOrdersGroup
+      throw error;
     }
   };
 
-  const normaliseOrders = (arr = []) => arr.map((o, idx) => {
-    const rawTimestamp = o.timestamp ?? o.createdAt ?? o.orderDate ?? o.OrderDate; // Look for common timestamp fields
-    let timestamp;
-    if (rawTimestamp) {
-      // Attempt to parse the timestamp. Firebase server timestamps are numbers.
-      // Other APIs might return ISO strings.
-      timestamp = new Date(rawTimestamp);
-      // Basic validation to ensure it's a valid date
-      if (isNaN(timestamp.getTime())) {
-        console.warn('Invalid timestamp format for order:', o.orderId, rawTimestamp);
-        timestamp = new Date(); // Fallback to current date or null
-      }
-    } else {
-      timestamp = new Date(); // Fallback if no timestamp found, might need adjustment
-    }
+  const normaliseOrders = (arr = []) =>
+    arr.map((o, idx) => {
+      const rawTimestamp = o.timestamp ?? o.createdAt ?? o.orderDate ?? o.OrderDate;
+      let timestamp = rawTimestamp ? new Date(rawTimestamp) : new Date();
+      if (isNaN(timestamp.getTime())) timestamp = new Date();
 
-    return {
-      ...o,
-      orderId: o.orderId ?? o.id ?? o.Order_ID ?? o.order_ID ?? `temp-${idx}`,
-      timestamp: timestamp, // Add the normalized timestamp here
-    };
+      return {
+        ...o,
+        orderId: o.orderId ?? o.id ?? o.Order_ID ?? o.order_ID ?? `temp-${idx}`,
+        timestamp: timestamp,
+      };
   });
-  // Add this helper function outside the component or within it if you prefer
-  const formatOrderDate = (timestamp) => {
-    if (!timestamp || isNaN(timestamp.getTime())) {
-      return 'N/A';
-    }
-    const date = new Date(timestamp);
-    const day = String(date.getDate()).padStart(2, '0');
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`; // DD/MM/YYYY
-  };
 
-  const fetchClientProfile = useCallback(async (clientGST) => {
-    if (!clientGST) return {};
-    if (clientCache[clientGST]) return clientCache[clientGST];
 
-    try {
-      const { data } = await axios.get(`${BASE_URL}${endpoints.clientProfile}/${clientGST}`);
-      setClientCache((prev) => ({...prev, [clientGST]: data}));
-      return data;
-    } catch (error) {
-      console.warn('Could not fetch client profile for', clientGST, error?.message);
-      return {};
-    }
-  }, [clientCache]);
+  const fetchClientProfile = useCallback(
+    async (clientGST, clientPhone) => {
+      const cacheKey = clientGST || clientPhone;
+      if (!cacheKey) return {};
 
-  const enrichOrders = useCallback(async (orders) => {
-    if (!Array.isArray(orders)) return [];
+      if (clientCache[cacheKey]) return clientCache[cacheKey];
 
-    return Promise.all(
-      orders.map(async (order) => {
-        if (order.clientGST && !order.clientName) {
-          const profile = await fetchClientProfile(order.clientGST);
+      let profile = {};
+
+      try {
+        if (clientGST) {
+          const { data } = await axios.get(`${BASE_URL}${endpoints.clientProfile}/${clientGST}`);
+          profile = data;
+        } else if (clientPhone) {
+          const { data } = await axios.get(`${BASE_URL}${endpoints.clientProfile}/${clientPhone}`);
+          profile = data;
+        }
+
+        setClientCache((prev) => ({ ...prev, [cacheKey]: profile }));
+        return profile;
+      } catch (error) {
+        console.warn(`Could not fetch client profile for ${cacheKey}`, error?.message);
+        return {};
+      }
+    },
+    [clientCache]
+  );
+
+
+  const enrichOrders = useCallback(
+    async (orders) => {
+      if (!Array.isArray(orders)) return [];
+
+      return Promise.all(
+        orders.map(async (order) => {
+          const alreadyHasName = order.clientName || order.businessName;
+          if (alreadyHasName) return order;
+
+          const profile = await fetchClientProfile(order.clientGST, order.clientPhone);
+
           return {
             ...order,
-            clientName: profile?.name || profile?.businessName || order.clientGST,
-            businessName: order.businessName ?? profile?.businessName ?? profile?.name,
+            clientName: profile?.name || profile?.Name || order.clientGST,
+            businessName: profile?.businessName || profile?.name || order.clientGST,
             clientAvatar: profile?.avatarUrl,
           };
-        }
-        return order;
-      }),
-    );
-  }, [fetchClientProfile]);
+        })
+      );
+    },
+    [fetchClientProfile]
+  );
 
 
-  const fetchOrdersGroup = useCallback(async () => {
+   const fetchOrdersGroup = useCallback(async () => {
     if (!supplierGST) {
-      console.log("Supplier GST not available, skipping order fetch.");
-      setLoading(false); // Ensure loading is false if GST is not present
+      console.log('Supplier GST not available, skipping order fetch.');
+      setLoading(false);
       return;
     }
 
     setLoading(true);
     try {
       const [rawPending, rawConfirmed, rawPast] = await Promise.all([
-        genericFetch(endpoints.pending, {supplierGST: supplierGST}),
-        genericFetch(endpoints.confirmed, {supplierGst: supplierGST}),
-        genericFetch(endpoints.past, {supplierGST: supplierGST}),
+        genericFetch(endpoints.pending, { supplierGST }),
+        genericFetch(endpoints.confirmed, { supplierGst: supplierGST }),
+        genericFetch(endpoints.past, { supplierGST }),
       ]);
 
       const [pending, confirmed, past] = await Promise.all([
-        enrichOrders(normaliseOrders(rawPending)), // Apply normalisation here
+        enrichOrders(normaliseOrders(rawPending)),
         enrichOrders(normaliseOrders(rawConfirmed)),
         enrichOrders(normaliseOrders(rawPast)),
       ]);
@@ -191,11 +193,11 @@ export default function VendorOrderPage() {
       setConfirmedOrders(confirmed);
       setPastOrders(past);
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || err.message || "Failed to fetch orders.");
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to fetch orders.');
     } finally {
       setLoading(false);
     }
-  }, [enrichOrders, supplierGST]); // Add supplierGST to dependencies
+  }, [enrichOrders, supplierGST]);
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -203,17 +205,15 @@ export default function VendorOrderPage() {
     setRefreshing(false);
   };
 
-  // 2. Fetch orders only when supplierGST is loaded and changes
   useEffect(() => {
     if (isGSTLoaded && supplierGST) {
       fetchOrdersGroup();
     } else if (isGSTLoaded && !supplierGST) {
-        console.warn("No supplier GST found in AsyncStorage. Orders will not be fetched.");
-        // Optionally, alert the user or navigate away
+      console.warn('No supplier GST found in AsyncStorage. Orders will not be fetched.');
     }
   }, [isGSTLoaded, supplierGST, fetchOrdersGroup]);
 
-  
+
   const acceptOrder = async (order) => {
     try {
       await genericFetch(endpoints.accept, {
@@ -222,22 +222,20 @@ export default function VendorOrderPage() {
         clientGST: order.clientGST,
       });
 
-      // --- NEW: Directly send message to Firebase ---
       const orderDate = order.timestamp ? new Date(order.timestamp).toLocaleDateString('en-GB') : 'N/A';
       const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
 
       const summaryMessageText = `Your order (ID: ${order.orderId}) has been accepted!\nOrder Date: ${orderDate}\nEstimated Delivery: ${deliveryDate}`;
 
-      // Derive chat ID consistently: [vendorGST, customerGST].sort().join('_');
       const chatIDForFirebase = [supplierGST, order.clientGST].sort().join('_');
       const chatMessagesRef = database.ref(`chats/${chatIDForFirebase}/messages`);
       const chatMetadataRef = database.ref(`chats/${chatIDForFirebase}`);
 
       const newMessagePayload = {
-        sender: supplierGST, // Supplier is the sender of this message
+        sender: supplierGST,
         message: summaryMessageText,
         timestamp: firebase.database.ServerValue.TIMESTAMP,
-        type: 'text', // It's a plain text message summarizing the order
+        type: 'text',
       };
 
       try {
@@ -252,12 +250,11 @@ export default function VendorOrderPage() {
         console.error('Firebase Send Message Error:', firebaseError);
         Alert.alert('Firebase Chat Error', `Failed to send order summary via Firebase: ${firebaseError.message}`);
       }
-      // --- END NEW LOGIC ---
 
       showToast(`Order from ${order.businessName || order.clientGST} is confirmed`);
-      await fetchOrdersGroup(); // Refresh orders after successful acceptance
+      await fetchOrdersGroup();
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || err.message || "Failed to accept order.");
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to accept order.');
     }
   };
 
@@ -265,28 +262,24 @@ export default function VendorOrderPage() {
     try {
       await genericFetch(endpoints.dispatch, {
         supplierGST: supplierGST,
-        orderId: order.orderId, // Use normalized orderId
+        orderId: order.orderId,
         clientGST: order.clientGST,
       });
 
-      
-
-      // --- NEW: Directly send message to Firebase ---
       const orderDate = order.timestamp ? new Date(order.timestamp).toLocaleDateString('en-GB') : 'N/A';
       const deliveryDate = new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toLocaleDateString('en-GB');
 
       const summaryMessageText = `Your order (ID: ${order.orderId}) has been Dispatched!\nOrder Date: ${orderDate}\nEstimated Delivery: ${deliveryDate}`;
 
-      // Derive chat ID consistently: [vendorGST, customerGST].sort().join('_');
       const chatIDForFirebase = [supplierGST, order.clientGST].sort().join('_');
       const chatMessagesRef = database.ref(`chats/${chatIDForFirebase}/messages`);
       const chatMetadataRef = database.ref(`chats/${chatIDForFirebase}`);
 
       const newMessagePayload = {
-        sender: supplierGST, // Supplier is the sender of this message
+        sender: supplierGST,
         message: summaryMessageText,
         timestamp: firebase.database.ServerValue.TIMESTAMP,
-        type: 'text', // It's a plain text message summarizing the order
+        type: 'text',
       };
 
       try {
@@ -302,11 +295,10 @@ export default function VendorOrderPage() {
         Alert.alert('Firebase Chat Error', `Failed to send order summary via Firebase: ${firebaseError.message}`);
       }
 
-
       showToast(`Order from ${order.businessName || order.clientGST} has been dispatched`);
       await fetchOrdersGroup();
     } catch (err) {
-      Alert.alert('Error', err.response?.data?.message || err.message || "Failed to dispatch order.");
+      Alert.alert('Error', err.response?.data?.message || err.message || 'Failed to dispatch order.');
     }
   };
 
@@ -340,87 +332,95 @@ export default function VendorOrderPage() {
     return pastOrders;
   };
 
+  // Function to handle "Download Invoice" click
+  const handleDownloadInvoice = () => {
+    setFeatureNotAvailableModalVisible(true);
+  };
+
+  // Function to handle "View Summary" click
+  const handleViewSummary = (order) => {
+    navigation.navigate('View Summary', {
+      supplierGST: supplierGST,
+      clientGST: order.clientGST,
+      orderId: order.orderId,
+    });
+  };
+
   const renderOrder = ({ item: order }) => (
-  <View style={styles.card} key={order.orderId}>
-    <View style={styles.orderItem}>
-      {/* CLIENT INFO */}
-      <View style={styles.vendorInfo}>
-        <Image
-          source={order.clientAvatar ? { uri: order.clientAvatar } : require('../Images/VendorProfileImage.png')}
-          style={{ width: 50, height: 50, borderRadius: 25 }}
-        />
-        <View>
-          <Text style={styles.vendorName} numberOfLines={1}>
-            {order.businessName
-              || order.clientName
-              || order.name
-              || order.clientGST
-              || order.orderId}
-          </Text>
-          {/* Add the Order Date here */}
-          <Text style={styles.orderDateText}>Order Date: {formatOrderDate(order.timestamp)}</Text>
-          {/* Your existing View Chat, Confirmed, Completed texts */}
-          {activeTab === 'Pending Order' && (
-            <TouchableOpacity
-              style={styles.chatBtn}
-              onPress={() => navigation.navigate('CustomerChatDetail', {
-                customerGST: order.clientGST, // Pass clientGST as customerGST
-                vendorGST: supplierGST, // Pass supplierGST as vendorGST
-                customerName: order.businessName || order.clientName || order.clientGST,
-                currentUserGST: supplierGST, // Current user is supplier
-              })}
-            >
-              <Text style={{ color: 'white' }}>View Chat</Text>
-            </TouchableOpacity>
-          )}
+    <View style={styles.card} key={order.orderId}>
+      <View style={styles.orderItem}>
+        {/* CLIENT INFO */}
+        <View style={styles.vendorInfo}>
+          <Image
+            source={order.clientAvatar ? { uri: order.clientAvatar } : require('../Images/VendorProfileImage.png')}
+            style={{ width: 50, height: 50, borderRadius: 25 }}
+          />
+          <View>
+            <Text style={styles.vendorName} numberOfLines={1}>
+              {order.clientName || order.businessName || order.BusinessName || order.name || order.clientGST || order.orderId}
+            </Text>
+            {activeTab === 'Pending Order' && (
+              <TouchableOpacity
+                style={styles.chatBtn}
+                onPress={() =>
+                  navigation.navigate('CustomerChatDetail', {
+                    customerGST: order.clientGST,
+                    vendorGST: supplierGST,
+                    customerName: order.clientName || order.businessName || order.clientGST,
+                    currentUserGST: supplierGST,
+                  })
+                }
+              >
+                <Text style={{ color: 'white' }}>View Chat</Text>
+              </TouchableOpacity>
+            )}
 
-          {activeTab === 'Confirmed Order' && <Text style={styles.confirmedText}>Confirmed</Text>}
-          {activeTab === 'Past Order' && <Text style={styles.confirmedText}>Completed</Text>}
+            {activeTab === 'Confirmed Order' && <Text style={styles.confirmedText}>Confirmed</Text>}
+            {activeTab === 'Past Order' && <Text style={styles.confirmedText}>Completed</Text>}
+          </View>
         </View>
-      </View>
-
 
         {/* ACTIONS */}
         {activeTab === 'Pending Order' && (
-            <View style={styles.actions}>
-              <TouchableOpacity onPress={() => handleAcceptPress(order)}>
-                <CheckCircleIcon size={30} color="#76B117" strokeWidth={3} />
-              </TouchableOpacity>
-              <TouchableOpacity onPress={confirmRejection}>
-                <XCircleIcon size={30} color="red" strokeWidth={3} />
-              </TouchableOpacity>
-            </View>
+          <View style={styles.actions}>
+            <TouchableOpacity onPress={() => handleAcceptPress(order)}>
+              <CheckCircleIcon size={30} color="#76B117" strokeWidth={3} />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={confirmRejection}>
+              <XCircleIcon size={30} color="red" strokeWidth={3} />
+            </TouchableOpacity>
+          </View>
         )}
 
         {activeTab === 'Confirmed Order' && (
-            <View>
-              <TouchableOpacity style={styles.actionButton} onPress={() => handleAcceptPress(order)}>
-                <Text style={styles.actionText}>Dispatch</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionText}>View Summary</Text>
-              </TouchableOpacity>
-            </View>
+          <View>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleAcceptPress(order)}>
+              <Text style={styles.actionText}>Dispatch</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleViewSummary(order)}>
+              <Text style={styles.actionText}>View Summary</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {activeTab === 'Past Order' && (
-            <View>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionText}>Download Invoice</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.actionButton}>
-                <Text style={styles.actionText}>View Summary</Text>
-              </TouchableOpacity>
-            </View>
+          <View>
+            <TouchableOpacity style={styles.actionButton} onPress={handleDownloadInvoice}>
+              <Text style={styles.actionText}>Download Invoice</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.actionButton} onPress={() => handleViewSummary(order)}>
+              <Text style={styles.actionText}>View Summary</Text>
+            </TouchableOpacity>
+          </View>
         )}
       </View>
 
       {/* Comment box only for pending */}
       {activeTab === 'Pending Order' && (
-          <View style={styles.commentBox}>
-            <Text style={{marginRight: 4}}>📝</Text>
-            <TextInput placeholder="Add a comment" style={{flex: 1, paddingVertical: 4}} />
-          </View>
+        <View style={styles.commentBox}>
+          <Text style={{ marginRight: 4 }}>📝</Text>
+          <TextInput placeholder="Add a comment" style={{ flex: 1, paddingVertical: 4 }} />
+        </View>
       )}
     </View>
   );
@@ -444,11 +444,9 @@ export default function VendorOrderPage() {
         justifyContent: 'center',
       },
       headerLeft: () => (
-          <TouchableOpacity
-              onPress={() => navigation.goBack()}
-              style={{paddingHorizontal: 13}}>
-            <ChevronLeftIcon size={28} color="#333" />
-          </TouchableOpacity>
+        <TouchableOpacity onPress={() => navigation.goBack()} style={{ paddingHorizontal: 13 }}>
+          <ChevronLeftIcon size={28} color="#333" />
+        </TouchableOpacity>
       ),
     });
   }, [navigation]);
@@ -461,46 +459,41 @@ export default function VendorOrderPage() {
       {/* TABS */}
       <View style={styles.tabs}>
         {tabs.map((tab) => (
-            <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
-              <Text style={[styles.tab, activeTab === tab && styles.activeTab]}>{tab}</Text>
-            </TouchableOpacity>
+          <TouchableOpacity key={tab} onPress={() => setActiveTab(tab)}>
+            <Text style={[styles.tab, activeTab === tab && styles.activeTab]}>{tab}</Text>
+          </TouchableOpacity>
         ))}
       </View>
 
       {/* LIST */}
       {loading ? (
-          <ActivityIndicator size="large" style={{marginTop: 32}} />
+        <ActivityIndicator size="large" style={{ marginTop: 32 }} />
       ) : (
-          <FlatList
-              data={getCurrentOrders()}
-              keyExtractor={(item) => item.orderId.toString()} // Use the normalized orderId
-              renderItem={renderOrder}
-              contentContainerStyle={{paddingBottom: 100}}
-              refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
-              ListEmptyComponent={() => (
-                  <Text style={{textAlign: 'center', marginTop: 40, color: '#757575'}}>
-                    No orders in this section
-                  </Text>
-              )}
-          />
+        <FlatList
+          data={getCurrentOrders()}
+          keyExtractor={(item) => item.orderId.toString()}
+          renderItem={renderOrder}
+          contentContainerStyle={{ paddingBottom: 100 }}
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
+          ListEmptyComponent={() => (
+            <Text style={{ textAlign: 'center', marginTop: 40, color: '#757575' }}>No orders in this section</Text>
+          )}
+        />
       )}
 
       {/* ACTION MODAL */}
       <Modal visible={modalVisible} transparent animationType="fade">
         <View style={styles.modalContainer}>
           <View style={styles.modalBox}>
-            <TouchableOpacity onPress={() => setModalVisible(false)} style={{position: 'absolute', top: 10, right: 10}}>
-              <Text style={{fontSize: 18}}>✕</Text>
+            <TouchableOpacity onPress={() => setModalVisible(false)} style={{ position: 'absolute', top: 10, right: 10 }}>
+              <Text style={{ fontSize: 18 }}>✕</Text>
             </TouchableOpacity>
             <Text style={styles.modalText}>
               Do you want to{' '}
-              <Text style={{color: '#76B117'}}>
-                {activeTab === 'Pending Order' ? 'accept' : 'dispatch'}
-              </Text>{' '}
-              the order from{' '}
-              <Text style={{color: '#76B117'}}>{selectedOrder?.clientName || selectedOrder?.orderId}</Text>?
+              <Text style={{ color: '#76B117' }}>{activeTab === 'Pending Order' ? 'accept' : 'dispatch'}</Text> the order from{' '}
+              <Text style={{ color: '#76B117' }}>{selectedOrder?.clientName || selectedOrder?.orderId}</Text>?
             </Text>
-            <View style={{flexDirection: 'row', gap: 60}}>
+            <View style={{ flexDirection: 'row', gap: 60 }}>
               <TouchableOpacity style={styles.modalButton} onPress={confirmAccept}>
                 <CheckCircleIcon size={30} color="#76B117" strokeWidth={3} />
               </TouchableOpacity>
@@ -512,16 +505,38 @@ export default function VendorOrderPage() {
         </View>
       </Modal>
 
+      {/* FEATURE NOT AVAILABLE MODAL */}
+      <Modal visible={featureNotAvailableModalVisible} transparent animationType="fade">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalBox}>
+            <TouchableOpacity onPress={() => setFeatureNotAvailableModalVisible(false)} style={{ position: 'absolute', top: 10, right: 10 }}>
+              <Text style={{ fontSize: 18 }}>✕</Text>
+            </TouchableOpacity>
+            <Text style={styles.modalText}>
+              <Text style={{ color: '#76B117', fontWeight: 'bold' }}>Feature Not Available</Text>
+            </Text>
+            <Text style={{ fontSize: 16, textAlign: 'center', marginTop: 10 }}>
+              This feature is under development and will be available soon.
+            </Text>
+            <TouchableOpacity
+              style={[styles.modalButton, { marginTop: 20, backgroundColor: '#76B117', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8 }]}
+              onPress={() => setFeatureNotAvailableModalVisible(false)}
+            >
+              <Text style={{ color: 'white', fontSize: 16, fontWeight: 'bold' }}>OK</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
       {/* TOAST */}
       {toast !== '' && (
-          <View style={styles.toast}>
-            <Text style={styles.toastText}>{toast}</Text>
-          </View>
+        <View style={styles.toast}>
+          <Text style={styles.toastText}>{toast}</Text>
+        </View>
       )}
     </View>
   );
 }
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,

@@ -1,5 +1,5 @@
-import {useNavigation, useRoute} from '@react-navigation/native';
-import React, {useEffect, useState} from 'react';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import React, { useEffect, useState } from 'react';
 import {
   View,
   Text,
@@ -9,21 +9,21 @@ import {
   TouchableOpacity,
   TextInput,
   ActivityIndicator,
+  Alert, // Make sure Alert is imported for debugging
 } from 'react-native';
-import {ChevronLeftIcon, PencilIcon} from 'react-native-heroicons/outline';
-import {BellIcon} from 'react-native-heroicons/solid';
+import { ChevronLeftIcon, PencilIcon } from 'react-native-heroicons/outline';
+import { BellIcon } from 'react-native-heroicons/solid';
 import axios from 'axios';
 
-const {width: screenWidth} = Dimensions.get('window');
+const { width: screenWidth } = Dimensions.get('window');
 
 const SpecificOrderScreen = () => {
   const navigation = useNavigation();
   const route = useRoute();
-  const {order} = route.params;
-  const [customerDetails, setCustomerDetails] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const { order } = route.params; // The 'order' object from the previous screen
+  const [loading, setLoading] = useState(true); // Keep loading state for potential async operations if needed
 
-  // Process order data
+  // Process order data - make sure this function truly returns data
   const processOrderData = () => {
     const baseData = {
       orderId: order.Order_ID || order.orderId || 'N/A',
@@ -42,38 +42,21 @@ const SpecificOrderScreen = () => {
         month: 'short',
       }),
       totalItems: order.items?.length || 0,
+      // Ensure these are correctly passed in the 'order' object from the previous screen
+      vendorName: order.vendorName || 'Unknown Vendor', // Assuming this is the supplier's business name
+      supplierPhone: order.supplierPhone || 'N/A', // Assuming this is the supplier's phone number
     };
-
-    return {
-      ...baseData,
-      customerName: customerDetails?.Name || 'Mr. Karan Rao',
-      customerPhone: customerDetails?.phone || '+91 9876543210',
-    };
+    return baseData; // This function must return the processed data
   };
 
-  const fetchUserDetails = async () => {
-    try {
-      const res = await axios.post(
-        'https://api-v7quhc5aza-uc.a.run.app/getUserProfile',
-        {
-          number: '04030506',
-        },
-      );
-      if (res.data?.data) {
-        setCustomerDetails(res.data.data);
-      }
-    } catch (error) {
-      console.error('Failed to fetch user details', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const orderData = processOrderData(); // Call it here to get the data
 
   useEffect(() => {
-    fetchUserDetails();
-  }, []);
+    // For debugging: show the full orderData received
+    // Alert.alert("Order Data on SpecificOrderScreen", JSON.stringify(orderData, null, 2));
+    setLoading(false); // Set loading to false once data is processed/received
+  }, [orderData]); // Depend on orderData to re-run if it changes (though usually it won't after initial load)
 
-  const orderData = processOrderData();
 
   if (loading) {
     return (
@@ -91,25 +74,31 @@ const SpecificOrderScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <ChevronLeftIcon size={22} color={'black'} strokeWidth={3} />
         </TouchableOpacity>
-        <Text style={styles.vendorName}>{order.vendorName}</Text>
+        <View style={styles.vendorHeaderInfo}> {/* New View to hold both name and phone */}
+          <Text style={styles.vendorName}>{orderData.vendorName}</Text> {/* Use orderData here */}
+          {orderData.supplierPhone !== 'N/A' && ( // Only show if phone number is available
+            <Text style={styles.supplierPhoneHeader}>{orderData.supplierPhone}</Text>
+          )}
+        </View>
       </View>
 
-      {/* Customer Info */}
+      {/* Customer Info (This section seems to display vendor info based on names) */}
       <View style={styles.vendorData}>
         <View style={styles.dataFlexDirection}>
-          <Text style={styles.customerName}>{order.vendorName}</Text>
-          <Text style={styles.customerPhone}>{order.supplierPhone}</Text>
+          {/* Consider renaming customerName to clientName if this is for the client */}
+          <Text style={styles.customerName}>{orderData.vendorName}</Text> {/* Using orderData */}
+          <Text style={styles.customerPhone}>{orderData.supplierPhone}</Text> {/* Using orderData */}
         </View>
         <View style={styles.dataFlexDirection}>
           <Text style={styles.deliveryDateText}>Delivery Date</Text>
-          <Text style={styles.deliveryDateEntry}>{order.DeliveryDate}</Text>
+          <Text style={styles.deliveryDateEntry}>{orderData.deliveryDate}</Text> {/* Using orderData */}
         </View>
       </View>
 
       {/* Comment Box */}
       <View style={styles.commentSection}>
         <Text style={styles.commentLabel}>Comment *</Text>
-        <View style={{flexDirection: 'row'}}>
+        <View style={{ flexDirection: 'row' }}>
           <View style={styles.commentBoxWrapper}>
             <TextInput
               style={styles.commentBox}
@@ -159,7 +148,7 @@ const SpecificOrderScreen = () => {
           <Text style={styles.summaryLabel}>Supplier GST</Text>
           <Text style={styles.summaryValue}>{orderData.supplierGST}</Text>
         </View>
-        <TouchableOpacity onPress={() => navigation.navigate('Order Tracking', {order})}>
+        <TouchableOpacity onPress={() => navigation.navigate('Order Tracking', { order })}>
           <Text style={styles.viewDetails}>VIEW DETAILS</Text>
         </TouchableOpacity>
       </View>
@@ -189,11 +178,18 @@ const styles = StyleSheet.create({
     paddingTop: screenWidth * 0.08,
     paddingLeft: screenWidth * 0.04,
   },
+  vendorHeaderInfo: { // New style for the container of vendor name and phone
+    marginLeft: screenWidth * 0.02,
+  },
   vendorName: {
     fontWeight: 'bold',
     fontSize: 18,
     color: '#0F1828',
-    marginLeft: screenWidth * 0.02,
+  },
+  supplierPhoneHeader: { // New style for the supplier phone number in the header
+    fontSize: 14,
+    color: '#6B7280', // A slightly muted color for the phone number
+    marginTop: 2, // Small margin to separate from the name
   },
   vendorData: {
     flexDirection: 'row',
@@ -209,7 +205,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     color: '#76B117',
   },
-  customerPhone: {
+  customerPhone: { // This seems to be for client's phone, but named customerPhone
     fontWeight: '500',
     fontSize: 15,
     color: '#000',
