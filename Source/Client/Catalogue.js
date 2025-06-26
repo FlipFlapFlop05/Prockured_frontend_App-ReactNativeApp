@@ -24,7 +24,7 @@ import {
 } from 'react-native-heroicons/outline';
 import {categories} from '../Constant/constant';
 
-const {width} = Dimensions.get('window');
+const {width, height} = Dimensions.get('window');
 
 export default function Catalogue() {
   const navigation = useNavigation();
@@ -42,6 +42,7 @@ export default function Catalogue() {
   const [selectedSupplierTab, setSelectedSupplierTab] =
     useState('My Catalogue');
   const [loading, setLoading] = useState(true);
+  const [tabLoading, setTabLoading] = useState(false); // New state for tab loading
   const [clientGST, setClientGST] = useState(null);
   console.log(suppliers, 'suppliers in catalogue');
 
@@ -63,11 +64,12 @@ export default function Catalogue() {
         'Could not find a valid GST number for the selected catalogue.',
       );
       setLoading(false);
+      setTabLoading(false); // Ensure loading is false
       return;
     }
 
     try {
-      setLoading(true);
+      setTabLoading(true); // Set tab loading when fetching starts
       const res = await axios.get(
         `https://api-v7quhc5aza-uc.a.run.app/getCatalogue/${gstToFetch}`,
       );
@@ -78,6 +80,7 @@ export default function Catalogue() {
       setData([]);
     } finally {
       setLoading(false);
+      setTabLoading(false); // Ensure loading is false when done
     }
   };
 
@@ -203,20 +206,17 @@ export default function Catalogue() {
 
         <View style={styles.headerTitleContainer}>
           <Text style={styles.headerTitle}>{selectedMainCategory}</Text>
-
-          {data?.length > 0 ? (
-            <TouchableOpacity
-              onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
-              <View style={styles.changeCategoryButton}>
-                <Text style={styles.changeCategoryText}>Change Category</Text>
-                <ChevronDownIcon
-                  size={18}
-                  color="#76B117"
-                  style={{marginLeft: 4}}
-                />
-              </View>
-            </TouchableOpacity>
-          ) : null}
+          <TouchableOpacity
+            onPress={() => setIsDropdownVisible(!isDropdownVisible)}>
+            <View style={styles.changeCategoryButton}>
+              <Text style={styles.changeCategoryText}>Change Category</Text>
+              <ChevronDownIcon
+                size={18}
+                color="#76B117"
+                style={{marginLeft: 4}}
+              />
+            </View>
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity onPress={toggleSearch} style={styles.searchIcon}>
@@ -291,7 +291,15 @@ export default function Catalogue() {
           ))}
         </ScrollView>
 
-        {selectedSupplierTab === 'My Catalogue' && data.length === 0 ? (
+        {loading ? (
+          <View style={styles.fullScreenLoader}>
+            <ActivityIndicator size="large" color="#76B117" />
+          </View>
+        ) : tabLoading ? (
+          <View style={styles.loaderContainer}>
+            <ActivityIndicator size="large" color="#76B117" />
+          </View>
+        ) : selectedSupplierTab === 'My Catalogue' && data.length === 0 ? (
           <View style={styles.emptyState}>
             <Image
               source={{
@@ -315,7 +323,7 @@ export default function Catalogue() {
                   source={{
                     uri:
                       item.image ||
-                      'https://www.themealdb.com/images/category/beef.png', // Use item.image if available
+                      'https://www.themealdb.com/images/category/beef.png',
                   }}
                   style={styles.productImageCard}
                 />
@@ -353,7 +361,7 @@ export default function Catalogue() {
         )}
       </ScrollView>
 
-      {data.length > 0 && (
+      {!loading && data.length > 0 && (
         <TouchableOpacity
           style={styles.floatingButton}
           onPress={() => navigation.navigate('Add Product Manually')}>
@@ -361,7 +369,7 @@ export default function Catalogue() {
         </TouchableOpacity>
       )}
 
-      {calculateTotalItems() > 0 && (
+      {!loading && calculateTotalItems() > 0 && (
         <TouchableOpacity
           style={styles.viewBasketButton}
           onPress={() => {
@@ -583,5 +591,17 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 30,
     fontWeight: 'bold',
+  },
+  fullScreenLoader: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: height * 0.6, // Adjust based on your layout
+  },
+  loaderContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 50,
   },
 });
